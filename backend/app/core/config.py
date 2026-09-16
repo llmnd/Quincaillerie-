@@ -1,3 +1,4 @@
+import json
 from functools import lru_cache
 from typing import Any
 
@@ -24,8 +25,25 @@ class Settings(BaseSettings):
     @field_validator("cors_origins", mode="before")
     @classmethod
     def parse_cors_origins(cls, value: Any) -> list[str]:
+        if value is None or value == "":
+            return []
+
+        if isinstance(value, list):
+            return [str(item).strip().strip("\"'") for item in value if str(item).strip()]
+
         if isinstance(value, str):
-            return [item.strip() for item in value.replace("[", "").replace("]", "").split(",") if item.strip()]
+            raw = value.strip()
+            if raw.startswith("[") and raw.endswith("]"):
+                try:
+                    parsed = json.loads(raw)
+                    if isinstance(parsed, list):
+                        return [str(item).strip().strip("\"'") for item in parsed if str(item).strip()]
+                except json.JSONDecodeError:
+                    pass
+
+            items = [part.strip().strip("\"'") for part in raw.split(",") if part.strip()]
+            return items
+
         return value
 
 
