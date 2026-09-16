@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db
+from app.api.deps import get_db, require_roles
 from app.models.supplier import Supplier
 from app.schemas.supplier import SupplierCreate, SupplierRead, SupplierUpdate
 
@@ -12,12 +12,12 @@ router = APIRouter(prefix="/suppliers", tags=["suppliers"])
 
 
 @router.get("", response_model=list[SupplierRead])
-def list_suppliers(db: Session = Depends(get_db)) -> list[Supplier]:
+def list_suppliers(db: Session = Depends(get_db), _: object = Depends(require_roles("admin"))) -> list[Supplier]:
     return db.scalars(select(Supplier).order_by(Supplier.id)).all()
 
 
 @router.post("", response_model=SupplierRead, status_code=status.HTTP_201_CREATED)
-def create_supplier(payload: SupplierCreate, db: Session = Depends(get_db)) -> Supplier:
+def create_supplier(payload: SupplierCreate, db: Session = Depends(get_db), _: object = Depends(require_roles("admin"))) -> Supplier:
     supplier = Supplier(**payload.model_dump())
     db.add(supplier)
     db.commit()
@@ -26,7 +26,7 @@ def create_supplier(payload: SupplierCreate, db: Session = Depends(get_db)) -> S
 
 
 @router.get("/{supplier_id}", response_model=SupplierRead)
-def get_supplier(supplier_id: int, db: Session = Depends(get_db)) -> Supplier:
+def get_supplier(supplier_id: int, db: Session = Depends(get_db), _: object = Depends(require_roles("admin"))) -> Supplier:
     supplier = db.get(Supplier, supplier_id)
     if supplier is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Supplier not found")
@@ -34,7 +34,7 @@ def get_supplier(supplier_id: int, db: Session = Depends(get_db)) -> Supplier:
 
 
 @router.put("/{supplier_id}", response_model=SupplierRead)
-def update_supplier(supplier_id: int, payload: SupplierUpdate, db: Session = Depends(get_db)) -> Supplier:
+def update_supplier(supplier_id: int, payload: SupplierUpdate, db: Session = Depends(get_db), _: object = Depends(require_roles("admin"))) -> Supplier:
     supplier = db.get(Supplier, supplier_id)
     if supplier is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Supplier not found")
@@ -48,7 +48,7 @@ def update_supplier(supplier_id: int, payload: SupplierUpdate, db: Session = Dep
 
 
 @router.delete("/{supplier_id}")
-def delete_supplier(supplier_id: int, db: Session = Depends(get_db)) -> dict[str, Any]:
+def delete_supplier(supplier_id: int, db: Session = Depends(get_db), _: object = Depends(require_roles("admin"))) -> dict[str, Any]:
     supplier = db.get(Supplier, supplier_id)
     if supplier is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Supplier not found")

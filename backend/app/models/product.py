@@ -13,5 +13,6 @@ class Product(Base):
     description: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     category: Mapped[str | None] = mapped_column(String(100), nullable=True)
     unit_price: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    initial_stock_quantity: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     stock_quantity: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     is_active: Mapped[bool] = mapped_column(default=True)

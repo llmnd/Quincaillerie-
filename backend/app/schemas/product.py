@@ -29,3 +29,6 @@ class ProductRead(ProductBase):
 
     id: int
     is_active: bool = True
+    initial_stock_quantity: int = 0
+    sold_quantity: int = 0
+    remaining_stock: int = 0

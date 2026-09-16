@@ -9,6 +9,8 @@ class Base(DeclarativeBase):
 
 
 from app.models.product import Product  # noqa: E402,F401
+from app.models.user import User  # noqa: E402,F401
+from app.models.cash import AuditLog, CashOperation, CashRegister, CashSession  # noqa: E402,F401
 
 connect_args = {}
 if settings.database_url.startswith("sqlite"):
@@ -21,4 +23,3 @@ engine = create_engine(
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-Base.metadata.create_all(bind=engine)

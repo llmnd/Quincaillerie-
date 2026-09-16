@@ -14,6 +14,8 @@ from app.models.product import Product  # noqa: F401
 from app.models.sale import Sale, SaleItem  # noqa: F401
 from app.models.stock_movement import StockMovement  # noqa: F401
 from app.models.supplier import Supplier  # noqa: F401
+from app.models.user import User  # noqa: F401
+from app.models.cash import AuditLog, CashOperation, CashRegister, CashSession  # noqa: F401
 
 config = context.config
 
