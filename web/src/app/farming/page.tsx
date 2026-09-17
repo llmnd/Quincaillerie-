@@ -28,6 +28,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const emptyBatch = { reference: "", species: "chicken", production_type: "broiler", breed: "", start_date: new Date().toISOString().slice(0, 10), initial_count: "", image_url: "" };
 const emptyHealth = { batch_id: "", event_date: new Date().toISOString().slice(0, 10), event_type: "vaccination", title: "", diagnosis: "", mortality_count: "0" };
 const emptyEgg = { batch_id: "", production_date: new Date().toISOString().slice(0, 10), quantity: "", damaged_quantity: "0" };
+const isLayerProduction = (value?: string | null) => ["layer", "layers", "pondeuse", "pondeuses", "ponte"].includes((value ?? "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
 
 export default function FarmingPage() {
   const [batches, setBatches] = useState<Batch[]>([]);
@@ -52,11 +53,12 @@ export default function FarmingPage() {
         fetch(`${API_URL}/api/v1/farming/health-events`, { headers: authHeaders(), credentials: "include" }),
         fetch(`${API_URL}/api/v1/farming/egg-productions`, { headers: authHeaders(), credentials: "include" }),
       ]);
-      if (bRes.ok && hRes.ok && eRes.ok) {
-        setBatches(await bRes.json());
-        setHealthEvents(await hRes.json());
-        setEggProductions(await eRes.json());
-      }
+      if (bRes.ok) setBatches(await bRes.json());
+      else console.error("Impossible de charger les bandes d'élevage", bRes.status);
+      if (hRes.ok) setHealthEvents(await hRes.json());
+      else console.error("Impossible de charger les événements sanitaires", hRes.status);
+      if (eRes.ok) setEggProductions(await eRes.json());
+      else console.error("Impossible de charger les productions d'œufs", eRes.status);
     } catch (err) {
       console.error("Erreur de chargement:", err);
     }
@@ -64,39 +66,26 @@ export default function FarmingPage() {
 
   useEffect(() => { load(); }, []);
 
-  useEffect(() => {
-    if (!batches.length) return;
-
-    const validHealthBatchIds = new Set(batches.filter(batch => batch.status === "active").map(batch => String(batch.id)));
-    if (healthForm.batch_id && !validHealthBatchIds.has(healthForm.batch_id)) {
-      setHealthForm(prev => ({ ...prev, batch_id: "" }));
+  function openForm(form: "batch" | "health" | "egg") {
+    if (form === "health") {
+      const activeBatchIds = new Set(batches.filter(batch => batch.status === "active").map(batch => String(batch.id)));
+      const selectedBatch = activeBatchIds.has(healthForm.batch_id)
+        ? healthForm.batch_id
+        : batches.find(batch => batch.status === "active")?.id?.toString() ?? "";
+      setHealthForm(prev => ({ ...prev, batch_id: selectedBatch }));
     }
 
-    const validEggBatchIds = new Set(
-      batches.filter(batch => batch.status === "active" && batch.production_type?.toLowerCase() === "layer").map(batch => String(batch.id))
-    );
-    if (eggForm.batch_id && !validEggBatchIds.has(eggForm.batch_id)) {
-      setEggForm(prev => ({ ...prev, batch_id: "" }));
-    }
-  }, [batches, healthForm.batch_id, eggForm.batch_id]);
-
-  useEffect(() => {
-    if (activeForm === "health" && !healthForm.batch_id) {
-      const firstAvailable = batches.find(batch => batch.status === "active");
-      if (firstAvailable) {
-        setHealthForm(prev => ({ ...prev, batch_id: String(firstAvailable.id) }));
-      }
+    if (form === "egg") {
+      const eligibleBatches = batches.filter(batch => batch.status === "active" && isLayerProduction(batch.production_type));
+      const eligibleIds = new Set(eligibleBatches.map(batch => String(batch.id)));
+      const selectedBatch = eligibleIds.has(eggForm.batch_id)
+        ? eggForm.batch_id
+        : eligibleBatches[0]?.id?.toString() ?? "";
+      setEggForm(prev => ({ ...prev, batch_id: selectedBatch }));
     }
 
-    if (activeForm === "egg" && !eggForm.batch_id) {
-      const firstLayer = batches.find(batch => batch.status === "active" && batch.production_type?.toLowerCase() === "layer");
-      const fallbackLayer = batches.find(batch => batch.status === "active");
-      const selected = firstLayer ?? fallbackLayer;
-      if (selected) {
-        setEggForm(prev => ({ ...prev, batch_id: String(selected.id) }));
-      }
-    }
-  }, [activeForm, batches, healthForm.batch_id, eggForm.batch_id]);
+    setActiveForm(form);
+  }
 
   useEffect(() => {
     if (!activeForm) return;
@@ -184,7 +173,7 @@ export default function FarmingPage() {
   async function createEgg(e: FormEvent) {
     e.preventDefault();
     const batch = batches.find(
-      item => item.id === Number(eggForm.batch_id) && item.status === "active" && item.production_type?.toLowerCase() === "layer"
+      item => item.id === Number(eggForm.batch_id) && item.status === "active" && isLayerProduction(item.production_type)
     );
     if (!batch) {
       alert("Aucune bande de ponte active disponible pour enregistrer une récolte.");
@@ -210,8 +199,8 @@ export default function FarmingPage() {
   const totalBrokenEggs = eggProductions.reduce((acc, e) => acc + (e.damaged_quantity || 0), 0);
 
   const activeBatches = batches.filter(b => b.status === "active");
-  const layerBatches = batches.filter(b => b.status === "active" && b.production_type?.toLowerCase() === "layer");
-  const eggSelectOptions = layerBatches.length > 0 ? layerBatches : activeBatches;
+  const layerBatches = batches.filter(b => b.status === "active" && isLayerProduction(b.production_type));
+  const eggSelectOptions = layerBatches;
 
   const selectedBatchEggs = selectedBatch
     ? eggProductions.filter(e => e.batch_id === selectedBatch.id)
@@ -257,9 +246,9 @@ export default function FarmingPage() {
             <Plus size={18} />
           </button>
           <div className={quickActionsOpen ? styles.quickActionListOpen : styles.quickActionList}>
-            <button className={styles.btnMinimal} onClick={() => setActiveForm("egg")}><Plus size={14} /> Récolte d'œufs</button>
-            <button className={styles.btnMinimal} onClick={() => setActiveForm("health")}><Plus size={14} /> Événement sanitaire</button>
-            <button className={styles.btnPrimary} onClick={() => setActiveForm("batch")}><Plus size={14} /> Nouvelle bande</button>
+            <button className={styles.btnMinimal} onClick={() => openForm("egg")}><Plus size={14} /> Récolte d'œufs</button>
+            <button className={styles.btnMinimal} onClick={() => openForm("health")}><Plus size={14} /> Événement sanitaire</button>
+            <button className={styles.btnPrimary} onClick={() => openForm("batch")}><Plus size={14} /> Nouvelle bande</button>
           </div>
         </div>
 
@@ -268,8 +257,8 @@ export default function FarmingPage() {
           {tasksOpen && <aside className={styles.taskRail}>
             <div className={styles.panelHeading}><div><span className={styles.panelKicker}>À faire</span><h2>Journée de travail</h2></div><span className={styles.taskCount}>{activeBatches.length + 2}</span></div>
             <div className={styles.taskList}>
-              <button className={styles.taskItem} onClick={() => setActiveForm("egg")}><span className={styles.taskIcon}><Wheat size={16} /></span><span><strong>Enregistrer la ponte</strong><small>{layerBatches.length || activeBatches.length} bande(s) à vérifier</small></span><ChevronRight size={15} /></button>
-              <button className={styles.taskItem} onClick={() => setActiveForm("health")}><span className={`${styles.taskIcon} ${styles.warning}`}><Thermometer size={16} /></span><span><strong>Contrôle sanitaire</strong><small>{latestHealthEvents.length ? "Dernier suivi disponible" : "Aucun suivi enregistré"}</small></span><ChevronRight size={15} /></button>
+              <button className={styles.taskItem} onClick={() => openForm("egg")}><span className={styles.taskIcon}><Wheat size={16} /></span><span><strong>Enregistrer la ponte</strong><small>{layerBatches.length || activeBatches.length} bande(s) à vérifier</small></span><ChevronRight size={15} /></button>
+              <button className={styles.taskItem} onClick={() => openForm("health")}><span className={`${styles.taskIcon} ${styles.warning}`}><Thermometer size={16} /></span><span><strong>Contrôle sanitaire</strong><small>{latestHealthEvents.length ? "Dernier suivi disponible" : "Aucun suivi enregistré"}</small></span><ChevronRight size={15} /></button>
               <button className={styles.taskItem} onClick={() => setWorkspaceView("batches")}><span className={`${styles.taskIcon} ${styles.blue}`}><ClipboardList size={16} /></span><span><strong>Vérifier les effectifs</strong><small>{activeBatches.length} bandes actives</small></span><ChevronRight size={15} /></button>
             </div>
             <div className={styles.taskFooter}><CheckCircle2 size={15} /> {healthyBatches.length} bande(s) sans alerte récente</div>
@@ -305,7 +294,7 @@ export default function FarmingPage() {
                 {workspaceView === "production" && <><div><span>Œufs conformes</span><strong>{totalEggs.toLocaleString("fr-FR")}</strong></div><div><span>Œufs cassés</span><strong className={totalBrokenEggs > 0 ? styles.alertText : styles.goodText}>{totalBrokenEggs.toLocaleString("fr-FR")}</strong></div><div><span>Taux de perte</span><strong>{totalEggs + totalBrokenEggs > 0 ? `${Math.round((totalBrokenEggs / (totalEggs + totalBrokenEggs)) * 100)}%` : "0%"}</strong></div></>}
               </div>
               {workspaceView === "production" && (
-                <div className={styles.productionSummary}><button className={styles.btnPrimary} onClick={() => setActiveForm("egg")}><Plus size={14} /> Saisir une récolte</button></div>
+                <div className={styles.productionSummary}><button className={styles.btnPrimary} onClick={() => openForm("egg")}><Plus size={14} /> Saisir une récolte</button></div>
               )}
               {workspaceView === "batches" && (
                 <div className={styles.tabList}><h3 className={styles.sectionTitle}>Bandes d'élevage</h3>{batches.length === 0 ? <p className={styles.emptyState}>Aucune bande enregistrée</p> : <div className={styles.listGroup}>{batches.map(batch => <div key={batch.id} className={styles.listItem} onClick={() => setSelectedBatch(batch)}><div className={styles.batchLead}><img src={batch.image_url && batch.image_url.trim() !== "" ? batch.image_url : DECOR_FARM_IMAGE} alt={batch.reference} className={styles.batchThumb} /><div className={styles.itemInfo}><h4>{batch.reference}</h4><p>{batch.production_type === "layer" ? "Pondeuses" : "Poulets de chair"} · {batch.breed || "Standard"}</p></div></div><div className={styles.itemValue}><strong>{batch.current_count} sujets</strong><span className={styles.statusBadge}>{batch.status === "active" ? "Actif" : batch.status}</span></div></div>)}</div>}</div>
@@ -387,11 +376,12 @@ export default function FarmingPage() {
               <div><span className={styles.modalEyebrow}>Production du jour</span><h2 id="action-modal-title">Saisie de la ponte journalière</h2></div>
               <button type="button" className={styles.modalCloseButton} onClick={() => setActiveForm(null)} aria-label="Fermer"><X size={18} /></button>
             </div>
+            {eggSelectOptions.length === 0 && <p className={styles.formNotice}>Aucune bande de ponte active. Créez une nouvelle bande avec le type de production « Pondeuses » pour enregistrer une récolte.</p>}
             <div className={styles.gridInputs}>
               <div className={styles.inputField}>
                 <label>Bande de Pondeuses</label>
                 <select required value={eggForm.batch_id} onChange={e => setEggForm({...eggForm, batch_id: e.target.value})}>
-                  <option value="">Sélectionner la bande</option>
+                  <option value="">{eggSelectOptions.length ? "Sélectionner la bande" : "Aucune bande de ponte disponible"}</option>
                   {eggSelectOptions.map(b => (
                     <option key={b.id} value={b.id}>{b.reference} — {b.current_count} sujets</option>
                   ))}
@@ -401,7 +391,7 @@ export default function FarmingPage() {
               <div className={styles.inputField}><label>Œufs valides (unités)</label><input type="number" required placeholder="350" value={eggForm.quantity} onChange={e => setEggForm({...eggForm, quantity: e.target.value})} /></div>
               <div className={styles.inputField}><label>Œufs fêlés / cassés</label><input type="number" value={eggForm.damaged_quantity} onChange={e => setEggForm({...eggForm, damaged_quantity: e.target.value})} /></div>
             </div>
-            <button className={styles.btnPrimary}>Enregistrer la récolte</button>
+            <button className={styles.btnPrimary} disabled={eggSelectOptions.length === 0}>Enregistrer la récolte</button>
           </form>
               )}
             </section>
