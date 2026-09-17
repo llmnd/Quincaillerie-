@@ -62,11 +62,6 @@ export default function AppShell({ children, hideTopbar = false }: { children: R
   return (
     <div className={styles.shell}>
       <aside className={styles.sidebar}>
-        <Link href="/dashboard" className={styles.brand}>
-          <span className={styles.brandMark}>Q</span>
-          <span><small>Quincaillerie</small><strong>Studio ERP</strong></span>
-        </Link>
-
         <button type="button" className={styles.menuButton} onClick={() => setMenuOpen((open) => !open)} aria-expanded={menuOpen} aria-label={menuOpen ? "Fermer la navigation" : "Ouvrir la navigation"}>
           {menuOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
@@ -83,13 +78,13 @@ export default function AppShell({ children, hideTopbar = false }: { children: R
         <div className={styles.userCard}>
           <span className={styles.avatar}>{(user.full_name ?? user.email ?? "U").slice(0, 1).toUpperCase()}</span>
           <div><strong>{user.full_name ?? "Utilisateur"}</strong><small>{role === "admin" ? "Administrateur" : "Vendeur"}</small></div>
-          <button type="button" onClick={logout} className={styles.logoutButton} aria-label="Se déconnecter" title="Se déconnecter"><LogOut size={17} /></button>
+          <button type="button" onClick={logout} className={styles.logoutButton} aria-label="Se déconnecter" title="Se déconnecter"><LogOut size={17} /><span className={styles.logoutText}>Déconnexion</span></button>
         </div>
       </aside>
 
       <main className={styles.mainArea}>
         {!hideTopbar && <header className={styles.topbar}>
-          <div className={styles.breadcrumb}><span>Studio ERP</span><b>/</b><strong>{pathname === "/dashboard" ? "Tableau de bord" : pathname.split("/").filter(Boolean).join(" / ")}</strong></div>
+          <div className={styles.breadcrumb}><span className={styles.breadcrumbBrand}>Studio ERP</span><b>/</b><strong>{pathname === "/dashboard" ? "Tableau de bord" : pathname.split("/").filter(Boolean).join(" / ")}</strong></div>
           <div className={styles.topbarActions}><div className={styles.globalSearch}><Search size={15} aria-hidden="true" /><span>Rechercher…</span></div><span className={styles.notification} aria-label="Notifications"><Bell size={15} /></span><span className={styles.company}>Ma société</span></div>
         </header>}
         <div className={styles.content}>{children}</div>
