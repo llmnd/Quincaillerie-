@@ -8,6 +8,7 @@ from app.api.customer_routes import router as customer_router
 from app.api.deps import get_db
 from app.api.deps import require_roles
 from app.api.auth_routes import router as auth_router
+from app.api.accounting_routes import router as accounting_router
 from app.api.cash_routes import router as cash_router
 from app.api.sale_routes import router as sale_router
 from app.api.supplier_routes import router as supplier_router
@@ -23,6 +24,7 @@ api_router.include_router(customer_router)
 api_router.include_router(sale_router)
 api_router.include_router(auth_router)
 api_router.include_router(cash_router)
+api_router.include_router(accounting_router)
 
 
 @api_router.get("/ping")

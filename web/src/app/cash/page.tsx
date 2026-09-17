@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { X, ChevronRight, Eye } from "lucide-react";
+import { X, ChevronDown, Plus, History } from "lucide-react";
 import AppShell from "../../components/AppShell";
 import styles from "./page.module.css";
 
@@ -53,7 +53,11 @@ export default function CashPage() {
   const [amount, setAmount] = useState("");
   const [closeAmount, setCloseAmount] = useState("");
   const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
-  const [selectedRecap, setSelectedRecap] = useState<SessionRecap | null>(null);
+  
+  // États de révélation au clic (Accordéons)
+  const [showHistory, setShowHistory] = useState(false);
+  const [expandedRecapId, setExpandedRecapId] = useState<number | null>(null);
+
   const [message, setMessage] = useState("");
   const [isClosing, setIsClosing] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -109,7 +113,7 @@ export default function CashPage() {
       setMessage("Ouverture impossible. Vérifiez la caisse ou le montant.");
       return;
     }
-    setMessage("Caisse ouverte et comptage enregistré.");
+    setMessage("Caisse ouverte.");
     setAmount("");
     await load();
   }
@@ -128,7 +132,7 @@ export default function CashPage() {
       return;
     }
     setIsCloseModalOpen(false);
-    setMessage("Session clôturée. L'écart est conservé dans l'historique.");
+    setMessage("Session clôturée.");
     setCloseAmount("");
     setIsClosing(false);
     await load();
@@ -136,319 +140,277 @@ export default function CashPage() {
 
   return (
     <AppShell>
-      <header className={styles.header}>
-        <div>
-          <p className={styles.eyebrow}>Point de vente</p>
-          <h1>Caisse</h1>
-          <p>Ouverture, ventes et clôture de sessions traçables.</p>
-        </div>
-        <span className={openSession ? styles.open : styles.closed}>
-          {openSession ? "Session ouverte" : "Aucune session ouverte"}
-        </span>
-      </header>
+      <div className={styles.container}>
+        {/* HEADER ZARA STYLE */}
+        <header className={styles.header}>
+          <div>
+            <span className={styles.categoryLabel}>POINT DE VENTE</span>
+            <h1 className={styles.title}>CAISSE</h1>
+          </div>
+          <div className={styles.statusIndicator}>
+            <span className={openSession ? styles.dotActive : styles.dotInactive} />
+            <span className={styles.statusText}>{openSession ? "SESSION ACTIVE" : "FERMÉ"}</span>
+          </div>
+        </header>
 
-      {message && <div className={styles.message}>{message}</div>}
+        {message && <div className={styles.messageBanner}>{message}</div>}
 
-      <section className={styles.grid}>
-        {openSession ? (
-          <article className={styles.card}>
-            <p className={styles.eyebrow}>Session active</p>
-            <h2>Caisse #{openSession.register_id}</h2>
-            <div className={styles.metrics}>
-              <div>
-                <span>Départ attendu</span>
-                <strong>{money(openSession.expected_opening_amount)}</strong>
+        {/* SECTION PRINCIPALE */}
+        <section className={styles.mainGrid}>
+          {openSession ? (
+            <article className={styles.minimalCard}>
+              <div className={styles.cardHeader}>
+                <h2>Caisse #{openSession.register_id}</h2>
+                <span className={styles.sessionBadge}>Session en cours</span>
               </div>
-              <div>
-                <span>Montant caisse actuel</span>
-                <strong>{money(expectedCash)}</strong>
+
+              <div className={styles.metricsRow}>
+                <div className={styles.metricBlock}>
+                  <label>Mise en caisse</label>
+                  <p>{money(openSession.expected_opening_amount)}</p>
+                </div>
+                <div className={styles.metricBlock}>
+                  <label>Solde théorique</label>
+                  <p className={styles.highlight}>{money(expectedCash)}</p>
+                </div>
+                <div className={styles.metricBlock}>
+                  <label>Écart ouverture</label>
+                  <p>{money(openSession.opening_difference)}</p>
+                </div>
               </div>
-              <div>
-                <span>Écart ouverture</span>
-                <strong className={openSession.opening_difference === 0 ? styles.good : styles.warning}>
-                  {money(openSession.opening_difference)}
-                </strong>
-              </div>
-            </div>
-            <div className={styles.closeBox}>
-              <p>La fermeture compare le montant théorique avec le comptage physique.</p>
+
               {isAdmin && (
-                <button type="button" className={styles.primaryButton} onClick={() => setIsCloseModalOpen(true)}>
-                  Clôturer la caisse
-                </button>
-              )}
-            </div>
-          </article>
-        ) : (
-          <article className={styles.card}>
-            <p className={styles.eyebrow}>Nouvelle session</p>
-            <h2>Ouvrir une caisse</h2>
-            <form onSubmit={open} className={styles.form}>
-              <label htmlFor="register">
-                Caisse
-                <select id="register" required value={registerId} onChange={(event) => setRegisterId(event.target.value)}>
-                  <option value="">Choisir une caisse</option>
-                  {registers.map((register) => (
-                    <option key={register.id} value={register.id}>
-                      {register.name} · {register.code}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              {registerId && (
-                <div className={styles.previousClosing}>
-                  <span>Dernière clôture de cette caisse</span>
-                  <strong>{money(previousSession?.actual_closing_amount ?? 0)}</strong>
-                  <small>
-                    {previousSession ? `Session #${previousSession.id} · ${dateTime(previousSession.closed_at)}` : "Aucune clôture précédente"}
-                  </small>
+                <div className={styles.actionRow}>
+                  <button type="button" className={styles.zaraButton} onClick={() => setIsCloseModalOpen(true)}>
+                    CLÔTURER LA CAISSE
+                  </button>
                 </div>
               )}
-              <label htmlFor="amount">
-                Montant réellement présent
-                <input
-                  id="amount"
-                  required
-                  type="number"
-                  min="0"
-                  value={amount}
-                  onChange={(event) => setAmount(event.target.value)}
-                  placeholder="Montant en FCFA"
-                />
-              </label>
-              <button className={styles.primaryButton}>Vérifier et ouvrir</button>
-            </form>
-          </article>
+            </article>
+          ) : (
+            <article className={styles.minimalCard}>
+              <h2>Ouverture de session</h2>
+              <form onSubmit={open} className={styles.zaraForm}>
+                <div className={styles.inputGroup}>
+                  <label htmlFor="register">Caisse cible</label>
+                  <select id="register" required value={registerId} onChange={(e) => setRegisterId(e.target.value)}>
+                    <option value="">Sélectionner une caisse...</option>
+                    {registers.map((r) => (
+                      <option key={r.id} value={r.id}>{r.name} ({r.code})</option>
+                    ))}
+                  </select>
+                </div>
+
+                {registerId && (
+                  <div className={styles.infoLine}>
+                    <span>Dernière clôture enregistrée :</span>
+                    <strong>{money(previousSession?.actual_closing_amount ?? 0)}</strong>
+                  </div>
+                )}
+
+                <div className={styles.inputGroup}>
+                  <label htmlFor="amount">Montant en caisse (FCFA)</label>
+                  <input
+                    id="amount"
+                    required
+                    type="number"
+                    min="0"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    placeholder="0"
+                  />
+                </div>
+
+                <button className={styles.zaraButton}>OUVRIR LA SESSION</button>
+              </form>
+            </article>
+          )}
+        </section>
+
+        {/* ACCORDÉON 1 : HISTORIQUE DES SESSIONS */}
+        <section className={styles.accordionSection}>
+          <button 
+            type="button" 
+            className={styles.accordionToggle} 
+            onClick={() => setShowHistory(!showHistory)}
+          >
+            <span className={styles.accordionTitle}>
+              <History size={16} /> HISTORIQUE D'EXPLOITATION ({sessions.length})
+            </span>
+            <ChevronDown size={16} className={`${styles.chevron} ${showHistory ? styles.chevronRotated : ''}`} />
+          </button>
+
+          {showHistory && (
+            <div className={styles.accordionContent}>
+              <div className={styles.historyTable}>
+                {sessions.map((s) => (
+                  <div key={s.id} className={styles.historyRow}>
+                    <div className={styles.historyMain}>
+                      <strong>Session #{s.id}</strong>
+                      <small>Ouverte le {dateTime(s.opened_at)}</small>
+                    </div>
+                    <div className={styles.historyStatus}>
+                      <span className={s.status === "open" ? styles.tagOpen : styles.tagClosed}>
+                        {s.status === "open" ? "Ouverte" : "Clôturée"}
+                      </span>
+                      {s.status === "closed" && (
+                        <small className={s.closing_difference === 0 ? styles.goodText : styles.badText}>
+                          Écart: {money(s.closing_difference ?? 0)}
+                        </small>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* ACCORDÉON 2 : RÉCAPITULATIFS DE CLÔTURE (CONTRÔLE) */}
+        {recaps.length > 0 && (
+          <section className={styles.accordionSection}>
+            <div className={styles.sectionHeaderZara}>
+              <h3>CONTRÔLE ET RÉCAPITULATIFS DE CAISSE</h3>
+            </div>
+
+            <div className={styles.recapList}>
+              {recaps.map((recap) => {
+                const isExpanded = expandedRecapId === recap.session_id;
+                return (
+                  <article key={recap.session_id} className={styles.recapItem}>
+                    <button 
+                      type="button"
+                      className={styles.recapHeaderBar}
+                      onClick={() => setExpandedRecapId(isExpanded ? null : recap.session_id)}
+                    >
+                      <div className={styles.recapMeta}>
+                        <strong>{recap.register} — {recap.seller}</strong>
+                        <small>Session #{recap.session_id} · {dateTime(recap.opened_at)}</small>
+                      </div>
+
+                      <div className={styles.recapRightNav}>
+                        <span className={recap.closing_difference === 0 ? styles.goodText : styles.badText}>
+                          {recap.status === "closed" ? money(recap.closing_difference ?? 0) : "En cours"}
+                        </span>
+                        <ChevronDown size={16} className={`${styles.chevron} ${isExpanded ? styles.chevronRotated : ''}`} />
+                      </div>
+                    </button>
+
+                    {/* DÉTAILS RÉVÉLÉS AU CLIC */}
+                    {isExpanded && (
+                      <div className={styles.recapExpandedBody}>
+                        <div className={styles.gridMetrics}>
+                          <div>
+                            <span>Ouverture</span>
+                            <p>{money(recap.actual_opening_amount)}</p>
+                          </div>
+                          <div>
+                            <span>Théorique</span>
+                            <p>{money(recap.expected_closing_amount ?? 0)}</p>
+                          </div>
+                          <div>
+                            <span>Compté</span>
+                            <p>{recap.actual_closing_amount == null ? "-" : money(recap.actual_closing_amount)}</p>
+                          </div>
+                          <div>
+                            <span>Écart</span>
+                            <p className={recap.closing_difference === 0 ? styles.goodText : styles.badText}>
+                              {recap.status === "closed" ? money(recap.closing_difference ?? 0) : "En cours"}
+                            </p>
+                          </div>
+                        </div>
+
+                        {recap.handoffs.length > 1 && (
+                          <div className={styles.handoffBox}>
+                            <label>Historique des passations</label>
+                            {recap.handoffs.map((h, idx) => (
+                              <p key={idx}>{idx + 1}. {h.seller} à {dateTime(h.acknowledged_at)}</p>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className={styles.operationsBox}>
+                          <label>Opérations ({recap.operations.length})</label>
+                          {recap.operations.length > 0 ? (
+                            <div className={styles.operationsList}>
+                              {recap.operations.map((op) => (
+                                <div key={op.id} className={styles.opItem}>
+                                  <div>
+                                    <span>{operationLabel(op.operation_type)}</span>
+                                    <small>{dateTime(op.created_at)}</small>
+                                  </div>
+                                  <strong>{money(op.amount)}</strong>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className={styles.emptyText}>Aucune opération enregistrée.</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+          </section>
         )}
 
-        <article className={styles.card}>
-          <p className={styles.eyebrow}>Historique</p>
-          <h2>Sessions de caisse</h2>
-          <div className={styles.history}>
-            {sessions.map((session) => (
-              <div key={session.id}>
-                <strong>Session #{session.id}</strong>
-                <span>{session.status === "open" ? "Ouverte" : "Clôturée"}</span>
-                <small>
-                  {session.status === "closed" ? `Écart : ${money(session.closing_difference ?? 0)}` : `Écart ouverture : ${money(session.opening_difference)}`}
-                </small>
-              </div>
-            ))}
-          </div>
-        </article>
-      </section>
-
-      {recaps.length > 0 && (
-        <section className={styles.recapSection}>
-          <div className={styles.sectionHeading}>
-            <div>
-              <p className={styles.eyebrow}>Contrôle administrateur</p>
-              <h2>Récapitulatifs de clôture</h2>
-            </div>
-            <span>
-              {recaps.length} session{recaps.length > 1 ? "s" : ""}
-            </span>
-          </div>
-          <div className={styles.recapTable}>
-            {recaps.map((recap) => (
-              <article 
-                key={recap.session_id} 
-                className={styles.recapCard} 
-                onClick={() => setSelectedRecap(recap)}
-                role="button"
-                tabIndex={0}
-              >
-                <div className={styles.recapCardHeader}>
-                  <div>
-                    <strong>
-                      {recap.register} · {recap.seller}
-                    </strong>
-                    <small>
-                      Session #{recap.session_id} · {dateTime(recap.opened_at)} → {dateTime(recap.closed_at)}
-                    </small>
-                  </div>
-                  <div className={styles.recapHeaderRight}>
-                    <b className={recap.closing_difference === 0 ? styles.good : styles.warning}>
-                      {recap.status === "closed" ? money(recap.closing_difference ?? 0) : "En cours"}
-                    </b>
-                    <span className={styles.viewBadge}>
-                      <Eye size={13} />
-                      <span className={styles.viewText}>Détails</span>
-                      <ChevronRight size={14} className={styles.mobileChevron} />
-                    </span>
-                  </div>
-                </div>
-
-                <div className={styles.recapMetrics}>
-                  <span>
-                    Ouverture
-                    <strong>{money(recap.actual_opening_amount)}</strong>
-                  </span>
-                  <span>
-                    Théorique
-                    <strong>{money(recap.expected_closing_amount ?? 0)}</strong>
-                  </span>
-                  <span>
-                    Compté
-                    <strong>{recap.actual_closing_amount == null ? "-" : money(recap.actual_closing_amount)}</strong>
-                  </span>
-                </div>
-
-                {/* Prévisualisation restreinte des opérations pour un aperçu rapide */}
-                {recap.operations.length > 0 ? (
-                  <div className={styles.operationsPreview}>
-                    <small>{recap.operations.length} opération(s) enregistrée(s)</small>
-                  </div>
-                ) : (
-                  <small className={styles.noOperations}>Aucune opération complémentaire</small>
-                )}
-              </article>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Modal de détail du récapitulatif (au clic sur une carte) */}
-      {selectedRecap && (
-        <div className={styles.modalBackdrop} onClick={() => setSelectedRecap(null)}>
-          <div className={`${styles.modal} ${styles.recapModal}`} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <div>
-                <p className={styles.eyebrow}>Session #{selectedRecap.session_id}</p>
-                <h2>Détails · {selectedRecap.register}</h2>
-              </div>
-              <button type="button" className={styles.closeButton} onClick={() => setSelectedRecap(null)}>
-                <X size={18} aria-hidden="true" />
-              </button>
-            </div>
-
-            <div className={styles.recapDetailBody}>
-              <div className={styles.detailRow}>
-                <span>Caissier principal</span>
-                <strong>{selectedRecap.seller}</strong>
-              </div>
-              <div className={styles.detailRow}>
-                <span>Période</span>
-                <strong>{dateTime(selectedRecap.opened_at)} → {dateTime(selectedRecap.closed_at)}</strong>
+        {/* MODAL DE CLÔTURE (MINIMALISTE ARCHITECTURAL) */}
+        {isCloseModalOpen && openSession && (
+          <div className={styles.modalOverlay} onClick={() => setIsCloseModalOpen(false)}>
+            <div className={styles.zaraModal} onClick={(e) => e.stopPropagation()}>
+              <div className={styles.modalHeader}>
+                <h3>CLÔTURE DE SESSION</h3>
+                <button type="button" onClick={() => setIsCloseModalOpen(false)}>
+                  <X size={18} />
+                </button>
               </div>
 
-              <div className={styles.recapMetricsModal}>
-                <div>
-                  <span>Ouverture</span>
-                  <strong>{money(selectedRecap.actual_opening_amount)}</strong>
+              <div className={styles.modalBody}>
+                <div className={styles.modalLine}>
+                  <span>Solde théorique</span>
+                  <strong>{money(expectedCash)}</strong>
                 </div>
-                <div>
-                  <span>Théorique</span>
-                  <strong>{money(selectedRecap.expected_closing_amount ?? 0)}</strong>
-                </div>
-                <div>
-                  <span>Compté</span>
-                  <strong>{selectedRecap.actual_closing_amount == null ? "-" : money(selectedRecap.actual_closing_amount)}</strong>
-                </div>
-                <div>
-                  <span>Écart final</span>
-                  <strong className={selectedRecap.closing_difference === 0 ? styles.good : styles.warning}>
-                    {selectedRecap.status === "closed" ? money(selectedRecap.closing_difference ?? 0) : "En cours"}
-                  </strong>
-                </div>
-              </div>
 
-              {selectedRecap.handoffs.length > 1 && (
-                <div className={styles.handoffHistory}>
-                  <small>Historique des passations</small>
-                  {selectedRecap.handoffs.map((handoff, index) => (
-                    <span key={`${selectedRecap.session_id}-${handoff.acknowledged_at}`}>
-                      {index + 1}. {handoff.seller} · {dateTime(handoff.acknowledged_at)}
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              <div className={styles.operationsFull}>
-                <small>Détail complet des opérations ({selectedRecap.operations.length})</small>
-                {selectedRecap.operations.length > 0 ? (
-                  <div className={styles.operationsList}>
-                    {selectedRecap.operations.map((operation) => (
-                      <div key={operation.id} className={styles.operationItem}>
-                        <div>
-                          <strong>{operationLabel(operation.operation_type)}</strong>
-                          <small>{dateTime(operation.created_at)}</small>
-                        </div>
-                        <span className={styles.operationAmount}>{money(operation.amount)}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <small className={styles.noOperations}>Aucune opération complémentaire effectuée pendant cette session.</small>
-                )}
-              </div>
-            </div>
-
-            <div className={styles.modalActions}>
-              <button type="button" className={styles.primaryButton} onClick={() => setSelectedRecap(null)}>
-                Fermer
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal de clôture de caisse */}
-      {isCloseModalOpen && openSession && (
-        <div className={styles.modalBackdrop} onClick={() => setIsCloseModalOpen(false)}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h2>Clôturer la caisse</h2>
-              <button type="button" className={styles.closeButton} onClick={() => setIsCloseModalOpen(false)}>
-                <X size={17} aria-hidden="true" />
-              </button>
-            </div>
-
-            <div className={styles.recap}>
-              <div>
-                <span>Montant théorique</span>
-                <strong>{money(expectedCash)}</strong>
-              </div>
-              <div>
-                <span>Montant compté</span>
-                <label htmlFor="closeInput">
-                  FCFA
+                <div className={styles.modalInputGroup}>
+                  <label htmlFor="closeInput">Montant réellement en caisse (FCFA)</label>
                   <input
                     id="closeInput"
                     type="number"
                     min="0"
+                    autoFocus
                     value={closeAmount}
-                    onChange={(event) => setCloseAmount(event.target.value)}
+                    onChange={(e) => setCloseAmount(e.eTarget.value || e.target.value)}
                     placeholder="0"
                   />
-                </label>
-              </div>
-              <div className={closingDifference === 0 ? styles.recapGood : styles.recapDifference}>
-                <span>Écart de clôture</span>
-                <strong>{money(closingDifference)}</strong>
-              </div>
-            </div>
+                </div>
 
-            <p className={styles.modalNote}>
-              L'écart entre le montant théorique et celui compté sera archivé. Vous pouvez procéder même en cas de différence.
-            </p>
+                <div className={styles.modalLine}>
+                  <span>Écart résultant</span>
+                  <strong className={closingDifference === 0 ? styles.goodText : styles.badText}>
+                    {money(closingDifference)}
+                  </strong>
+                </div>
+              </div>
 
-            <div className={styles.modalActions}>
-              <button type="button" className={styles.cancelButton} onClick={() => setIsCloseModalOpen(false)}>
-                Annuler
-              </button>
-              <button
-                type="button"
-                className={styles.primaryButton}
-                onClick={confirmClose}
-                disabled={isClosing || !closeAmount}
-              >
-                {isClosing ? "Clôture en cours…" : "Confirmer la clôture"}
-              </button>
+              <div className={styles.modalActions}>
+                <button type="button" className={styles.outlineButton} onClick={() => setIsCloseModalOpen(false)}>
+                  ANNULER
+                </button>
+                <button
+                  type="button"
+                  className={styles.zaraButton}
+                  onClick={confirmClose}
+                  disabled={isClosing || !closeAmount}
+                >
+                  {isClosing ? "TRAITEMENT..." : "CONFIRMER LA CLÔTURE"}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </AppShell>
   );
 }

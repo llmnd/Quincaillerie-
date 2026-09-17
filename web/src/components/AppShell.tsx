@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { BarChart3, Bell, Boxes, LogOut, Menu, Package, Search, Settings, ShoppingCart, Users, WalletCards, X } from "lucide-react";
+import { BarChart3, Bell, Boxes, FileText, LogOut, Menu, Package, Search, Settings, ShoppingCart, Users, WalletCards, X } from "lucide-react";
 import styles from "./AppShell.module.css";
 
 type User = { full_name?: string; email?: string; role?: "admin" | "seller" };
@@ -16,6 +16,7 @@ const applications: Application[] = [
   { label: "Clients", description: "Contacts et comptes", href: "/clients", icon: Users, roles: ["admin", "seller"] },
   { label: "Stock", description: "Inventaire et mouvements", href: "/stock", icon: Boxes, roles: ["admin"] },
   { label: "Rapports", description: "Analyse de l’activité", href: "/reports", icon: BarChart3, roles: ["admin"] },
+  { label: "Comptabilité", description: "Taxes et factures", href: "/accounting", icon: FileText, roles: ["admin", "seller"] },
   { label: "Administration", description: "Utilisateurs et droits", href: "/settings/users", icon: Settings, roles: ["admin"] },
 ];
 
@@ -27,6 +28,7 @@ const sidebarItems = [
   { label: "Clients", href: "/clients" },
   { label: "Stock", href: "/stock", roles: ["admin"] },
   { label: "Rapports", href: "/reports", roles: ["admin"] },
+  { label: "Comptabilité", href: "/accounting", roles: ["admin", "seller"] },
   { label: "Utilisateurs", href: "/settings/users", roles: ["admin"] },
 ];
 
