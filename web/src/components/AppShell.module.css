@@ -1,3 +1,35 @@
+/* Keep workspace navigation available while the main content scrolls. */
+.sidebar {
+	position: sticky;
+	top: 0;
+	align-self: flex-start;
+	height: 100vh;
+	max-height: 100vh;
+	overflow-y: auto;
+}
+
+.mainArea {
+	min-height: 100vh;
+	min-width: 0;
+	height: 100vh;
+	overflow-y: auto;
+}
+
+@media (max-width: 760px) {
+	.sidebar {
+		position: relative;
+		top: auto;
+		align-self: auto;
+		height: auto;
+		max-height: none;
+		overflow: visible;
+	}
+
+	.mainArea {
+		height: auto;
+		overflow-y: visible;
+	}
+}
 .brandMark{border-radius:50%!important;background:#111!important;color:#fff!important}
 .logoutButton{display:grid!important;place-items:center;visibility:visible!important;opacity:1!important}
 @media(max-width:800px){.userCard{display:flex!important;visibility:visible!important;opacity:1!important}.logoutButton{display:grid!important;visibility:visible!important;opacity:1!important;min-width:32px;min-height:32px}}

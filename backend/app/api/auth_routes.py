@@ -25,12 +25,15 @@ def set_auth_cookie(response: Response, token: str) -> None:
 
 
 @router.post("/login", response_model=UserRead)
-def login(payload: LoginRequest, response: Response, db: Session = Depends(get_db)) -> User:
+def login(payload: LoginRequest, response: Response, db: Session = Depends(get_db)) -> UserRead:
     user = db.scalar(select(User).where(func.lower(User.email) == payload.email.lower()))
     if user is None or not user.is_active or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Email or password is incorrect")
-    set_auth_cookie(response, create_access_token(user.id, user.role))
-    return user
+    access_token = create_access_token(user.id, user.role)
+    set_auth_cookie(response, access_token)
+    user_data = UserRead.model_validate(user).model_dump()
+    user_data["access_token"] = access_token
+    return user_data
 
 
 @router.post("/bootstrap", response_model=UserRead, status_code=status.HTTP_201_CREATED)

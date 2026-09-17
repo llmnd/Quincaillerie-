@@ -51,6 +51,7 @@ class UserRead(BaseModel):
     full_name: str
     role: Literal["admin", "seller"]
     is_active: bool
+    access_token: str | None = None
 
 
 class TokenResponse(BaseModel):
