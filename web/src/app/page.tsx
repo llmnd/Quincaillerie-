@@ -43,7 +43,7 @@ export default function Home() {
       <section className={styles.hero}>
         <div className={styles.heroContent}>
           <p className={styles.eyebrow}>Gestion sans complication</p>
-          <h1>Clarté et contrôle à chaque vente.</h1>
+          <h1>Gestion du logiciel.</h1>
           <p className={styles.heroText}>
             Quincaillerie Studio ERP : un logiciel conçu pour votre activité au quotidien. 
             Vendre, suivre, organiser. Simple et efficace.
@@ -54,24 +54,16 @@ export default function Home() {
           </div>
         </div>
 
-        <div className={styles.heroArtwork} aria-label="Interface de gestion">
-          <div className={styles.artworkTop}>
-            <span>Votre espace</span>
-            <span className={styles.artworkDot} />
-          </div>
-          <div className={styles.artworkTitle}>
-            <small>Prêt à démarrer</small>
-            <strong>Construisez votre activité.</strong>
-          </div>
-          <div className={styles.artworkLines}>
-            <span />
-            <span />
-            <span />
-          </div>
-          <div className={styles.artworkFooter}>
-            <span>Ventes</span>
-            <span>Stock</span>
-            <span>Clients</span>
+        <div className={styles.heroArtwork} aria-label="Aperçu de l'interface de gestion sur mobile">
+          <div className={styles.phone}>
+            <div className={styles.phoneNotch} />
+            <div className={styles.phoneScreen}>
+              <div className={styles.phoneBar}><span>09:41</span><b>ERP</b><span>•••</span></div>
+              <div className={styles.phoneGreeting}><small>TABLEAU DE BORD</small><strong>Bonjour, équipe</strong></div>
+              <div className={styles.phoneBalance}><span>Solde caisse</span><strong>73 500 FCFA</strong><small>+12,8% aujourd'hui</small></div>
+              <div className={styles.phoneStats}><div><small>Ventes</small><strong>24</strong></div><div><small>Stock</small><strong>186</strong></div></div>
+              <div className={styles.phoneActivity}><small>ACTIVITÉ RÉCENTE</small><div><i />Vente comptoir<b>4 000</b></div><div><i />Réassort stock<b>+32</b></div><div><i />Passation caisse<b>18:42</b></div></div>
+            </div>
           </div>
         </div>
       </section>
