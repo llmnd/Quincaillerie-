@@ -5,10 +5,12 @@ import { X } from "lucide-react";
 import AppShell from "../../components/AppShell";
 import styles from "./page.module.css";
 
-type Product = { id: number; sku: string; name: string; category?: string | null; unit_price: number; initial_stock_quantity: number; sold_quantity: number; remaining_stock: number; is_active: boolean };
-type ProductForm = { sku: string; name: string; category: string; unit_price: string; stock_quantity: string };
+type Product = { id: number; sku: string; name: string; image_url?: string | null; category?: string | null; unit_price: number; initial_stock_quantity: number; sold_quantity: number; remaining_stock: number; is_active: boolean };
+type ProductForm = { sku: string; name: string; category: string; unit_price: string; stock_quantity: string; image_url: string };
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-const emptyForm: ProductForm = { sku: "", name: "", category: "", unit_price: "", stock_quantity: "" };
+const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+const CLOUDINARY_UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+const emptyForm: ProductForm = { sku: "", name: "", category: "", unit_price: "", stock_quantity: "", image_url: "" };
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -19,6 +21,9 @@ export default function ProductsPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [form, setForm] = useState<ProductForm>(emptyForm);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState("");
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const isAdmin = typeof window !== "undefined" && JSON.parse(window.localStorage.getItem("quincaillerie_user") ?? "{}")?.role === "admin";
   const tokenHeaders = (): Record<string, string> => {
@@ -58,6 +63,8 @@ export default function ProductsPage() {
   function openCreate() {
     setEditingId(null);
     setForm(emptyForm);
+    setImageFile(null);
+    setImagePreview("");
     setShowForm(true);
   }
 
@@ -69,18 +76,43 @@ export default function ProductsPage() {
       category: product.category ?? "",
       unit_price: String(product.unit_price),
       stock_quantity: String(product.remaining_stock),
+      image_url: product.image_url ?? "",
     });
+    setImageFile(null);
+    setImagePreview(product.image_url ?? "");
     setShowForm(true);
   }
 
   async function saveProduct(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
+    let imageUrl = form.image_url || null;
+    if (imageFile) {
+      if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
+        setError("La configuration Cloudinary est absente.");
+        return;
+      }
+      setIsUploadingImage(true);
+      try {
+        const uploadData = new FormData();
+        uploadData.append("file", imageFile);
+        uploadData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+        const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, { method: "POST", body: uploadData });
+        if (!uploadResponse.ok) throw new Error("Cloudinary upload failed");
+        imageUrl = (await uploadResponse.json()).secure_url;
+      } catch {
+        setError("L'image n'a pas pu être envoyée vers Cloudinary.");
+        setIsUploadingImage(false);
+        return;
+      }
+      setIsUploadingImage(false);
+    }
     const response = await fetch(`${API_URL}/api/v1/products${editingId ? `/${editingId}` : ""}`, {
       method: editingId ? "PUT" : "POST",
       headers: { "Content-Type": "application/json", ...tokenHeaders() },
       body: JSON.stringify({
         ...form,
+        image_url: imageUrl,
         unit_price: Number(form.unit_price),
         stock_quantity: Number(form.stock_quantity),
       }),
@@ -91,6 +123,8 @@ export default function ProductsPage() {
     }
     setShowForm(false);
     setForm(emptyForm);
+    setImageFile(null);
+    setImagePreview("");
     setEditingId(null);
     await loadProducts();
   }
@@ -143,6 +177,11 @@ export default function ProductsPage() {
             value={form.category}
             onChange={(event) => setForm({ ...form, category: event.target.value })}
           />
+          <label className={styles.imageField}>
+            Image du produit
+            <input type="file" accept="image/*" onChange={(event) => { const file = event.target.files?.[0] ?? null; setImageFile(file); setImagePreview(file ? URL.createObjectURL(file) : form.image_url); }} />
+            {imagePreview ? <img src={imagePreview} alt="Aperçu du produit" className={styles.imagePreview} /> : null}
+          </label>
           <input
             required
             type="number"
@@ -164,7 +203,7 @@ export default function ProductsPage() {
             <button type="button" className={styles.cancelButton} onClick={() => setShowForm(false)}>
               Annuler
             </button>
-            <button className={styles.primaryButton}>Enregistrer</button>
+            <button className={styles.primaryButton} disabled={isUploadingImage}>{isUploadingImage ? "Envoi de l'image…" : "Enregistrer"}</button>
           </div>
         </form>
       )}
@@ -203,7 +242,7 @@ export default function ProductsPage() {
           {visibleProducts.map((product) => (
             <div className={styles.row} key={product.id} role="button" tabIndex={0} onClick={() => setSelectedProduct(product)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") setSelectedProduct(product); }}>
               <div>
-                <strong>{product.name}</strong>
+                <strong>{product.image_url ? <img src={product.image_url} alt="" className={styles.productThumb} /> : null}{product.name}</strong>
                 <small>
                   {product.sku} · {product.category ?? "Sans catégorie"}
                 </small>
@@ -231,7 +270,7 @@ export default function ProductsPage() {
         </div>
       )}
 
-      {selectedProduct && <div className={styles.modalBackdrop} role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedProduct(null); }}><section className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="product-detail-title"><div className={styles.modalHeader}><div><p className={styles.eyebrow}>Fiche produit</p><h2 id="product-detail-title">{selectedProduct.name}</h2></div><button type="button" className={styles.closeButton} onClick={() => setSelectedProduct(null)} aria-label="Fermer"><X size={18} /></button></div><div className={styles.detailGrid}><div><span>SKU</span><strong>{selectedProduct.sku}</strong></div><div><span>Catégorie</span><strong>{selectedProduct.category ?? "Sans catégorie"}</strong></div><div><span>Prix unitaire</span><strong>{selectedProduct.unit_price.toLocaleString("fr-FR")} FCFA</strong></div><div><span>Stock de départ</span><strong>{selectedProduct.initial_stock_quantity}</strong></div><div><span>Quantité vendue</span><strong>{selectedProduct.sold_quantity}</strong></div><div><span>Stock restant</span><strong className={styles.remaining}>{selectedProduct.remaining_stock}</strong></div><div><span>État</span><strong>{selectedProduct.is_active ? "Actif" : "Archivé"}</strong></div></div></section></div>}
+      {selectedProduct && <div className={styles.modalBackdrop} role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedProduct(null); }}><section className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="product-detail-title"><div className={styles.modalHeader}><div><p className={styles.eyebrow}>Fiche produit</p>{selectedProduct.image_url ? <img src={selectedProduct.image_url} alt={selectedProduct.name} className={styles.detailImage} /> : null}<h2 id="product-detail-title">{selectedProduct.name}</h2></div><button type="button" className={styles.closeButton} onClick={() => setSelectedProduct(null)} aria-label="Fermer"><X size={18} /></button></div><div className={styles.detailGrid}><div><span>SKU</span><strong>{selectedProduct.sku}</strong></div><div><span>Catégorie</span><strong>{selectedProduct.category ?? "Sans catégorie"}</strong></div><div><span>Prix unitaire</span><strong>{selectedProduct.unit_price.toLocaleString("fr-FR")} FCFA</strong></div><div><span>Stock de départ</span><strong>{selectedProduct.initial_stock_quantity}</strong></div><div><span>Quantité vendue</span><strong>{selectedProduct.sold_quantity}</strong></div><div><span>Stock restant</span><strong className={styles.remaining}>{selectedProduct.remaining_stock}</strong></div><div><span>État</span><strong>{selectedProduct.is_active ? "Actif" : "Archivé"}</strong></div></div></section></div>}
     </AppShell>
   );
 }

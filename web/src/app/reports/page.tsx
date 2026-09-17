@@ -6,6 +6,7 @@ import styles from "./page.module.css";
 
 type SaleItem = { product_id: number; quantity: number; unit_price: number; line_total: number };
 type Sale = { id: number; customer_id: number | null; total_amount: number; status: string; sale_date: string; items: SaleItem[] };
+type Product = { id: number; name: string; image_url?: string | null };
 type Customer = { id: number; name: string };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -16,6 +17,7 @@ const statusLabel = (status: string) =>
 export default function ReportsPage() {
   const [sales, setSales] = useState<Sale[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [message, setMessage] = useState("Chargement des données…");
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -27,17 +29,20 @@ export default function ReportsPage() {
     Promise.all([
       fetch(`${API_URL}/api/v1/sales`, { headers }),
       fetch(`${API_URL}/api/v1/customers`, { headers }),
+      fetch(`${API_URL}/api/v1/products`, { headers }),
     ])
-      .then(async ([salesResponse, customersResponse]) => {
+      .then(async ([salesResponse, customersResponse, productsResponse]) => {
         if (!salesResponse.ok) throw new Error();
         setSales(await salesResponse.json());
         if (customersResponse.ok) setCustomers(await customersResponse.json());
+        if (productsResponse.ok) setProducts(await productsResponse.json());
         setMessage("");
       })
       .catch(() => setMessage("Les rapports ne sont pas disponibles pour le moment."));
   }, []);
 
   const customerNames = useMemo(() => new Map(customers.map((customer) => [customer.id, customer.name])), [customers]);
+  const productDetails = useMemo(() => new Map(products.map((product) => [product.id, product])), [products]);
   const filteredSales = statusFilter === "all" ? sales : sales.filter((sale) => sale.status === statusFilter);
   const revenue = sales.reduce((sum, sale) => sum + sale.total_amount, 0);
   const units = sales.reduce((sum, sale) => sum + sale.items.reduce((itemSum, item) => itemSum + item.quantity, 0), 0);
@@ -126,7 +131,7 @@ export default function ReportsPage() {
                     <div className={styles.items}>
                       {sale.items.map((item) => (
                         <div key={item.product_id}>
-                          <span>Produit #{item.product_id}</span>
+                          <span>{productDetails.get(item.product_id)?.image_url ? <img src={productDetails.get(item.product_id)?.image_url ?? ""} alt="" className={styles.productThumb} /> : null}{productDetails.get(item.product_id)?.name ?? `Produit #${item.product_id}`}</span>
                           <small>
                             {item.quantity} unité{item.quantity > 1 ? "s" : ""} × {money(item.unit_price)}
                           </small>

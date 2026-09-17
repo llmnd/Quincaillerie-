@@ -6,7 +6,7 @@ import { Minus, Plus, X } from "lucide-react";
 import AppShell from "../../components/AppShell";
 import styles from "./page.module.css";
 
-type Product = { id: number; name: string; sku: string; unit_price: number; stock_quantity: number };
+type Product = { id: number; name: string; sku: string; image_url?: string | null; unit_price: number; stock_quantity: number };
 type Customer = { id: number; name: string; email?: string | null };
 type CartLine = Product & { quantity: number };
 type Handoff = { theoretical_balance: number; sales_total: number; cash_collected: number; withdrawals: number; previous_seller?: string | null; handoff_at: string; last_operation?: { type: string; amount: number } | null; requires_acknowledgement: boolean };
@@ -169,7 +169,7 @@ export default function SalesPage() {
                 disabled={product.stock_quantity < 1 || Boolean(requiresHandoff)}
               >
                 <span>
-                  <strong>{product.name}</strong>
+                  <strong>{product.image_url ? <img src={product.image_url} alt="" className={styles.productThumb} /> : null}{product.name}</strong>
                   <small>{product.sku} · {product.stock_quantity} en stock</small>
                 </span>
                 <b>{product.unit_price.toLocaleString("fr-FR")} FCFA</b>
@@ -200,7 +200,7 @@ export default function SalesPage() {
               cart.map((line) => (
                 <div className={styles.cartLine} key={line.id}>
                   <div>
-                    <strong>{line.name}</strong>
+                    <strong>{line.image_url ? <img src={line.image_url} alt="" className={styles.cartThumb} /> : null}{line.name}</strong>
                     <small>{line.unit_price.toLocaleString("fr-FR")} FCFA l'unité</small>
                   </div>
                   <div className={styles.quantity}>
