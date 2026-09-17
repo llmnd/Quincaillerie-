@@ -50,8 +50,8 @@
   width: 36px;
   height: 36px;
   place-items: center;
-  border-radius: 6px;
-  background: #684b72;
+  border-radius: 100px;
+  background: #4e5283;
   color: #fff;
   font-weight: 600;
   font-size: 0.85rem;
@@ -174,7 +174,7 @@
 
 .primaryButton {
   padding: 0.85rem 1.5rem;
-  background: #684b72;
+  background: #4b4c72;
   color: #fff;
   font-size: 0.8rem;
   font-weight: 500;
@@ -183,7 +183,7 @@
 }
 
 .primaryButton:hover {
-  background: #7a5580;
+  background: #595580;
   transform: translateY(-1px);
 }
 
@@ -440,7 +440,7 @@
   padding: 28px;
   background: #252936;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-top: 2px solid #684b72;
+  border-top: 2px solid #4b4c72;
   border-radius: 6px;
   transition: all 200ms ease;
 }
