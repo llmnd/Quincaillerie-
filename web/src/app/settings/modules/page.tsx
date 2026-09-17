@@ -14,13 +14,19 @@ type Module = {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
+function authHeaders(): HeadersInit {
+  const storedUser = window.localStorage.getItem("quincaillerie_user");
+  const accessToken = storedUser ? (JSON.parse(storedUser) as { access_token?: string }).access_token : undefined;
+  return accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
+}
+
 export default function ModulesPage() {
   const [modules, setModules] = useState<Module[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
   async function loadModules() {
-    const response = await fetch(`${API_URL}/api/v1/organization/modules`, { credentials: "include" });
+    const response = await fetch(`${API_URL}/api/v1/organization/modules`, { credentials: "include", headers: authHeaders() });
     if (!response.ok) throw new Error("Impossible de charger les modules.");
     setModules(await response.json());
   }
@@ -35,6 +41,7 @@ export default function ModulesPage() {
     const response = await fetch(`${API_URL}/api/v1/organization/modules/${module.key}?enabled=${!module.enabled}`, {
       method: "PATCH",
       credentials: "include",
+      headers: authHeaders(),
     });
     if (!response.ok) {
       const payload = await response.json().catch(() => ({}));

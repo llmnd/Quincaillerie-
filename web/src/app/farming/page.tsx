@@ -3,6 +3,7 @@
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import { Activity, CalendarDays, CheckCircle2, ChevronRight, ClipboardList, Droplets, MapPinned, MoreHorizontal, Plus, Thermometer, Wheat } from "lucide-react";
 import AppShell from "../../components/AppShell";
+import { authHeaders } from "../../lib/auth";
 import styles from "./page.module.css";
 
 type Batch = { 
@@ -46,9 +47,9 @@ export default function FarmingPage() {
   async function load() {
     try {
       const [bRes, hRes, eRes] = await Promise.all([
-        fetch(`${API_URL}/api/v1/farming/batches`, { credentials: "include" }),
-        fetch(`${API_URL}/api/v1/farming/health-events`, { credentials: "include" }),
-        fetch(`${API_URL}/api/v1/farming/egg-productions`, { credentials: "include" }),
+        fetch(`${API_URL}/api/v1/farming/batches`, { headers: authHeaders(), credentials: "include" }),
+        fetch(`${API_URL}/api/v1/farming/health-events`, { headers: authHeaders(), credentials: "include" }),
+        fetch(`${API_URL}/api/v1/farming/egg-productions`, { headers: authHeaders(), credentials: "include" }),
       ]);
       if (bRes.ok && hRes.ok && eRes.ok) {
         setBatches(await bRes.json());
@@ -116,7 +117,7 @@ export default function FarmingPage() {
 
     const res = await fetch(url, {
       method,
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...authHeaders() },
       credentials: "include",
       body: JSON.stringify(payload),
     });
@@ -128,6 +129,7 @@ export default function FarmingPage() {
 
     const res = await fetch(`${API_URL}/api/v1/farming/batches/${batchId}`, {
       method: "DELETE",
+      headers: authHeaders(),
       credentials: "include",
     });
 
@@ -149,7 +151,7 @@ export default function FarmingPage() {
 
     const res = await fetch(`${API_URL}/api/v1/farming/health-events`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...authHeaders() },
       credentials: "include",
       body: JSON.stringify({
         ...healthForm,
@@ -173,7 +175,7 @@ export default function FarmingPage() {
 
     const res = await fetch(`${API_URL}/api/v1/farming/egg-productions`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...authHeaders() },
       credentials: "include",
       body: JSON.stringify({
         ...eggForm,

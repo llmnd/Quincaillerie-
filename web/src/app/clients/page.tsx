@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import AppShell from "../../components/AppShell";
+import { authHeaders } from "../../lib/auth";
 import styles from "./page.module.css";
 
 type Customer = { id: number; name: string; email?: string | null; phone?: string | null; is_active: boolean };
@@ -14,14 +15,14 @@ export default function ClientsPage() {
   const [message, setMessage] = useState("");
 
   async function loadCustomers() {
-    const response = await fetch(`${API_URL}/api/v1/customers`, { credentials: "include" });
+    const response = await fetch(`${API_URL}/api/v1/customers`, { headers: authHeaders(), credentials: "include" });
     if (response.ok) setCustomers(await response.json());
   }
   useEffect(() => { void loadCustomers(); }, []);
 
   async function createCustomer(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const response = await fetch(`${API_URL}/api/v1/customers`, { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(form) });
+    const response = await fetch(`${API_URL}/api/v1/customers`, { method: "POST", headers: { "Content-Type": "application/json", ...authHeaders() }, credentials: "include", body: JSON.stringify(form) });
     if (!response.ok) { setMessage("Impossible de créer ce client."); return; }
     setForm({ name: "", email: "", phone: "", address: "" }); setShowForm(false); setMessage("Client créé."); void loadCustomers();
   }

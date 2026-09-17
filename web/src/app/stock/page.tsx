@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AppShell from "../../components/AppShell";
+import { authHeaders } from "../../lib/auth";
 import styles from "./page.module.css";
 
 type Product = { id: number; sku: string; name: string; image_url?: string | null; category?: string | null; unit_price: number; initial_stock_quantity: number; sold_quantity: number; remaining_stock: number; is_active: boolean };
@@ -10,7 +11,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export default function StockPage() {
   const [products, setProducts] = useState<Product[]>([]); const [movements, setMovements] = useState<Movement[]>([]); const [search, setSearch] = useState(""); const [message, setMessage] = useState("Chargement de l’inventaire…");
-  useEffect(() => { Promise.all([fetch(`${API_URL}/api/v1/products`, { credentials: "include" }), fetch(`${API_URL}/api/v1/stock-movements`, { credentials: "include" })]).then(async ([productsResponse, movementsResponse]) => { if (!productsResponse.ok) throw new Error(); const productData = await productsResponse.json(); setProducts(Array.isArray(productData) ? productData : []); if (movementsResponse.ok) setMovements(await movementsResponse.json()); setMessage(""); }).catch(() => setMessage("L’inventaire n’est pas disponible pour le moment.")); }, []);
+  useEffect(() => { Promise.all([fetch(`${API_URL}/api/v1/products`, { headers: authHeaders(), credentials: "include" }), fetch(`${API_URL}/api/v1/stock-movements`, { headers: authHeaders(), credentials: "include" })]).then(async ([productsResponse, movementsResponse]) => { if (!productsResponse.ok) throw new Error(); const productData = await productsResponse.json(); setProducts(Array.isArray(productData) ? productData : []); if (movementsResponse.ok) setMovements(await movementsResponse.json()); setMessage(""); }).catch(() => setMessage("L’inventaire n’est pas disponible pour le moment.")); }, []);
   const filteredProducts = products.filter((product) => `${product.name} ${product.sku} ${product.category ?? ""}`.toLowerCase().includes(search.toLowerCase()));
   return <AppShell><header className={styles.header}><div><p className={styles.eyebrow}>Contrôle des opérations</p><h1>Stock & inventaire</h1><p>Une vue complète des produits, des ventes et des quantités restantes.</p></div><span className={styles.countBadge}>{products.length} produit{products.length > 1 ? "s" : ""}</span></header>
     <section className={styles.toolbar}><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Rechercher par nom, SKU ou catégorie…" aria-label="Rechercher dans l’inventaire" /><span>{filteredProducts.length} résultat{filteredProducts.length > 1 ? "s" : ""}</span></section>
