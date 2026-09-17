@@ -22,14 +22,12 @@ export default function ReportsPage() {
   const [statusFilter, setStatusFilter] = useState("all");
 
   useEffect(() => {
-    const token = window.localStorage.getItem("quincaillerie_access_token");
     const headers: Record<string, string> = {};
-    if (token) headers.Authorization = `Bearer ${token}`;
 
     Promise.all([
-      fetch(`${API_URL}/api/v1/sales`, { headers }),
-      fetch(`${API_URL}/api/v1/customers`, { headers }),
-      fetch(`${API_URL}/api/v1/products`, { headers }),
+      fetch(`${API_URL}/api/v1/sales`, { headers, credentials: "include" }),
+      fetch(`${API_URL}/api/v1/customers`, { headers, credentials: "include" }),
+      fetch(`${API_URL}/api/v1/products`, { headers, credentials: "include" }),
     ])
       .then(async ([salesResponse, customersResponse, productsResponse]) => {
         if (!salesResponse.ok) throw new Error();

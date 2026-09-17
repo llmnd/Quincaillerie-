@@ -25,20 +25,19 @@ export default function AccountingPage() {
   const [message, setMessage] = useState("Chargement de la comptabilité…");
 
   const headers = (): Record<string, string> => {
-    const token = window.localStorage.getItem("quincaillerie_access_token");
-    return token ? { Authorization: `Bearer ${token}` } : {};
+    return {};
   };
 
   async function load() {
     const [taxResponse, saleResponse, invoiceResponse, trialResponse, journalResponse, balanceResponse, incomeResponse, vatResponse] = await Promise.all([
-      fetch(`${API_URL}/api/v1/accounting/taxes`, { headers: headers() }),
-      fetch(`${API_URL}/api/v1/sales`, { headers: headers() }),
-      fetch(`${API_URL}/api/v1/accounting/invoices`, { headers: headers() }),
-      fetch(`${API_URL}/api/v1/accounting/trial-balance`, { headers: headers() }),
-      fetch(`${API_URL}/api/v1/accounting/journal`, { headers: headers() }),
-      fetch(`${API_URL}/api/v1/accounting/reports/balance-sheet`, { headers: headers() }),
-      fetch(`${API_URL}/api/v1/accounting/reports/income-statement`, { headers: headers() }),
-      fetch(`${API_URL}/api/v1/accounting/reports/vat`, { headers: headers() }),
+      fetch(`${API_URL}/api/v1/accounting/taxes`, { headers: headers(), credentials: "include" }),
+      fetch(`${API_URL}/api/v1/sales`, { headers: headers(), credentials: "include" }),
+      fetch(`${API_URL}/api/v1/accounting/invoices`, { headers: headers(), credentials: "include" }),
+      fetch(`${API_URL}/api/v1/accounting/trial-balance`, { headers: headers(), credentials: "include" }),
+      fetch(`${API_URL}/api/v1/accounting/journal`, { headers: headers(), credentials: "include" }),
+      fetch(`${API_URL}/api/v1/accounting/reports/balance-sheet`, { headers: headers(), credentials: "include" }),
+      fetch(`${API_URL}/api/v1/accounting/reports/income-statement`, { headers: headers(), credentials: "include" }),
+      fetch(`${API_URL}/api/v1/accounting/reports/vat`, { headers: headers(), credentials: "include" }),
     ]);
 
     if (!taxResponse.ok || !saleResponse.ok || !invoiceResponse.ok || !trialResponse.ok || !journalResponse.ok || !balanceResponse.ok || !incomeResponse.ok || !vatResponse.ok) {
@@ -66,6 +65,7 @@ export default function AccountingPage() {
     const response = await fetch(`${API_URL}/api/v1/accounting/taxes`, {
       method: "POST",
       headers: { "Content-Type": "application/json", ...headers() },
+      credentials: "include",
       body: JSON.stringify({ ...form, rate: Number(form.rate) }),
     });
 
@@ -83,6 +83,7 @@ export default function AccountingPage() {
     const response = await fetch(`${API_URL}/api/v1/accounting/invoices/from-sale/${saleId}${taxId ? `?tax_id=${taxId}` : ""}`, {
       method: "POST",
       headers: headers(),
+      credentials: "include",
     });
 
     if (!response.ok) {
@@ -93,7 +94,7 @@ export default function AccountingPage() {
   }
 
   async function exportJournal() {
-    const response = await fetch(`${API_URL}/api/v1/accounting/exports/journal.csv`, { headers: headers() });
+    const response = await fetch(`${API_URL}/api/v1/accounting/exports/journal.csv`, { headers: headers(), credentials: "include" });
     if (!response.ok) {
       setMessage("L'export du journal est réservé aux administrateurs.");
       return;

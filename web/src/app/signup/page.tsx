@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import styles from "./page.module.css";
+import styles from "../login/page.module.css";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
-export default function LoginPage() {
+export default function SignupPage() {
   const router = useRouter();
+  const [organizationName, setOrganizationName] = useState("");
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -20,21 +22,27 @@ export default function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${API_URL}/api/v1/auth/login`, {
+      const response = await fetch(`${API_URL}/api/v1/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          organization_name: organizationName,
+          full_name: fullName,
+          email,
+          password,
+        }),
       });
 
       if (!response.ok) {
-        setError("Email ou mot de passe incorrect.");
+        const payload = await response.json().catch(() => ({}));
+        setError(payload.detail ?? "Impossible de créer votre organisation.");
         return;
       }
 
       const payload = await response.json();
-      window.localStorage.removeItem("quincaillerie_access_token");
-      window.localStorage.setItem("quincaillerie_user", JSON.stringify(payload));
+  window.localStorage.removeItem("quincaillerie_access_token");
+      window.localStorage.setItem("quincaillerie_user", JSON.stringify(payload.user ?? payload));
       router.push("/dashboard");
     } catch {
       setError("Le service est momentanément indisponible.");
@@ -46,20 +54,42 @@ export default function LoginPage() {
   return (
     <main className={styles.pageShell}>
       <Link href="/" className={styles.brand}>
-        <span className={styles.brandMark}>Q</span>
+        <span className={styles.brandMark}>S</span>
         <span>
-          <small>Quincaillerie</small>
-          <strong>Studio ERP</strong>
+          <small>ERP</small>
+          <strong>Studio</strong>
         </span>
       </Link>
 
       <section className={styles.loginLayout}>
         <div className={styles.intro}>
-          <p className={styles.eyebrow}>Accès professionnel</p>
-          <h1>Connectez-vous.</h1>
+          <p className={styles.eyebrow}>Créer votre organisation</p>
+          <h1>Bienvenue dans votre ERP.</h1>
         </div>
 
         <form className={styles.form} onSubmit={handleSubmit}>
+          <div>
+            <label htmlFor="organizationName">Nom de l’entreprise</label>
+            <input
+              id="organizationName"
+              type="text"
+              value={organizationName}
+              onChange={(event) => setOrganizationName(event.target.value)}
+              required
+              minLength={2}
+            />
+          </div>
+          <div>
+            <label htmlFor="fullName">Votre nom</label>
+            <input
+              id="fullName"
+              type="text"
+              value={fullName}
+              onChange={(event) => setFullName(event.target.value)}
+              required
+              minLength={2}
+            />
+          </div>
           <div>
             <label htmlFor="email">Email</label>
             <input
@@ -80,18 +110,18 @@ export default function LoginPage() {
               onChange={(event) => setPassword(event.target.value)}
               required
               minLength={8}
-              autoComplete="current-password"
+              autoComplete="new-password"
             />
           </div>
           {error && <p className={styles.error} role="alert">{error}</p>}
           <button type="submit" className={styles.submitButton} disabled={isSubmitting}>
-            {isSubmitting ? "Connexion…" : "Se connecter"}
+            {isSubmitting ? "Création…" : "Créer mon organisation"}
           </button>
         </form>
 
         <div className={styles.signupHint}>
-          <span>Première utilisation ?</span>
-          <Link href="/signup">Créer mon organisation</Link>
+          <span>Vous avez déjà un compte ?</span>
+          <Link href="/login">Se connecter</Link>
         </div>
       </section>
     </main>

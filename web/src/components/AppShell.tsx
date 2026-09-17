@@ -37,9 +37,8 @@ export default function AppShell({ children, hideTopbar = false }: { children: R
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    const token = window.localStorage.getItem("quincaillerie_access_token");
     const storedUser = window.localStorage.getItem("quincaillerie_user");
-    if (!token || !storedUser) {
+    if (!storedUser) {
       router.replace("/login");
       return;
     }
@@ -52,6 +51,7 @@ export default function AppShell({ children, hideTopbar = false }: { children: R
   const visibleSidebar = sidebarItems.filter((item) => !item.roles || item.roles.includes(role));
 
   function logout() {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/auth/logout`, { method: "POST", credentials: "include" }).catch(() => undefined);
     window.localStorage.removeItem("quincaillerie_access_token");
     window.localStorage.removeItem("quincaillerie_user");
     router.replace("/");

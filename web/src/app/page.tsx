@@ -23,10 +23,10 @@ export default function Home() {
   return (
     <main className={styles.landingPage}>
       <header className={styles.header}>
-        <Link href="/" className={styles.brand} aria-label="Quincaillerie Studio ERP, accueil">
-          <span className={styles.brandMark}>Q</span>
+        <Link href="/" className={styles.brand} aria-label="Studio ERP, accueil">
+          <span className={styles.brandMark}>S</span>
           <span>
-            <small>Quincaillerie</small>
+            <small>Platform</small>
             <strong>Studio ERP</strong>
           </span>
         </Link>
@@ -42,11 +42,11 @@ export default function Home() {
 
       <section className={styles.hero}>
         <div className={styles.heroContent}>
-          <p className={styles.eyebrow}>Gestion sans complication</p>
-          <h1>Gestion du logiciel.</h1>
+          <p className={styles.eyebrow}>ERP modulaire et multi-entreprises</p>
+          <h1>Une plateforme ERP prête à évoluer.</h1>
           <p className={styles.heroText}>
-            Quincaillerie Studio ERP : un logiciel conçu pour votre activité au quotidien. 
-            Vendre, suivre, organiser. Simple et efficace.
+            Studio ERP centralise les processus de votre organisation, sans verrouiller le système dans un seul métier.
+            Vendre, gérer les stocks, organiser les équipes et faire grandir votre activité sans friction.
           </p>
           <div className={styles.heroActions}>
             <Link href="/login" className={styles.primaryButton}>Accéder à l'espace de vente</Link>
@@ -116,8 +116,8 @@ export default function Home() {
       </section>
 
       <footer className={styles.footer}>
-        <span>Quincaillerie Studio ERP</span>
-        <span>Gestion claire pour professionnels</span>
+        <span>Studio ERP</span>
+        <span>ERP SaaS multi-entreprises</span>
       </footer>
     </main>
   );

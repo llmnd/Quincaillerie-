@@ -86,15 +86,14 @@ export default function CashPage() {
   }, [isCloseModalOpen]);
 
   const headers = (): Record<string, string> => {
-    const token = window.localStorage.getItem("quincaillerie_access_token");
-    return token ? { Authorization: `Bearer ${token}` } : {};
+    return {};
   };
 
   async function load() {
     const [registerResponse, sessionResponse, recapResponse] = await Promise.all([
-      fetch(`${API_URL}/api/v1/cash/registers`, { headers: headers() }),
-      fetch(`${API_URL}/api/v1/cash/sessions`, { headers: headers() }),
-      fetch(`${API_URL}/api/v1/cash/sessions/recap`, { headers: headers() }),
+      fetch(`${API_URL}/api/v1/cash/registers`, { headers: headers(), credentials: "include" }),
+      fetch(`${API_URL}/api/v1/cash/sessions`, { headers: headers(), credentials: "include" }),
+      fetch(`${API_URL}/api/v1/cash/sessions/recap`, { headers: headers(), credentials: "include" }),
     ]);
     if (!registerResponse.ok || !sessionResponse.ok) throw new Error();
     setRegisters(await registerResponse.json());
@@ -119,7 +118,7 @@ export default function CashPage() {
       setBalance(null);
       return;
     }
-    fetch(`${API_URL}/api/v1/cash/sessions/${openSession.id}/balance`, { headers: headers() })
+    fetch(`${API_URL}/api/v1/cash/sessions/${openSession.id}/balance`, { headers: headers(), credentials: "include" })
       .then((response) => (response.ok ? response.json() : null))
       .then(setBalance)
       .catch(() => setBalance(null));
@@ -130,6 +129,7 @@ export default function CashPage() {
     const response = await fetch(`${API_URL}/api/v1/cash/sessions/open`, {
       method: "POST",
       headers: { "Content-Type": "application/json", ...headers() },
+      credentials: "include",
       body: JSON.stringify({ register_id: Number(registerId), actual_opening_amount: Number(amount) }),
     });
     if (!response.ok) {
@@ -147,6 +147,7 @@ export default function CashPage() {
     const response = await fetch(`${API_URL}/api/v1/cash/sessions/${openSession.id}/close`, {
       method: "POST",
       headers: { "Content-Type": "application/json", ...headers() },
+      credentials: "include",
       body: JSON.stringify({ actual_closing_amount: physicalClosing }),
     });
     if (!response.ok) {

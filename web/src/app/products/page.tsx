@@ -28,13 +28,10 @@ export default function ProductsPage() {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const isAdmin = typeof window !== "undefined" && JSON.parse(window.localStorage.getItem("quincaillerie_user") ?? "{}")?.role === "admin";
-  const tokenHeaders = (): Record<string, string> => {
-    const token = window.localStorage.getItem("quincaillerie_access_token");
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  };
+  const tokenHeaders = (): Record<string, string> => ({});
 
   async function loadProducts() {
-    const response = await fetch(`${API_URL}/api/v1/products`, { headers: tokenHeaders() });
+    const response = await fetch(`${API_URL}/api/v1/products`, { headers: tokenHeaders(), credentials: "include" });
     if (!response.ok) throw new Error();
     setProducts(await response.json());
   }
@@ -118,6 +115,7 @@ export default function ProductsPage() {
     const response = await fetch(`${API_URL}/api/v1/products${editingId ? `/${editingId}` : ""}`, {
       method: editingId ? "PUT" : "POST",
       headers: { "Content-Type": "application/json", ...tokenHeaders() },
+      credentials: "include",
       body: JSON.stringify({
         ...form,
         image_url: imageUrl,
@@ -143,6 +141,7 @@ export default function ProductsPage() {
     const response = await fetch(`${API_URL}/api/v1/products/${product.id}`, {
       method: "DELETE",
       headers: tokenHeaders(),
+      credentials: "include",
     });
     if (!response.ok) {
       setError("Archivage impossible.");

@@ -30,16 +30,14 @@ export default function SalesPage() {
   const [userRole, setUserRole] = useState<"admin" | "seller">("seller");
 
   useEffect(() => {
-    const token = window.localStorage.getItem("quincaillerie_access_token");
     const headers: Record<string, string> = {};
-    if (token) headers.Authorization = `Bearer ${token}`;
     const storedUser = window.localStorage.getItem("quincaillerie_user");
     if (storedUser) setUserRole(JSON.parse(storedUser).role === "admin" ? "admin" : "seller");
     Promise.all([
-      fetch(`${API_URL}/api/v1/products`, { headers }).then((response) => response.json()),
-      fetch(`${API_URL}/api/v1/customers`, { headers }).then((response) => response.json()),
-      fetch(`${API_URL}/api/v1/cash/sessions`, { headers }).then((response) => response.json()),
-      fetch(`${API_URL}/api/v1/cash/sessions/current/handoff`, { headers }).then((response) => response.ok ? response.json() : null),
+      fetch(`${API_URL}/api/v1/products`, { headers, credentials: "include" }).then((response) => response.json()),
+      fetch(`${API_URL}/api/v1/customers`, { headers, credentials: "include" }).then((response) => response.json()),
+      fetch(`${API_URL}/api/v1/cash/sessions`, { headers, credentials: "include" }).then((response) => response.json()),
+      fetch(`${API_URL}/api/v1/cash/sessions/current/handoff`, { headers, credentials: "include" }).then((response) => response.ok ? response.json() : null),
     ])
       .then(([productData, customerData, sessionData, handoffData]) => {
         setProducts(Array.isArray(productData) ? productData : []);
@@ -86,13 +84,13 @@ export default function SalesPage() {
       return;
     }
 
-    const token = window.localStorage.getItem("quincaillerie_access_token");
     setIsSubmitting(true);
     setMessage("");
     try {
       const response = await fetch(`${API_URL}/api/v1/sales`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ customer_id: selectedCustomer ? Number(selectedCustomer) : null, status: "pending", discount_amount: Number(discount), payment_method: paymentMethod, items: cart.map((line) => ({ product_id: line.id, quantity: line.quantity, unit_price: line.unit_price })) }),
       });
       if (!response.ok) throw new Error();
@@ -108,10 +106,9 @@ export default function SalesPage() {
   }
 
   async function acknowledgeHandoff() {
-    const token = window.localStorage.getItem("quincaillerie_access_token");
     setIsAcknowledgingHandoff(true);
     try {
-      const response = await fetch(`${API_URL}/api/v1/cash/sessions/current/handoff/acknowledge`, { method: "POST", headers: token ? { Authorization: `Bearer ${token}` } : {} });
+      const response = await fetch(`${API_URL}/api/v1/cash/sessions/current/handoff/acknowledge`, { method: "POST", credentials: "include" });
       if (!response.ok) throw new Error();
       setHandoff(await response.json());
     } catch {

@@ -14,16 +14,14 @@ export default function ClientsPage() {
   const [message, setMessage] = useState("");
 
   async function loadCustomers() {
-    const token = window.localStorage.getItem("quincaillerie_access_token");
-    const response = await fetch(`${API_URL}/api/v1/customers`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+    const response = await fetch(`${API_URL}/api/v1/customers`, { credentials: "include" });
     if (response.ok) setCustomers(await response.json());
   }
   useEffect(() => { void loadCustomers(); }, []);
 
   async function createCustomer(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const token = window.localStorage.getItem("quincaillerie_access_token");
-    const response = await fetch(`${API_URL}/api/v1/customers`, { method: "POST", headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify(form) });
+    const response = await fetch(`${API_URL}/api/v1/customers`, { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(form) });
     if (!response.ok) { setMessage("Impossible de créer ce client."); return; }
     setForm({ name: "", email: "", phone: "", address: "" }); setShowForm(false); setMessage("Client créé."); void loadCustomers();
   }
