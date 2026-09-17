@@ -59,7 +59,7 @@ export default function AppShell({ children, hideTopbar = false }: { children: R
     fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/organization/modules`, { credentials: "include" })
       .then((response) => response.ok ? response.json() : [])
       .then((modules: ModuleState[]) => setEnabledModules(new Set(modules.filter((module) => module.enabled).map((module) => module.key))))
-      .catch(() => setEnabledModules(null));
+      .catch(() => setEnabledModules(new Set(sidebarItems.flatMap((item) => item.moduleKey ? [item.moduleKey] : []))));
   }, [user]);
 
   const role = user?.role ?? "seller";

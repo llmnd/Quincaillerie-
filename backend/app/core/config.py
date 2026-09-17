@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 60
     database_url: str = "sqlite:///./erp_platform.db"
     cors_origins: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001", "http://127.0.0.1:3001"]
+    cors_origin_regex: str = r"https://([a-z0-9-]+\.)*vercel\.app"
 
     model_config = SettingsConfigDict(
         env_file=".env",
