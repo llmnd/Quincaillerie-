@@ -79,8 +79,6 @@ export default function DashboardPage() {
       }
     }
     void loadActivity();
-    const refreshTimer = window.setInterval(() => void loadActivity(), 30000);
-    return () => window.clearInterval(refreshTimer);
   }, []);
 
   const visibleApps = applications.filter((application) =>
@@ -150,8 +148,6 @@ export default function DashboardPage() {
             </div>
           </aside>
         </div>
-
-        <section className={styles.modulesSection} aria-labelledby="modules-title"><div className={styles.sectionHeader}><div><span className={styles.sectionKicker}><Grid size={13} /> Navigation</span><h2 id="modules-title">Accès aux modules</h2></div><span className={styles.updatedAt}>Actions disponibles dans le menu</span></div><div className={styles.moduleLinks}>{visibleApps.map((application) => { const Icon = application.icon; return <Link href={application.href} key={application.href} className={styles.moduleLink}><span><Icon size={15} /><strong>{application.label}</strong></span><ArrowUpRight size={14} /></Link>; })}</div></section>
       </div>
     </AppShell>
   );

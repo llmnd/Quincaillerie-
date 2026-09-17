@@ -48,7 +48,7 @@ export default function LoginPage() {
       <Link href="/" className={styles.brand}>
         <span className={styles.brandMark}>Q</span>
         <span>
-          <small>Quincaillerie</small>
+          <small>Lamine</small>
           <strong>Studio ERP</strong>
         </span>
       </Link>
@@ -60,7 +60,7 @@ export default function LoginPage() {
         </div>
 
         <form className={styles.form} onSubmit={handleSubmit}>
-          <div>
+          <div className={styles.fieldGroup}>
             <label htmlFor="email">Email</label>
             <input
               id="email"
@@ -69,9 +69,11 @@ export default function LoginPage() {
               onChange={(event) => setEmail(event.target.value)}
               required
               autoComplete="email"
+              placeholder="votre@email.com"
             />
           </div>
-          <div>
+
+          <div className={styles.fieldGroup}>
             <label htmlFor="password">Mot de passe</label>
             <input
               id="password"
@@ -83,16 +85,21 @@ export default function LoginPage() {
               autoComplete="current-password"
             />
           </div>
+
           {error && <p className={styles.error} role="alert">{error}</p>}
+
           <button type="submit" className={styles.submitButton} disabled={isSubmitting}>
             {isSubmitting ? "Connexion…" : "Se connecter"}
           </button>
-        </form>
 
-        <div className={styles.signupHint}>
-          <span>Première utilisation ?</span>
-          <Link href="/signup">Créer mon organisation</Link>
-        </div>
+          {/* Intégration dans la même carte */}
+          <div className={styles.cardFooter}>
+            <span>Première utilisation ?</span>
+            <Link href="/signup" className={styles.signupLink}>
+              Créer un compte
+            </Link>
+          </div>
+        </form>
       </section>
     </main>
   );
