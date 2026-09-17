@@ -10,8 +10,9 @@ class CashRegister(Base):
     __tablename__ = "cash_registers"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id"), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
-    code: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    code: Mapped[str] = mapped_column(String(50), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
 
@@ -19,6 +20,7 @@ class CashSession(Base):
     __tablename__ = "cash_sessions"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id"), nullable=False, index=True)
     register_id: Mapped[int] = mapped_column(ForeignKey("cash_registers.id"), nullable=False)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     opened_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
@@ -38,6 +40,7 @@ class CashHandoff(Base):
     __tablename__ = "cash_handoffs"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id"), nullable=False, index=True)
     session_id: Mapped[int] = mapped_column(ForeignKey("cash_sessions.id"), nullable=False)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     previous_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
@@ -49,6 +52,7 @@ class CashOperation(Base):
     __tablename__ = "cash_operations"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id"), nullable=False, index=True)
     register_id: Mapped[int] = mapped_column(ForeignKey("cash_registers.id"), nullable=False)
     session_id: Mapped[int] = mapped_column(ForeignKey("cash_sessions.id"), nullable=False)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
@@ -63,6 +67,7 @@ class AuditLog(Base):
     __tablename__ = "audit_logs"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    organization_id: Mapped[int | None] = mapped_column(ForeignKey("organizations.id"), nullable=True, index=True)
     user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     register_id: Mapped[int | None] = mapped_column(ForeignKey("cash_registers.id"), nullable=True)
     session_id: Mapped[int | None] = mapped_column(ForeignKey("cash_sessions.id"), nullable=True)

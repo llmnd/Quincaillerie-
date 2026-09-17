@@ -24,6 +24,8 @@ services:
         value: "8000"
       - key: DATABASE_URL
         value: ${DATABASE_URL}
+      - key: SECRET_KEY
+        value: ${SECRET_KEY}
       - key: CORS_ORIGINS
         value: ${CORS_ORIGINS}
       - key: APP_ENV

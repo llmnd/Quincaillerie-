@@ -15,26 +15,26 @@ router = APIRouter(prefix="/accounting", tags=["accounting"])
 
 
 @router.get("")
-def accounting_overview(db: Session = Depends(get_db), _: User = Depends(require_roles("admin", "seller"))) -> dict[str, int | str]:
+def accounting_overview(db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin", "seller"))) -> dict[str, int | str]:
     return {
         "module": "accounting",
         "currency": "XOF",
-        "taxes": db.scalar(select(func.count(Tax.id))) or 0,
-        "invoices": db.scalar(select(func.count(Invoice.id))) or 0,
-        "journal_entries": db.scalar(select(func.count(JournalEntry.id))) or 0,
+        "taxes": db.scalar(select(func.count(Tax.id)).where(Tax.organization_id == current_user.organization_id)) or 0,
+        "invoices": db.scalar(select(func.count(Invoice.id)).where(Invoice.organization_id == current_user.organization_id)) or 0,
+        "journal_entries": db.scalar(select(func.count(JournalEntry.id)).where(JournalEntry.organization_id == current_user.organization_id)) or 0,
     }
 
 
 @router.get("/accounts", response_model=list[AccountRead])
-def list_accounts(db: Session = Depends(get_db), _: User = Depends(require_roles("admin", "seller"))) -> list[Account]:
-    return db.scalars(select(Account).where(Account.is_active.is_(True)).order_by(Account.code)).all()
+def list_accounts(db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin", "seller"))) -> list[Account]:
+    return db.scalars(select(Account).where(Account.organization_id == current_user.organization_id, Account.is_active.is_(True)).order_by(Account.code)).all()
 
 
 @router.post("/accounts", response_model=AccountRead, status_code=status.HTTP_201_CREATED)
-def create_account(payload: AccountCreate, db: Session = Depends(get_db), _: User = Depends(require_roles("admin"))) -> Account:
-    if db.scalar(select(Account.id).where(Account.code == payload.code)) is not None:
+def create_account(payload: AccountCreate, db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin"))) -> Account:
+    if db.scalar(select(Account.id).where(Account.organization_id == current_user.organization_id, Account.code == payload.code)) is not None:
         raise HTTPException(status_code=409, detail="Account code already exists")
-    account = Account(**payload.model_dump())
+    account = Account(**payload.model_dump(), organization_id=current_user.organization_id)
     db.add(account)
     db.commit()
     db.refresh(account)
@@ -42,13 +42,13 @@ def create_account(payload: AccountCreate, db: Session = Depends(get_db), _: Use
 
 
 @router.get("/journal", response_model=list[JournalEntryRead])
-def list_journal(db: Session = Depends(get_db), _: User = Depends(require_roles("admin", "seller"))) -> list[JournalEntry]:
-    return db.scalars(select(JournalEntry).options(selectinload(JournalEntry.lines)).order_by(JournalEntry.entry_date.desc(), JournalEntry.id.desc())).unique().all()
+def list_journal(db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin", "seller"))) -> list[JournalEntry]:
+    return db.scalars(select(JournalEntry).where(JournalEntry.organization_id == current_user.organization_id).options(selectinload(JournalEntry.lines)).order_by(JournalEntry.entry_date.desc(), JournalEntry.id.desc())).unique().all()
 
 
 @router.get("/trial-balance")
-def trial_balance(db: Session = Depends(get_db), _: User = Depends(require_roles("admin", "seller"))) -> list[dict[str, object]]:
-    rows = db.execute(select(Account.id, Account.code, Account.name, func.coalesce(func.sum(JournalLine.debit), 0), func.coalesce(func.sum(JournalLine.credit), 0)).join(JournalLine, JournalLine.account_id == Account.id, isouter=True).group_by(Account.id).order_by(Account.code)).all()
+def trial_balance(db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin", "seller"))) -> list[dict[str, object]]:
+    rows = db.execute(select(Account.id, Account.code, Account.name, func.coalesce(func.sum(JournalLine.debit), 0), func.coalesce(func.sum(JournalLine.credit), 0)).where(Account.organization_id == current_user.organization_id).join(JournalLine, JournalLine.account_id == Account.id, isouter=True).group_by(Account.id).order_by(Account.code)).all()
     return [{"account_id": account_id, "code": code, "name": name, "debit": float(debit), "credit": float(credit), "balance": float(debit - credit)} for account_id, code, name, debit, credit in rows]
 
 
@@ -71,8 +71,8 @@ def income_statement(db: Session = Depends(get_db), _: User = Depends(require_ro
 
 
 @router.get("/reports/vat")
-def vat_report(db: Session = Depends(get_db), _: User = Depends(require_roles("admin", "seller"))) -> dict[str, object]:
-    invoices = db.scalars(select(Invoice).order_by(Invoice.issue_date)).all()
+def vat_report(db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin", "seller"))) -> dict[str, object]:
+    invoices = db.scalars(select(Invoice).where(Invoice.organization_id == current_user.organization_id).order_by(Invoice.issue_date)).all()
     periods: dict[str, dict[str, float | str]] = {}
     for invoice in invoices:
         period = invoice.issue_date.strftime("%Y-%m")
@@ -84,8 +84,8 @@ def vat_report(db: Session = Depends(get_db), _: User = Depends(require_roles("a
 
 
 @router.get("/exports/journal.csv")
-def export_journal_csv(db: Session = Depends(get_db), _: User = Depends(require_roles("admin"))) -> Response:
-    entries = db.scalars(select(JournalEntry).options(selectinload(JournalEntry.lines)).order_by(JournalEntry.entry_date, JournalEntry.id)).unique().all()
+def export_journal_csv(db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin"))) -> Response:
+    entries = db.scalars(select(JournalEntry).where(JournalEntry.organization_id == current_user.organization_id).options(selectinload(JournalEntry.lines)).order_by(JournalEntry.entry_date, JournalEntry.id)).unique().all()
     lines = ["date;reference;journal;compte;libelle;debit;credit"]
     for entry in entries:
         for line in entry.lines:
@@ -95,15 +95,15 @@ def export_journal_csv(db: Session = Depends(get_db), _: User = Depends(require_
 
 
 @router.get("/taxes", response_model=list[TaxRead])
-def list_taxes(db: Session = Depends(get_db), _: User = Depends(require_roles("admin", "seller"))) -> list[Tax]:
-    return db.scalars(select(Tax).where(Tax.is_active.is_(True)).order_by(Tax.rate.desc(), Tax.name)).all()
+def list_taxes(db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin", "seller"))) -> list[Tax]:
+    return db.scalars(select(Tax).where(Tax.organization_id == current_user.organization_id, Tax.is_active.is_(True)).order_by(Tax.rate.desc(), Tax.name)).all()
 
 
 @router.post("/taxes", response_model=TaxRead, status_code=status.HTTP_201_CREATED)
-def create_tax(payload: TaxCreate, db: Session = Depends(get_db), _: User = Depends(require_roles("admin"))) -> Tax:
-    if db.scalar(select(Tax.id).where(Tax.code == payload.code)) is not None:
+def create_tax(payload: TaxCreate, db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin"))) -> Tax:
+    if db.scalar(select(Tax.id).where(Tax.organization_id == current_user.organization_id, Tax.code == payload.code)) is not None:
         raise HTTPException(status_code=409, detail="Tax code already exists")
-    tax = Tax(**payload.model_dump())
+    tax = Tax(**payload.model_dump(), organization_id=current_user.organization_id)
     db.add(tax)
     db.commit()
     db.refresh(tax)
@@ -117,9 +117,9 @@ def list_invoices(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles("admin", "seller")),
 ) -> list[Invoice]:
-    query = select(Invoice).options(selectinload(Invoice.lines)).order_by(Invoice.issue_date.desc(), Invoice.id.desc())
+    query = select(Invoice).where(Invoice.organization_id == current_user.organization_id).options(selectinload(Invoice.lines)).order_by(Invoice.issue_date.desc(), Invoice.id.desc())
     if current_user.role != "admin":
-        query = query.join(Sale, Invoice.sale_id == Sale.id).where(Sale.user_id == current_user.id)
+        query = query.join(Sale, Invoice.sale_id == Sale.id).where(Sale.user_id == current_user.id, Sale.organization_id == current_user.organization_id)
     if date_from is not None:
         query = query.where(Invoice.issue_date >= date_from)
     if date_to is not None:
@@ -134,37 +134,37 @@ def create_invoice_from_sale(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles("admin", "seller")),
 ) -> Invoice:
-    sale = db.scalar(select(Sale).options(selectinload(Sale.items)).where(Sale.id == sale_id))
+    sale = db.scalar(select(Sale).options(selectinload(Sale.items)).where(Sale.id == sale_id, Sale.organization_id == current_user.organization_id))
     if sale is None:
         raise HTTPException(status_code=404, detail="Sale not found")
     if current_user.role != "admin":
-        session = get_open_cash_session(db)
+        session = get_open_cash_session(db, current_user)
         if session is None or sale.user_id != current_user.id or not handoff_is_acknowledged(session.id, current_user.id, db):
             raise HTTPException(status_code=403, detail="You cannot invoice this sale")
-    if db.scalar(select(Invoice.id).where(Invoice.sale_id == sale.id)) is not None:
+    if db.scalar(select(Invoice.id).where(Invoice.organization_id == current_user.organization_id, Invoice.sale_id == sale.id)) is not None:
         raise HTTPException(status_code=409, detail="An invoice already exists for this sale")
 
-    tax = db.get(Tax, tax_id) if tax_id is not None else None
+    tax = db.scalar(select(Tax).where(Tax.id == tax_id, Tax.organization_id == current_user.organization_id)) if tax_id is not None else None
     if tax_id is not None and (tax is None or not tax.is_active):
         raise HTTPException(status_code=404, detail="Tax not found")
     subtotal = float(sale.total_amount)
     tax_amount = round(subtotal * ((tax.rate if tax else 0.0) / 100), 2)
-    invoice_count = db.scalar(select(func.count(Invoice.id))) or 0
-    invoice = Invoice(number=f"FAC-{datetime.utcnow():%Y}-{invoice_count + 1:06d}", sale_id=sale.id, customer_id=sale.customer_id, tax_id=tax.id if tax else None, subtotal=subtotal, tax_amount=tax_amount, total_amount=subtotal + tax_amount)
+    invoice_count = db.scalar(select(func.count(Invoice.id)).where(Invoice.organization_id == current_user.organization_id)) or 0
+    invoice = Invoice(organization_id=current_user.organization_id, number=f"FAC-{datetime.utcnow():%Y}-{invoice_count + 1:06d}", sale_id=sale.id, customer_id=sale.customer_id, tax_id=tax.id if tax else None, subtotal=subtotal, tax_amount=tax_amount, total_amount=subtotal + tax_amount)
     db.add(invoice)
     db.flush()
     for item in sale.items:
-        db.add(InvoiceLine(invoice_id=invoice.id, product_id=item.product_id, description=f"Produit #{item.product_id}", quantity=item.quantity, unit_price=item.unit_price, line_total=item.line_total))
-    account_rows = db.scalars(select(Account).where(Account.code.in_(["411", "4431", "701"]))).all()
+        db.add(InvoiceLine(organization_id=current_user.organization_id, invoice_id=invoice.id, product_id=item.product_id, description=f"Produit #{item.product_id}", quantity=item.quantity, unit_price=item.unit_price, line_total=item.line_total))
+    account_rows = db.scalars(select(Account).where(Account.organization_id == current_user.organization_id, Account.code.in_(["411", "4431", "701"]))).all()
     accounts = {account.code: account for account in account_rows}
     if len(accounts) != 3:
         raise HTTPException(status_code=500, detail="Default accounting accounts are missing")
-    entry = JournalEntry(reference=f"VE-{invoice.number}", journal="VENTES", description=f"Facture {invoice.number}", source_type="invoice", source_id=invoice.id)
+    entry = JournalEntry(organization_id=current_user.organization_id, reference=f"VE-{invoice.number}", journal="VENTES", description=f"Facture {invoice.number}", source_type="invoice", source_id=invoice.id)
     db.add(entry)
     db.flush()
-    db.add(JournalLine(entry_id=entry.id, account_id=accounts["411"].id, label=f"Client facture {invoice.number}", debit=invoice.total_amount, credit=0))
-    db.add(JournalLine(entry_id=entry.id, account_id=accounts["701"].id, label=f"Vente facture {invoice.number}", debit=0, credit=invoice.subtotal))
+    db.add(JournalLine(organization_id=current_user.organization_id, entry_id=entry.id, account_id=accounts["411"].id, label=f"Client facture {invoice.number}", debit=invoice.total_amount, credit=0))
+    db.add(JournalLine(organization_id=current_user.organization_id, entry_id=entry.id, account_id=accounts["701"].id, label=f"Vente facture {invoice.number}", debit=0, credit=invoice.subtotal))
     if invoice.tax_amount:
-        db.add(JournalLine(entry_id=entry.id, account_id=accounts["4431"].id, label=f"TVA facture {invoice.number}", debit=0, credit=invoice.tax_amount))
+        db.add(JournalLine(organization_id=current_user.organization_id, entry_id=entry.id, account_id=accounts["4431"].id, label=f"TVA facture {invoice.number}", debit=0, credit=invoice.tax_amount))
     db.commit()
-    return db.scalar(select(Invoice).options(selectinload(Invoice.lines)).where(Invoice.id == invoice.id))
+    return db.scalar(select(Invoice).options(selectinload(Invoice.lines)).where(Invoice.id == invoice.id, Invoice.organization_id == current_user.organization_id))

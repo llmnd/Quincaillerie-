@@ -28,7 +28,7 @@ def list_sales(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles("admin", "seller")),
 ) -> list[Sale]:
-    query = select(Sale).order_by(Sale.id.desc())
+    query = select(Sale).where(Sale.organization_id == current_user.organization_id).order_by(Sale.id.desc())
     if current_user.role != "admin":
         query = query.where(Sale.user_id == current_user.id)
     if user_id is not None:
@@ -36,7 +36,7 @@ def list_sales(
     if session_id is not None:
         query = query.where(Sale.session_id == session_id)
     if register_id is not None:
-        query = query.join(CashSession, Sale.session_id == CashSession.id).where(CashSession.register_id == register_id)
+        query = query.join(CashSession, Sale.session_id == CashSession.id).where(CashSession.register_id == register_id, Sale.organization_id == current_user.organization_id)
     if date_from is not None:
         query = query.where(Sale.sale_date >= date_from)
     if date_to is not None:
@@ -49,7 +49,7 @@ def create_sale(payload: SaleCreate, db: Session = Depends(get_db), current_user
     if not payload.items:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A sale must contain at least one item")
 
-    session = get_open_cash_session(db)
+    session = get_open_cash_session(db, current_user)
     if session is None:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Open a cash session before creating a sale")
     if current_user.role != "admin" and not handoff_is_acknowledged(session.id, current_user.id, db):
@@ -57,13 +57,13 @@ def create_sale(payload: SaleCreate, db: Session = Depends(get_db), current_user
     if payload.payment_method not in {"cash", "card", "mobile_money", "other"}:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported payment method")
 
-    sale = Sale(customer_id=payload.customer_id, user_id=current_user.id, session_id=session.id, status=payload.status, notes=payload.notes, discount_amount=payload.discount_amount, payment_method=payload.payment_method)
+    sale = Sale(organization_id=current_user.organization_id, customer_id=payload.customer_id, user_id=current_user.id, session_id=session.id, status=payload.status, notes=payload.notes, discount_amount=payload.discount_amount, payment_method=payload.payment_method)
     db.add(sale)
     db.flush()
 
     total_amount = 0.0
     for item in payload.items:
-        product = db.get(Product, item.product_id)
+        product = db.scalar(select(Product).where(Product.id == item.product_id, Product.organization_id == current_user.organization_id))
         if product is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Product {item.product_id} not found")
         if item.quantity > product.stock_quantity:
@@ -71,6 +71,7 @@ def create_sale(payload: SaleCreate, db: Session = Depends(get_db), current_user
 
         line_total = item.quantity * item.unit_price
         sale_item = SaleItem(
+            organization_id=current_user.organization_id,
             sale=sale,
             product_id=item.product_id,
             quantity=item.quantity,
@@ -82,6 +83,7 @@ def create_sale(payload: SaleCreate, db: Session = Depends(get_db), current_user
 
         db.add(
             StockMovement(
+                organization_id=current_user.organization_id,
                 product_id=item.product_id,
                 movement_type="sale",
                 quantity=item.quantity,
@@ -93,24 +95,24 @@ def create_sale(payload: SaleCreate, db: Session = Depends(get_db), current_user
     if payload.discount_amount > total_amount:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Discount cannot exceed sale subtotal")
     sale.total_amount = total_amount - payload.discount_amount
-    db.add(CashOperation(register_id=session.register_id, session_id=session.id, user_id=current_user.id, operation_type="sale", amount=sale.total_amount, payment_method=payload.payment_method, reason=f"Sale #{sale.id}"))
-    db.add(AuditLog(user_id=current_user.id, register_id=session.register_id, session_id=session.id, action="sale.created", entity_type="sale", entity_id=sale.id, amount=sale.total_amount, after_data=f"payment_method={payload.payment_method}"))
+    db.add(CashOperation(organization_id=current_user.organization_id, register_id=session.register_id, session_id=session.id, user_id=current_user.id, operation_type="sale", amount=sale.total_amount, payment_method=payload.payment_method, reason=f"Sale #{sale.id}"))
+    db.add(AuditLog(organization_id=current_user.organization_id, user_id=current_user.id, register_id=session.register_id, session_id=session.id, action="sale.created", entity_type="sale", entity_id=sale.id, amount=sale.total_amount, after_data=f"payment_method={payload.payment_method}"))
     db.commit()
     db.refresh(sale)
     return sale
 
 
 @router.get("/{sale_id}", response_model=SaleRead)
-def get_sale(sale_id: int, db: Session = Depends(get_db), _: object = Depends(require_roles("admin", "seller"))) -> Sale:
-    sale = db.get(Sale, sale_id)
+def get_sale(sale_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin", "seller"))) -> Sale:
+    sale = db.scalar(select(Sale).where(Sale.id == sale_id, Sale.organization_id == current_user.organization_id))
     if sale is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sale not found")
     return sale
 
 
 @router.put("/{sale_id}", response_model=SaleRead)
-def update_sale(sale_id: int, payload: SaleUpdate, db: Session = Depends(get_db), _: object = Depends(require_roles("admin"))) -> Sale:
-    sale = db.get(Sale, sale_id)
+def update_sale(sale_id: int, payload: SaleUpdate, db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin"))) -> Sale:
+    sale = db.scalar(select(Sale).where(Sale.id == sale_id, Sale.organization_id == current_user.organization_id))
     if sale is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sale not found")
 
@@ -123,8 +125,8 @@ def update_sale(sale_id: int, payload: SaleUpdate, db: Session = Depends(get_db)
 
 
 @router.delete("/{sale_id}")
-def delete_sale(sale_id: int, db: Session = Depends(get_db), _: object = Depends(require_roles("admin"))) -> dict[str, Any]:
-    sale = db.get(Sale, sale_id)
+def delete_sale(sale_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin"))) -> dict[str, Any]:
+    sale = db.scalar(select(Sale).where(Sale.id == sale_id, Sale.organization_id == current_user.organization_id))
     if sale is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sale not found")
 

@@ -12,13 +12,13 @@ router = APIRouter(prefix="/customers", tags=["customers"])
 
 
 @router.get("", response_model=list[CustomerRead])
-def list_customers(db: Session = Depends(get_db), _: object = Depends(require_roles("admin", "seller"))) -> list[Customer]:
-    return db.scalars(select(Customer).order_by(Customer.id)).all()
+def list_customers(db: Session = Depends(get_db), current_user: object = Depends(require_roles("admin", "seller"))) -> list[Customer]:
+    return db.scalars(select(Customer).where(Customer.organization_id == current_user.organization_id).order_by(Customer.id)).all()
 
 
 @router.post("", response_model=CustomerRead, status_code=status.HTTP_201_CREATED)
-def create_customer(payload: CustomerCreate, db: Session = Depends(get_db), _: object = Depends(require_roles("admin"))) -> Customer:
-    customer = Customer(**payload.model_dump())
+def create_customer(payload: CustomerCreate, db: Session = Depends(get_db), current_user: object = Depends(require_roles("admin"))) -> Customer:
+    customer = Customer(**payload.model_dump(), organization_id=current_user.organization_id)
     db.add(customer)
     db.commit()
     db.refresh(customer)
@@ -26,16 +26,16 @@ def create_customer(payload: CustomerCreate, db: Session = Depends(get_db), _: o
 
 
 @router.get("/{customer_id}", response_model=CustomerRead)
-def get_customer(customer_id: int, db: Session = Depends(get_db), _: object = Depends(require_roles("admin", "seller"))) -> Customer:
-    customer = db.get(Customer, customer_id)
+def get_customer(customer_id: int, db: Session = Depends(get_db), current_user: object = Depends(require_roles("admin", "seller"))) -> Customer:
+    customer = db.scalar(select(Customer).where(Customer.id == customer_id, Customer.organization_id == current_user.organization_id))
     if customer is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer not found")
     return customer
 
 
 @router.put("/{customer_id}", response_model=CustomerRead)
-def update_customer(customer_id: int, payload: CustomerUpdate, db: Session = Depends(get_db), _: object = Depends(require_roles("admin"))) -> Customer:
-    customer = db.get(Customer, customer_id)
+def update_customer(customer_id: int, payload: CustomerUpdate, db: Session = Depends(get_db), current_user: object = Depends(require_roles("admin"))) -> Customer:
+    customer = db.scalar(select(Customer).where(Customer.id == customer_id, Customer.organization_id == current_user.organization_id))
     if customer is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer not found")
 
@@ -48,8 +48,8 @@ def update_customer(customer_id: int, payload: CustomerUpdate, db: Session = Dep
 
 
 @router.delete("/{customer_id}")
-def delete_customer(customer_id: int, db: Session = Depends(get_db), _: object = Depends(require_roles("admin"))) -> dict[str, Any]:
-    customer = db.get(Customer, customer_id)
+def delete_customer(customer_id: int, db: Session = Depends(get_db), current_user: object = Depends(require_roles("admin"))) -> dict[str, Any]:
+    customer = db.scalar(select(Customer).where(Customer.id == customer_id, Customer.organization_id == current_user.organization_id))
     if customer is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer not found")
 

@@ -12,13 +12,13 @@ router = APIRouter(prefix="/suppliers", tags=["suppliers"])
 
 
 @router.get("", response_model=list[SupplierRead])
-def list_suppliers(db: Session = Depends(get_db), _: object = Depends(require_roles("admin"))) -> list[Supplier]:
-    return db.scalars(select(Supplier).order_by(Supplier.id)).all()
+def list_suppliers(db: Session = Depends(get_db), current_user: object = Depends(require_roles("admin"))) -> list[Supplier]:
+    return db.scalars(select(Supplier).where(Supplier.organization_id == current_user.organization_id).order_by(Supplier.id)).all()
 
 
 @router.post("", response_model=SupplierRead, status_code=status.HTTP_201_CREATED)
-def create_supplier(payload: SupplierCreate, db: Session = Depends(get_db), _: object = Depends(require_roles("admin"))) -> Supplier:
-    supplier = Supplier(**payload.model_dump())
+def create_supplier(payload: SupplierCreate, db: Session = Depends(get_db), current_user: object = Depends(require_roles("admin"))) -> Supplier:
+    supplier = Supplier(**payload.model_dump(), organization_id=current_user.organization_id)
     db.add(supplier)
     db.commit()
     db.refresh(supplier)
@@ -26,16 +26,16 @@ def create_supplier(payload: SupplierCreate, db: Session = Depends(get_db), _: o
 
 
 @router.get("/{supplier_id}", response_model=SupplierRead)
-def get_supplier(supplier_id: int, db: Session = Depends(get_db), _: object = Depends(require_roles("admin"))) -> Supplier:
-    supplier = db.get(Supplier, supplier_id)
+def get_supplier(supplier_id: int, db: Session = Depends(get_db), current_user: object = Depends(require_roles("admin"))) -> Supplier:
+    supplier = db.scalar(select(Supplier).where(Supplier.id == supplier_id, Supplier.organization_id == current_user.organization_id))
     if supplier is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Supplier not found")
     return supplier
 
 
 @router.put("/{supplier_id}", response_model=SupplierRead)
-def update_supplier(supplier_id: int, payload: SupplierUpdate, db: Session = Depends(get_db), _: object = Depends(require_roles("admin"))) -> Supplier:
-    supplier = db.get(Supplier, supplier_id)
+def update_supplier(supplier_id: int, payload: SupplierUpdate, db: Session = Depends(get_db), current_user: object = Depends(require_roles("admin"))) -> Supplier:
+    supplier = db.scalar(select(Supplier).where(Supplier.id == supplier_id, Supplier.organization_id == current_user.organization_id))
     if supplier is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Supplier not found")
 
@@ -48,8 +48,8 @@ def update_supplier(supplier_id: int, payload: SupplierUpdate, db: Session = Dep
 
 
 @router.delete("/{supplier_id}")
-def delete_supplier(supplier_id: int, db: Session = Depends(get_db), _: object = Depends(require_roles("admin"))) -> dict[str, Any]:
-    supplier = db.get(Supplier, supplier_id)
+def delete_supplier(supplier_id: int, db: Session = Depends(get_db), current_user: object = Depends(require_roles("admin"))) -> dict[str, Any]:
+    supplier = db.scalar(select(Supplier).where(Supplier.id == supplier_id, Supplier.organization_id == current_user.organization_id))
     if supplier is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Supplier not found")
 

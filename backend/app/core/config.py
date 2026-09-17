@@ -2,7 +2,7 @@ import json
 from functools import lru_cache
 from typing import Any
 
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     secret_key: str = "change-me-in-production"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 60
-    database_url: str = "postgresql+psycopg://neondb_owner:npg_bxJI6HwqkB0K@ep-sparkling-shadow-b5uaxwxs-pooler.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+    database_url: str = "sqlite:///./erp_platform.db"
     cors_origins: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001", "http://127.0.0.1:3001"]
 
     model_config = SettingsConfigDict(
@@ -45,6 +45,17 @@ class Settings(BaseSettings):
             return items
 
         return value
+
+    @model_validator(mode="after")
+    def validate_production_settings(self) -> "Settings":
+        if self.app_env.lower() == "production":
+            if len(self.secret_key) < 32 or self.secret_key == "change-me-in-production":
+                raise ValueError("SECRET_KEY must be a strong production secret")
+            if self.database_url.startswith("sqlite"):
+                raise ValueError("DATABASE_URL must use a server database in production")
+            if self.debug:
+                raise ValueError("DEBUG must be false in production")
+        return self
 
 
 @lru_cache

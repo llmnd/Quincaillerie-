@@ -20,6 +20,22 @@ def test_ping_endpoint():
     assert response.json() == {"message": "pong"}
 
 
+def test_register_company_creates_admin_and_organization():
+    payload = {
+        "organization_name": "Boutique Demo",
+        "full_name": "Nassim Admin",
+        "email": f"admin-{uuid.uuid4().hex[:8]}@demo.test",
+        "password": "StrongPass123",
+    }
+
+    response = client.post("/api/v1/auth/register", json=payload)
+    assert response.status_code == 201
+    body = response.json()
+    assert body["full_name"] == "Nassim Admin"
+    assert body["organization_id"] is not None
+    assert body["role"] == "admin"
+
+
 def test_products_crud_flow():
     sku = f"SKU-{uuid.uuid4().hex[:8].upper()}"
     create_response = client.post(
@@ -178,3 +194,102 @@ def test_stock_movement_and_sale_inventory_adjustments():
     remaining_stock = client.get(f"/api/v1/products/{product_id}")
     assert remaining_stock.status_code == 200
     assert remaining_stock.json()["stock_quantity"] == 15
+
+
+def test_organizations_are_isolated():
+    org1_email = f"org1-{uuid.uuid4().hex[:8]}@demo.test"
+    org2_email = f"org2-{uuid.uuid4().hex[:8]}@demo.test"
+    org1_client = TestClient(app)
+    org2_client = TestClient(app)
+
+    org1 = client.post(
+        "/api/v1/auth/register",
+        json={
+            "organization_name": f"Org1-{uuid.uuid4().hex[:6]}",
+            "full_name": "Alice Org 1",
+            "email": org1_email,
+            "password": "StrongPass123",
+        },
+    )
+    assert org1.status_code == 201
+    org1_token = org1_client.post(
+        "/api/v1/auth/login",
+        json={"email": org1_email, "password": "StrongPass123"},
+    )
+    assert org1_token.status_code == 200
+
+    org2 = client.post(
+        "/api/v1/auth/register",
+        json={
+            "organization_name": f"Org2-{uuid.uuid4().hex[:6]}",
+            "full_name": "Bob Org 2",
+            "email": org2_email,
+            "password": "StrongPass123",
+        },
+    )
+    assert org2.status_code == 201
+    org2_token = org2_client.post(
+        "/api/v1/auth/login",
+        json={"email": org2_email, "password": "StrongPass123"},
+    )
+    assert org2_token.status_code == 200
+
+    product1 = org1_client.post(
+        "/api/v1/products",
+        json={
+            "sku": f"ORG1-{uuid.uuid4().hex[:8].upper()}",
+            "name": "Produit org 1",
+            "description": "Produit de l'organisation 1",
+            "category": "Outillage",
+            "unit_price": 10.0,
+            "stock_quantity": 5,
+        },
+    )
+    assert product1.status_code == 201
+
+    product2 = org2_client.post(
+        "/api/v1/products",
+        json={
+            "sku": f"ORG2-{uuid.uuid4().hex[:8].upper()}",
+            "name": "Produit org 2",
+            "description": "Produit de l'organisation 2",
+            "category": "Outillage",
+            "unit_price": 20.0,
+            "stock_quantity": 7,
+        },
+    )
+    assert product2.status_code == 201
+
+    list_org1 = org1_client.get("/api/v1/products")
+    assert list_org1.status_code == 200
+    assert any(item["id"] == product1.json()["id"] for item in list_org1.json())
+    assert not any(item["id"] == product2.json()["id"] for item in list_org1.json())
+
+    list_org2 = org2_client.get("/api/v1/products")
+    assert list_org2.status_code == 200
+    assert any(item["id"] == product2.json()["id"] for item in list_org2.json())
+    assert not any(item["id"] == product1.json()["id"] for item in list_org2.json())
+
+
+def test_login_authenticates_with_httponly_cookie():
+    email = f"cookie-{uuid.uuid4().hex[:8]}@demo.test"
+    register = client.post(
+        "/api/v1/auth/register",
+        json={
+            "organization_name": f"Cookie Org-{uuid.uuid4().hex[:6]}",
+            "full_name": "Cookie Admin",
+            "email": email,
+            "password": "StrongPass123",
+        },
+    )
+    assert register.status_code == 201
+    assert "access_token" not in register.json()
+    assert "access_token=" in register.headers.get("set-cookie", "")
+
+    cookie_client = TestClient(app)
+    login = cookie_client.post("/api/v1/auth/login", json={"email": email, "password": "StrongPass123"})
+    assert login.status_code == 200
+    assert "HttpOnly" in login.headers.get("set-cookie", "")
+
+    products = cookie_client.get("/api/v1/products")
+    assert products.status_code == 200

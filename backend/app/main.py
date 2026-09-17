@@ -7,7 +7,7 @@ from app.core.config import settings
 app = FastAPI(
     title=settings.app_name,
     version="0.1.0",
-    description="ERP de gestion de quincaillerie",
+    description="ERP SaaS multi-entreprises, core modulaire et multi-tenant",
 )
 
 app.add_middleware(
@@ -17,6 +17,17 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def enforce_csrf_origin(request, call_next):
+    if settings.app_env.lower() == "production" and request.method in {"POST", "PUT", "PATCH", "DELETE"}:
+        origin = request.headers.get("origin")
+        if origin not in settings.cors_origins:
+            from fastapi.responses import JSONResponse
+
+            return JSONResponse(status_code=403, content={"detail": "Invalid request origin"})
+    return await call_next(request)
 
 app.include_router(api_router)
 
@@ -28,4 +39,4 @@ def health_check() -> dict[str, str]:
 
 @app.get("/")
 def root() -> dict[str, str]:
-    return {"message": "Quincaillerie ERP API"}
+    return {"message": "ERP Platform API"}

@@ -10,6 +10,7 @@ class Sale(Base):
     __tablename__ = "sales"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id"), nullable=False, index=True)
     customer_id: Mapped[int | None] = mapped_column(ForeignKey("customers.id"), nullable=True)
     sale_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
     total_amount: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
@@ -27,6 +28,7 @@ class SaleItem(Base):
     __tablename__ = "sale_items"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id"), nullable=False, index=True)
     sale_id: Mapped[int] = mapped_column(ForeignKey("sales.id"), nullable=False)
     product_id: Mapped[int] = mapped_column(ForeignKey("products.id"), nullable=False)
     quantity: Mapped[int] = mapped_column(Integer, nullable=False)

@@ -15,6 +15,7 @@ from app.api.supplier_routes import router as supplier_router
 from app.models.product import Product
 from app.models.sale import SaleItem
 from app.models.stock_movement import StockMovement
+from app.models.user import User
 from app.schemas.product import ProductCreate, ProductRead, ProductUpdate
 from app.schemas.stock_movement import StockMovementCreate, StockMovementRead
 
@@ -50,19 +51,19 @@ def product_read(product: Product, sold_quantity: int = 0) -> ProductRead:
 
 
 @api_router.get("/products", response_model=list[ProductRead])
-def list_products(db: Session = Depends(get_db), _: object = Depends(require_roles("admin", "seller"))) -> list[ProductRead]:
-    sold_subquery = select(func.coalesce(func.sum(SaleItem.quantity), 0)).where(SaleItem.product_id == Product.id).scalar_subquery()
-    rows = db.execute(select(Product, sold_subquery.label("sold_quantity")).where(Product.is_active.is_(True)).order_by(Product.id)).all()
+def list_products(db: Session = Depends(get_db), current_user: object = Depends(require_roles("admin", "seller"))) -> list[ProductRead]:
+    sold_subquery = select(func.coalesce(func.sum(SaleItem.quantity), 0)).where(SaleItem.product_id == Product.id, SaleItem.organization_id == current_user.organization_id).scalar_subquery()
+    rows = db.execute(select(Product, sold_subquery.label("sold_quantity")).where(Product.is_active.is_(True), Product.organization_id == current_user.organization_id).order_by(Product.id)).all()
     return [product_read(product, int(sold_quantity)) for product, sold_quantity in rows]
 
 
 @api_router.post("/products", response_model=ProductRead, status_code=status.HTTP_201_CREATED)
-def create_product(payload: ProductCreate, db: Session = Depends(get_db), _: object = Depends(require_roles("admin"))) -> Product:
-    existing = db.scalar(select(Product).where(Product.sku == payload.sku))
+def create_product(payload: ProductCreate, db: Session = Depends(get_db), current_user: object = Depends(require_roles("admin"))) -> Product:
+    existing = db.scalar(select(Product).where(Product.organization_id == current_user.organization_id, Product.sku == payload.sku))
     if existing is not None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Product SKU already exists")
 
-    product = Product(**payload.model_dump(), initial_stock_quantity=payload.stock_quantity)
+    product = Product(**payload.model_dump(), organization_id=current_user.organization_id, initial_stock_quantity=payload.stock_quantity)
     db.add(product)
     db.commit()
     db.refresh(product)
@@ -70,23 +71,23 @@ def create_product(payload: ProductCreate, db: Session = Depends(get_db), _: obj
 
 
 @api_router.get("/products/{product_id}", response_model=ProductRead)
-def get_product(product_id: int, db: Session = Depends(get_db), _: object = Depends(require_roles("admin", "seller"))) -> ProductRead:
-    product = db.get(Product, product_id)
+def get_product(product_id: int, db: Session = Depends(get_db), current_user: object = Depends(require_roles("admin", "seller"))) -> ProductRead:
+    product = db.scalar(select(Product).where(Product.id == product_id, Product.organization_id == current_user.organization_id))
     if product is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
-    sold_quantity = db.scalar(select(func.coalesce(func.sum(SaleItem.quantity), 0)).where(SaleItem.product_id == product.id)) or 0
+    sold_quantity = db.scalar(select(func.coalesce(func.sum(SaleItem.quantity), 0)).where(SaleItem.product_id == product.id, SaleItem.organization_id == current_user.organization_id)) or 0
     return product_read(product, int(sold_quantity))
 
 
 @api_router.put("/products/{product_id}", response_model=ProductRead)
-def update_product(product_id: int, payload: ProductUpdate, db: Session = Depends(get_db), _: object = Depends(require_roles("admin"))) -> ProductRead:
-    product = db.get(Product, product_id)
+def update_product(product_id: int, payload: ProductUpdate, db: Session = Depends(get_db), current_user: object = Depends(require_roles("admin"))) -> ProductRead:
+    product = db.scalar(select(Product).where(Product.id == product_id, Product.organization_id == current_user.organization_id))
     if product is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
 
     update_data = payload.model_dump(exclude_unset=True)
     if "sku" in update_data and update_data["sku"] != product.sku:
-        if db.scalar(select(Product).where(Product.sku == update_data["sku"])) is not None:
+        if db.scalar(select(Product).where(Product.organization_id == current_user.organization_id, Product.sku == update_data["sku"])) is not None:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Product SKU already exists")
 
     for field, value in update_data.items():
@@ -94,13 +95,13 @@ def update_product(product_id: int, payload: ProductUpdate, db: Session = Depend
 
     db.commit()
     db.refresh(product)
-    sold_quantity = db.scalar(select(func.coalesce(func.sum(SaleItem.quantity), 0)).where(SaleItem.product_id == product.id)) or 0
+    sold_quantity = db.scalar(select(func.coalesce(func.sum(SaleItem.quantity), 0)).where(SaleItem.product_id == product.id, SaleItem.organization_id == current_user.organization_id)) or 0
     return product_read(product, int(sold_quantity))
 
 
 @api_router.delete("/products/{product_id}")
-def delete_product(product_id: int, db: Session = Depends(get_db), _: object = Depends(require_roles("admin"))) -> dict[str, Any]:
-    product = db.get(Product, product_id)
+def delete_product(product_id: int, db: Session = Depends(get_db), current_user: object = Depends(require_roles("admin"))) -> dict[str, Any]:
+    product = db.scalar(select(Product).where(Product.id == product_id, Product.organization_id == current_user.organization_id))
     if product is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
 
@@ -110,13 +111,13 @@ def delete_product(product_id: int, db: Session = Depends(get_db), _: object = D
 
 
 @api_router.get("/stock-movements", response_model=list[StockMovementRead])
-def list_stock_movements(db: Session = Depends(get_db), _: object = Depends(require_roles("admin"))) -> list[StockMovement]:
-    return db.scalars(select(StockMovement).order_by(StockMovement.id.desc())).all()
+def list_stock_movements(db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin", "seller"))) -> list[StockMovement]:
+    return db.scalars(select(StockMovement).where(StockMovement.organization_id == current_user.organization_id).order_by(StockMovement.id.desc())).all()
 
 
 @api_router.post("/stock-movements", response_model=StockMovementRead, status_code=status.HTTP_201_CREATED)
-def create_stock_movement(payload: StockMovementCreate, db: Session = Depends(get_db), _: object = Depends(require_roles("admin"))) -> StockMovement:
-    product = db.get(Product, payload.product_id)
+def create_stock_movement(payload: StockMovementCreate, db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin", "seller"))) -> StockMovement:
+    product = db.scalar(select(Product).where(Product.id == payload.product_id, Product.organization_id == current_user.organization_id))
     if product is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
 
@@ -131,6 +132,7 @@ def create_stock_movement(payload: StockMovementCreate, db: Session = Depends(ge
         product.stock_quantity += payload.quantity
 
     movement = StockMovement(
+        organization_id=current_user.organization_id,
         product_id=payload.product_id,
         movement_type=payload.movement_type,
         quantity=payload.quantity,
