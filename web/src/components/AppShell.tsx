@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { BarChart3, Bell, Bird, Boxes, Calculator, Menu, Package, Search, Settings, ShoppingCart, Users, WalletCards, X } from "lucide-react";
+import { BarChart3, Bell, Bird, Boxes, Calculator, Package, Search, Settings, ShoppingCart, Users, WalletCards } from "lucide-react";
 import styles from "./AppShell.module.css";
 
 type User = { full_name?: string; email?: string; role?: "admin" | "seller" };
@@ -68,7 +68,6 @@ export default function AppShell({ children, hideTopbar = false }: { children: R
   }, [user]);
 
   const role = user?.role ?? "seller";
-  const visibleApps = applications.filter((application) => application.roles.includes(role) && (!application.moduleKey || enabledModules === null || enabledModules.has(application.moduleKey)));
   const visibleSidebar = sidebarItems.filter((item) => (!item.roles || item.roles.includes(role)) && (!item.moduleKey || enabledModules === null || enabledModules.has(item.moduleKey)));
 
   if (!user) return null;
@@ -76,32 +75,71 @@ export default function AppShell({ children, hideTopbar = false }: { children: R
   return (
     <div className={styles.shell}>
       <aside className={styles.sidebar}>
-        <button type="button" className={styles.menuButton} onClick={() => setMenuOpen((open) => !open)} aria-expanded={menuOpen} aria-label={menuOpen ? "Fermer la navigation" : "Ouvrir la navigation"}>
-          {menuOpen ? <X size={20} /> : <Menu size={20} />}
+        {/* Bouton Hamburger style Zara */}
+        <button
+          type="button"
+          className={`${styles.menuButton} ${menuOpen ? styles.menuOpen : ""}`}
+          onClick={() => setMenuOpen((open) => !open)}
+          aria-expanded={menuOpen}
+          aria-label={menuOpen ? "Fermer le menu" : "Ouvrir le menu"}
+        >
+          <span className={styles.burgerLine}></span>
+          <span className={styles.burgerLine}></span>
         </button>
 
-        <nav className={menuOpen ? styles.sidebarNavOpen : styles.sidebarNav} aria-label="Navigation de l’espace de travail">
+        <nav className={menuOpen ? styles.sidebarNavOpen : styles.sidebarNav} aria-label="Navigation">
           <span className={styles.navLabel}>Espace de travail</span>
           {visibleSidebar.map((item) => (
-            <Link key={item.href} href={item.href} onClick={() => setMenuOpen(false)} className={pathname === item.href ? styles.navActive : styles.navItem}>
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={() => setMenuOpen(false)}
+              className={pathname === item.href ? styles.navActive : styles.navItem}
+            >
               {item.label}
             </Link>
           ))}
         </nav>
 
         <div className={styles.userCard}>
-          <button type="button" className={styles.avatarButton} onClick={() => router.push("/profile")} aria-label="Ouvrir mon profil" title="Mon profil">
+          <button
+            type="button"
+            className={styles.avatarButton}
+            onClick={() => router.push("/profile")}
+            aria-label="Ouvrir mon profil"
+            title="Mon profil"
+          >
             {(user.full_name ?? user.email ?? "U").slice(0, 1).toUpperCase()}
           </button>
-          <div><strong>{user.full_name ?? "Utilisateur"}</strong><small>{role === "admin" ? "Administrateur" : "Vendeur"}</small></div>
+          <div>
+            <strong>{user.full_name ?? "Utilisateur"}</strong>
+            <small>{role === "admin" ? "Administrateur" : "Vendeur"}</small>
+          </div>
         </div>
       </aside>
 
       <main className={styles.mainArea}>
-        {!hideTopbar && <header className={styles.topbar}>
-          <div className={styles.breadcrumb}><span className={styles.breadcrumbBrand}>Studio ERP</span><b>/</b><strong>{pathname === "/dashboard" ? "Tableau de bord" : pathname.split("/").filter(Boolean).join(" / ")}</strong></div>
-          <div className={styles.topbarActions}><div className={styles.globalSearch}><Search size={15} aria-hidden="true" /><span>Rechercher…</span></div><span className={styles.notification} aria-label="Notifications"><Bell size={15} /></span><span className={styles.company}>Ma société</span></div>
-        </header>}
+        {!hideTopbar && (
+          <header className={styles.topbar}>
+            <div className={styles.breadcrumb}>
+              <span className={styles.breadcrumbBrand}>Studio ERP</span>
+              <span className={styles.breadcrumbSep}>/</span>
+              <strong>{pathname === "/dashboard" ? "Tableau de bord" : pathname.split("/").filter(Boolean).join(" / ")}</strong>
+            </div>
+
+            <div className={styles.topbarActions}>
+              <div className={styles.globalSearch}>
+                <Search size={14} aria-hidden="true" />
+                <span>Rechercher…</span>
+              </div>
+              <button type="button" className={styles.notificationBtn} aria-label="Notifications">
+                <Bell size={14} />
+                <span className={styles.notificationDot} />
+              </button>
+              <span className={styles.company}>Ma société</span>
+            </div>
+          </header>
+        )}
         <div className={styles.content}>{children}</div>
       </main>
     </div>

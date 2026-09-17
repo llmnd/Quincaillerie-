@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Minus, Plus, X } from "lucide-react";
 import AppShell from "../../components/AppShell";
+import { authHeaders } from "../../lib/auth";
 import styles from "./page.module.css";
 
 type Product = { id: number; name: string; sku: string; image_url?: string | null; unit_price: number; stock_quantity: number };
@@ -30,23 +31,36 @@ export default function SalesPage() {
   const [userRole, setUserRole] = useState<"admin" | "seller">("seller");
 
   useEffect(() => {
-    const headers: Record<string, string> = {};
     const storedUser = window.localStorage.getItem("quincaillerie_user");
-    if (storedUser) setUserRole(JSON.parse(storedUser).role === "admin" ? "admin" : "seller");
+    if (storedUser) {
+      try {
+        setUserRole(JSON.parse(storedUser).role === "admin" ? "admin" : "seller");
+      } catch {
+        setMessage("Session utilisateur invalide. Reconnectez-vous.");
+      }
+    }
+
+    const headers = authHeaders();
+    const loadResource = async <T,>(path: string, fallback: T): Promise<T> => {
+      try {
+        const response = await fetch(`${API_URL}${path}`, { headers, credentials: "include" });
+        return response.ok ? await response.json() as T : fallback;
+      } catch {
+        return fallback;
+      }
+    };
+
     Promise.all([
-      fetch(`${API_URL}/api/v1/products`, { headers, credentials: "include" }).then((response) => response.json()),
-      fetch(`${API_URL}/api/v1/customers`, { headers, credentials: "include" }).then((response) => response.json()),
-      fetch(`${API_URL}/api/v1/cash/sessions`, { headers, credentials: "include" }).then((response) => response.json()),
-      fetch(`${API_URL}/api/v1/cash/sessions/current/handoff`, { headers, credentials: "include" }).then((response) => response.ok ? response.json() : null),
-    ])
-      .then(([productData, customerData, sessionData, handoffData]) => {
-        setProducts(Array.isArray(productData) ? productData : []);
-        setCustomers(Array.isArray(customerData) ? customerData : []);
-        setHasOpenSession(Array.isArray(sessionData) && sessionData.some((session: { status: string }) => session.status === "open"));
-        setHandoff(handoffData);
-      })
-      .catch(() => setMessage("Impossible de charger les données de vente."))
-      .finally(() => setIsLoading(false));
+      loadResource<Product[]>("/api/v1/products", []),
+      loadResource<Customer[]>("/api/v1/customers", []),
+      loadResource<{ status: string }[]>("/api/v1/cash/sessions", []),
+      loadResource<Handoff | null>("/api/v1/cash/sessions/current/handoff", null),
+    ]).then(([productData, customerData, sessionData, handoffData]) => {
+      setProducts(productData);
+      setCustomers(customerData);
+      setHasOpenSession(sessionData.some((session) => session.status === "open"));
+      setHandoff(handoffData);
+    }).finally(() => setIsLoading(false));
   }, []);
 
   const filteredProducts = products.filter((product) => `${product.name} ${product.sku}`.toLowerCase().includes(search.toLowerCase()));

@@ -4,5 +4,18 @@
 .paymentStep{margin:15px 0;padding:15px;border:1px solid #596171;border-radius:8px;background:#2d3240}.paymentStep h3{margin:0;color:#f1f3f7;font-size:1.05rem}.stepEyebrow{margin:0 0 7px;color:#6ce1d1;font-size:.68rem;letter-spacing:.12em;text-transform:uppercase}.checkoutActions{display:grid;grid-template-columns:1fr 1fr;gap:9px}.secondaryButton{width:100%;padding:.88rem;border:1px solid #596171;border-radius:6px;background:transparent;color:#dce2ec;font:inherit;font-weight:600;cursor:pointer}.secondaryButton:disabled{cursor:not-allowed;opacity:.45}@media(max-width:560px){.checkoutActions{grid-template-columns:1fr}.secondaryButton{order:2}}
 .productList{height:min(52vh,520px);max-height:none}.cartLines{height:min(30vh,300px);max-height:none;flex:0 0 auto}.cartPanel{display:flex;flex-direction:column}.cartPanel .checkoutActions{margin-top:auto}@media(max-width:640px){.productList{height:350px}.cartLines{height:220px}}
 .checkoutActions+.customerLabel{margin-top:14px}
+.pageHeader{padding-bottom:28px;border-bottom:1px solid rgba(255,255,255,.08)}
+.pageHeader h1{font-weight:300;letter-spacing:-.06em}
+.catalogPanel,.cartPanel{padding:26px;border:1px solid rgba(255,255,255,.1);border-radius:0;background:#181a1f;box-shadow:none}
+.cartPanel{border-top:2px solid #f0f2f5}
+.panelHeader{padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,.07)}
+.productRow{border-radius:0;border-color:rgba(255,255,255,.09);background:#20232a}
+.productRow:hover:not(:disabled){border-color:rgba(255,255,255,.35);background:#292d35}
+.productRow i{border-radius:0;background:#30343d;color:#f0f2f5}
+.primaryButton{border-radius:0;background:#f0f2f5;color:#0d0e11}
+.primaryButton:hover:not(:disabled){background:#fff;color:#0d0e11;box-shadow:0 4px 14px rgba(255,255,255,.12)}
+.secondaryButton{border-radius:0}
+.paymentStep{border-radius:0;border-color:rgba(255,255,255,.15);background:#20232a}
+@media(max-width:640px){.catalogPanel,.cartPanel{padding:22px 18px}.pageHeader{padding-bottom:24px}.cartPanel{border-top-width:1px}}
 .handoffBackdrop{overflow:hidden!important;overscroll-behavior:contain;touch-action:none}.handoffModal{max-height:calc(100dvh - 40px);overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y}
 .handoffBackdrop{position:fixed;z-index:60;inset:0;display:grid;place-items:center;padding:20px;background:rgba(8,10,16,.78);backdrop-filter:blur(6px)}.handoffModal{width:min(620px,100%);padding:28px;border:1px solid #566174;border-radius:10px;background:#252936;box-shadow:0 24px 70px rgba(0,0,0,.5)}.handoffModal h2{margin:0;color:#f1f3f7;font-size:1.6rem;letter-spacing:-.05em}.handoffIntro{margin:12px 0 20px;color:#aab5c5;font-size:.82rem;line-height:1.5}.handoffMetrics{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.handoffMetrics div{padding:13px;border-radius:6px;background:#1d212d}.handoffMetrics span,.handoffMetrics strong{display:block}.handoffMetrics span{color:#aab5c5;font-size:.7rem}.handoffMetrics strong{margin-top:7px;color:#edf0f5;font-size:.92rem}.handoffDetails{display:grid;gap:8px;margin:16px 0 22px;padding:14px;border:1px solid #414a5c;border-radius:6px}.handoffDetails span{display:flex;justify-content:space-between;gap:12px;color:#aab5c5;font-size:.72rem}.handoffDetails strong{color:#edf0f5;text-align:right}@media(max-width:560px){.handoffBackdrop{align-items:end;padding:0}.handoffModal{border-radius:14px 14px 0 0;padding:22px}.handoffMetrics{grid-template-columns:1fr}.handoffDetails span{align-items:flex-start;flex-direction:column;gap:3px}.handoffDetails strong{text-align:left}}

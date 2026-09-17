@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { X } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import AppShell from "../../components/AppShell";
 import styles from "./page.module.css";
 
@@ -160,7 +160,8 @@ export default function ProductsPage() {
         </div>
         {isAdmin && (
           <button type="button" className={styles.primaryButton} onClick={openCreate}>
-            Nouveau produit
+            <Plus size={16} aria-hidden="true" />
+            <span>Nouveau produit</span>
           </button>
         )}
       </header>

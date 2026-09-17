@@ -443,16 +443,19 @@
 @media (max-width: 680px) {
   .headerMeta { width: 100%; justify-content: space-between; }
   .metricGrid { gap: 8px; }
-  .metricCard { padding: 14px; }
-  .metricCard > strong { margin-top: 11px; font-size: 1.1rem; }
+  .metricCard { min-height: 132px; padding: 20px 16px !important; }
+  .metricCard > span { min-height: 30px; line-height: 1.35; }
+  .metricCard > strong { margin-top: 13px; font-size: 1.18rem; }
   .sectionHeader { padding: 17px 15px 14px; }
+  .activityPanel, .alertPanel, .modulesSection { padding: 0 !important; }
   .activityList, .alertList { padding-inline: 15px; }
+  .activityRow, .alertRow { min-height: 62px; padding: 16px 0; }
   .activityRow time { display: none; }
   .moduleLinks { grid-template-columns: repeat(2, minmax(0, 1fr)); padding-inline: 15px; }
 }
 
 @media (max-width: 420px) {
   .metricGrid { grid-template-columns: 1fr 1fr; }
-  .metricCard > span { min-height: 28px; }
+  .metricCard { min-height: 142px; padding: 21px 14px !important; }
   .moduleLinks { grid-template-columns: 1fr; }
 }

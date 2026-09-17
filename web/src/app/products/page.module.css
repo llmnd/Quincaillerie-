@@ -1,4 +1,59 @@
+.header .primaryButton{background:#fff!important;border-color:#fff!important;color:#0d0e11!important;transform:none!important}.header .primaryButton:hover,.header .primaryButton:focus-visible{background:#fff!important;border-color:#fff!important;color:#0d0e11!important;box-shadow:none;transform:none!important}.header .primaryButton svg{transform:none!important}
 .productThumb{width:40px;height:40px}.imagePreview{width:96px;height:96px}
+.header{padding-bottom:28px;border-bottom:1px solid rgba(255,255,255,.08)}
+.header h1{font-weight:300}
+.primaryButton{border-radius:0;background:#f0f2f5;color:#0d0e11}
+.primaryButton:hover{background:#fff;color:#0d0e11}
+.createForm{border-radius:0;border-color:rgba(255,255,255,.1);background:#181a1f;box-shadow:none}
+.toolbar input{border-radius:0;background:#111317}
+.tableHead{padding-block:15px;background:#181a1f;border-bottom:1px solid rgba(255,255,255,.08)}
+.row{border-radius:0;background:#20232a}
+.row:hover{background:#292d35;border-color:rgba(255,255,255,.3)}
+.actions button{border-radius:0}
+.modal{border-radius:0;background:#181a1f}
+.header{align-items:flex-end;gap:28px;margin-bottom:30px}
+.header .eyebrow{color:#949ba6;letter-spacing:.2em}
+.header p:last-child{max-width:420px;margin-top:12px;color:#949ba6}
+.primaryButton{display:inline-flex;min-height:46px;align-items:center;justify-content:center;gap:9px;padding:0 20px;border:1px solid #fff;background:#fff;color:#0d0e11;letter-spacing:.08em;text-transform:uppercase;box-shadow:0 8px 20px rgba(0,0,0,.18)}
+.primaryButton svg{transform:none}
+.createForm{position:relative;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;padding:28px;margin-bottom:24px;border-top:2px solid #f0f2f5}
+.createForm h2{font-size:1rem;letter-spacing:.08em;text-transform:uppercase}
+.createForm input,.createForm select{min-height:44px;padding:.8rem .9rem;border-radius:0;border-color:rgba(255,255,255,.14);background:#111317;color:#f0f2f5;font:inherit;font-size:15px;outline:none}
+.createForm select:focus,.createForm input:focus{border-color:#f0f2f5;box-shadow:0 0 0 2px rgba(255,255,255,.08)}
+.imageField{padding:14px;border:1px dashed rgba(255,255,255,.16);background:#15171c}
+.imageField input{min-height:auto;padding:0;border:0;background:transparent;font-size:14px}
+.imagePreview{width:88px;height:88px;border-radius:0;border-color:rgba(255,255,255,.18)}
+.formActions{align-items:center;padding-top:6px;border-top:1px solid rgba(255,255,255,.08)}
+.cancelButton{border-radius:0}
+.toolbar{align-items:center;margin-bottom:18px;padding:12px 14px;border:1px solid rgba(255,255,255,.08);background:#181a1f}
+.toolbar input{padding:.8rem 0;border:0;border-bottom:1px solid rgba(255,255,255,.15);border-radius:0;background:transparent}
+.toolbar input:focus{border-bottom-color:#f0f2f5}
+.toolbar span{padding-left:12px;color:#949ba6;font-size:.65rem;letter-spacing:.12em}
+.table{gap:0;overflow:hidden;border:1px solid rgba(255,255,255,.1);background:#181a1f}
+.tableHead,.row{border-left:0;border-right:0}
+.tableHead{padding:14px 18px;background:#111317}
+.row{padding:20px 18px;border-radius:0;border-color:rgba(255,255,255,.07);background:#1b1e24}
+.row:hover{transform:none;background:#252930}
+.row strong{font-size:.9rem}
+.row small{color:#838a97}
+.actions{align-items:center}
+.actions button{min-height:34px;padding:.45rem .75rem}
+.state{border-radius:0;background:#181a1f}
+.modalBackdrop{background:rgba(8,10,14,.86)}
+.modal{border-top:2px solid #f0f2f5;box-shadow:0 24px 70px rgba(0,0,0,.6)}
+.detailGrid div{border-radius:0;border:1px solid rgba(255,255,255,.06);background:#20232a}
+@media(max-width:640px){
+	.header{gap:18px;margin-bottom:24px}
+	.header p:last-child{margin-top:10px}
+	.createForm{grid-template-columns:1fr;padding:22px 18px}
+	.header .primaryButton{width:100%;min-height:50px}
+	.toolbar{align-items:stretch;padding:12px}
+	.toolbar span{padding:6px 0 0}
+	.table{margin-inline:-2px}
+	.tableHead{padding:12px}
+	.row{padding:17px 12px}
+}
+@media(max-width:640px){.header{padding-bottom:24px}.createForm{padding:22px 18px}.row{padding:16px 14px}}
 .detailImage{width:150px;height:150px;object-fit:cover;margin:10px 0 16px;border-radius:10px}
 @media(max-width:600px){.detailImage{width:128px;height:128px}}
 .imageField{display:flex;grid-column:1/-1;flex-direction:column;gap:8px;color:#aab5c5;font-size:.78rem}.imageField input{font-size:14px}.imagePreview{width:76px;height:76px;object-fit:cover;border-radius:6px;border:1px solid #4a5569}.productThumb{width:28px;height:28px;object-fit:cover;margin-right:8px;vertical-align:middle;border-radius:4px}.detailImage{width:96px;height:96px;object-fit:cover;margin:8px 0 12px;border-radius:8px}.modalBackdrop{overflow:hidden!important;overscroll-behavior:contain;touch-action:none}.modal{max-height:calc(100dvh - 40px);overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y}
