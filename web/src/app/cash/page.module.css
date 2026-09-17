@@ -18,6 +18,29 @@
   margin-bottom: 36px;
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.addRegisterButton {
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: transparent;
+  color: #f0f2f5;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+
+.addRegisterButton:hover,
+.addRegisterButton:focus-visible {
+  border-color: #f0f2f5;
+  background: rgba(255, 255, 255, 0.08);
+}
+
 .categoryLabel {
   display: block;
   font-size: 0.65rem;
@@ -474,6 +497,15 @@
   color: #f7f8fa;
 }
 
+.modalEyebrow {
+  display: block;
+  margin-bottom: 7px;
+  color: #949ba6;
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
 .modalHeader button {
   background: transparent;
   border: none;
@@ -488,6 +520,20 @@
 .modalHeader button:hover { color: #f7f8fa; }
 
 .modalBody {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-bottom: 28px;
+}
+
+.modalIntro {
+  margin: 0;
+  color: #949ba6;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.registerFormBody {
   display: flex;
   flex-direction: column;
   gap: 18px;
@@ -536,6 +582,17 @@
 
 /* RESPONSIVE */
 @media (max-width: 600px) {
+  .header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .headerActions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
   .metricsRow {
     grid-template-columns: 1fr;
     gap: 16px;
@@ -548,5 +605,10 @@
 
   .modalActions {
     grid-template-columns: 1fr;
+  }
+
+  .zaraModal {
+    width: 100%;
+    padding: 22px 18px;
   }
 }

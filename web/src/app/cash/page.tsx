@@ -55,6 +55,10 @@ export default function CashPage() {
   const [amount, setAmount] = useState("");
   const [closeAmount, setCloseAmount] = useState("");
   const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
+  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+  const [registerName, setRegisterName] = useState("");
+  const [registerCode, setRegisterCode] = useState("");
+  const [isCreatingRegister, setIsCreatingRegister] = useState(false);
   
   // Accordéons
   const [showHistory, setShowHistory] = useState(false);
@@ -66,12 +70,13 @@ export default function CashPage() {
 
   // Verrouillage du scroll en arrière-plan & gestion de la touche Échap
   useEffect(() => {
-    if (isCloseModalOpen) {
+    if (isCloseModalOpen || isRegisterModalOpen) {
       document.body.style.overflow = "hidden";
       
       const handleKeyDown = (e: KeyboardEvent) => {
         if (e.key === "Escape") {
           setIsCloseModalOpen(false);
+          setIsRegisterModalOpen(false);
         }
       };
 
@@ -83,7 +88,7 @@ export default function CashPage() {
     } else {
       document.body.style.overflow = "";
     }
-  }, [isCloseModalOpen]);
+  }, [isCloseModalOpen, isRegisterModalOpen]);
 
   const headers = (): Record<string, string> => {
     return {};
@@ -141,6 +146,32 @@ export default function CashPage() {
     await load();
   }
 
+  async function createRegister(event: FormEvent) {
+    event.preventDefault();
+    setIsCreatingRegister(true);
+    const response = await fetch(`${API_URL}/api/v1/cash/registers`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...headers() },
+      credentials: "include",
+      body: JSON.stringify({ name: registerName.trim(), code: registerCode.trim().toUpperCase() }),
+    });
+
+    if (!response.ok) {
+      setMessage(response.status === 409 ? "Ce code de caisse existe déjà." : "Impossible de créer cette caisse.");
+      setIsCreatingRegister(false);
+      return;
+    }
+
+    const register = await response.json() as Register;
+    setRegisters((current) => [...current, register]);
+    setRegisterId(String(register.id));
+    setRegisterName("");
+    setRegisterCode("");
+    setIsRegisterModalOpen(false);
+    setMessage("Caisse créée. Vous pouvez maintenant ouvrir la session.");
+    setIsCreatingRegister(false);
+  }
+
   async function confirmClose() {
     if (!openSession || !closeAmount) return;
     setIsClosing(true);
@@ -171,9 +202,16 @@ export default function CashPage() {
             <span className={styles.categoryLabel}>POINT DE VENTE</span>
             <h1 className={styles.title}>CAISSE</h1>
           </div>
-          <div className={styles.statusIndicator}>
-            <span className={openSession ? styles.dotActive : styles.dotInactive} />
-            <span className={styles.statusText}>{openSession ? "SESSION ACTIVE" : "FERMÉ"}</span>
+          <div className={styles.headerActions}>
+            {isAdmin && (
+              <button type="button" className={styles.addRegisterButton} onClick={() => setIsRegisterModalOpen(true)}>
+                + NOUVELLE CAISSE
+              </button>
+            )}
+            <div className={styles.statusIndicator}>
+              <span className={openSession ? styles.dotActive : styles.dotInactive} />
+              <span className={styles.statusText}>{openSession ? "SESSION ACTIVE" : "FERMÉ"}</span>
+            </div>
           </div>
         </header>
 
@@ -380,6 +418,39 @@ export default function CashPage() {
         )}
 
         {/* MODAL DE CLÔTURE */}
+        {isRegisterModalOpen && (
+          <div className={styles.modalOverlay} onClick={() => setIsRegisterModalOpen(false)}>
+            <form className={styles.zaraModal} onSubmit={createRegister} onClick={(event) => event.stopPropagation()}>
+              <div className={styles.modalHeader}>
+                <div>
+                  <span className={styles.modalEyebrow}>Administration</span>
+                  <h3 id="register-modal-title">NOUVELLE CAISSE</h3>
+                </div>
+                <button type="button" onClick={() => setIsRegisterModalOpen(false)} aria-label="Fermer la fenêtre">
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className={styles.registerFormBody}>
+                <p className={styles.modalIntro}>Créez une caisse pour qu’elle soit disponible à l’ouverture d’une session.</p>
+                <div className={styles.modalInputGroup}>
+                  <label htmlFor="registerName">Nom de la caisse</label>
+                  <input id="registerName" required minLength={2} maxLength={100} autoFocus value={registerName} onChange={(event) => setRegisterName(event.target.value)} placeholder="Caisse principale" />
+                </div>
+                <div className={styles.modalInputGroup}>
+                  <label htmlFor="registerCode">Code interne</label>
+                  <input id="registerCode" required minLength={1} maxLength={50} value={registerCode} onChange={(event) => setRegisterCode(event.target.value)} placeholder="CAISSE-01" />
+                </div>
+              </div>
+
+              <div className={styles.modalActions}>
+                <button type="button" className={styles.outlineButton} onClick={() => setIsRegisterModalOpen(false)}>ANNULER</button>
+                <button type="submit" className={styles.zaraButton} disabled={isCreatingRegister}>{isCreatingRegister ? "CRÉATION…" : "CRÉER LA CAISSE"}</button>
+              </div>
+            </form>
+          </div>
+        )}
+
         {isCloseModalOpen && openSession && (
           <div className={styles.modalOverlay} onClick={() => setIsCloseModalOpen(false)}>
             <div 
