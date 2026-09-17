@@ -10,6 +10,7 @@ type ProductForm = { sku: string; name: string; category: string; unit_price: st
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
 const CLOUDINARY_UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+const NEW_CATEGORY = "__new_category__";
 const emptyForm: ProductForm = { sku: "", name: "", category: "", unit_price: "", stock_quantity: "", image_url: "" };
 
 export default function ProductsPage() {
@@ -21,6 +22,7 @@ export default function ProductsPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [form, setForm] = useState<ProductForm>(emptyForm);
+  const [isNewCategory, setIsNewCategory] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState("");
   const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -59,10 +61,15 @@ export default function ProductsPage() {
       ),
     [products, search]
   );
+  const categories = useMemo(
+    () => [...new Set(products.map((product) => product.category?.trim()).filter((category): category is string => Boolean(category)))].sort((left, right) => left.localeCompare(right, "fr")),
+    [products]
+  );
 
   function openCreate() {
     setEditingId(null);
     setForm(emptyForm);
+    setIsNewCategory(false);
     setImageFile(null);
     setImagePreview("");
     setShowForm(true);
@@ -80,6 +87,7 @@ export default function ProductsPage() {
     });
     setImageFile(null);
     setImagePreview(product.image_url ?? "");
+    setIsNewCategory(!product.category || !categories.includes(product.category));
     setShowForm(true);
   }
 
@@ -123,6 +131,7 @@ export default function ProductsPage() {
     }
     setShowForm(false);
     setForm(emptyForm);
+    setIsNewCategory(false);
     setImageFile(null);
     setImagePreview("");
     setEditingId(null);
@@ -172,11 +181,15 @@ export default function ProductsPage() {
             value={form.name}
             onChange={(event) => setForm({ ...form, name: event.target.value })}
           />
-          <input
-            placeholder="Catégorie"
-            value={form.category}
-            onChange={(event) => setForm({ ...form, category: event.target.value })}
-          />
+          <select
+            value={isNewCategory ? NEW_CATEGORY : form.category}
+            onChange={(event) => { const newCategory = event.target.value === NEW_CATEGORY; setIsNewCategory(newCategory); setForm({ ...form, category: newCategory ? "" : event.target.value }); }}
+          >
+            <option value="">Choisir une catégorie</option>
+            {categories.map((category) => <option key={category} value={category}>{category}</option>)}
+            <option value={NEW_CATEGORY}>+ Créer une nouvelle catégorie</option>
+          </select>
+          {isNewCategory ? <input required placeholder="Nom de la nouvelle catégorie" value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })} /> : null}
           <label className={styles.imageField}>
             Image du produit
             <input type="file" accept="image/*" onChange={(event) => { const file = event.target.files?.[0] ?? null; setImageFile(file); setImagePreview(file ? URL.createObjectURL(file) : form.image_url); }} />

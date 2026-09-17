@@ -10,6 +10,7 @@ class Product(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     sku: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
+    image_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     description: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     category: Mapped[str | None] = mapped_column(String(100), nullable=True)
     unit_price: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)

@@ -4,6 +4,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class ProductBase(BaseModel):
     sku: str
     name: str
+    image_url: str | None = None
     description: str | None = None
     category: str | None = None
     unit_price: float = Field(..., ge=0)
@@ -17,6 +18,7 @@ class ProductCreate(ProductBase):
 class ProductUpdate(BaseModel):
     sku: str | None = None
     name: str | None = None
+    image_url: str | None = None
     description: str | None = None
     category: str | None = None
     unit_price: float | None = Field(default=None, ge=0)

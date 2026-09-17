@@ -35,6 +35,7 @@ def product_read(product: Product, sold_quantity: int = 0) -> ProductRead:
         id=product.id,
         sku=product.sku,
         name=product.name,
+        image_url=product.image_url,
         description=product.description,
         category=product.category,
         unit_price=product.unit_price,
