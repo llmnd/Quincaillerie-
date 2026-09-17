@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { X } from "lucide-react";
+import { X, ChevronRight, Eye } from "lucide-react";
 import AppShell from "../../components/AppShell";
 import styles from "./page.module.css";
 
@@ -22,11 +22,25 @@ type CashSession = {
 };
 type CashBalance = { expected_cash_amount: number };
 type CashOperation = { id: number; operation_type: string; amount: number; created_at: string };
-type SessionRecap = CashSession & { session_id: number; seller: string; register: string; handoffs: { seller: string; previous_seller?: string | null; acknowledged_at: string }[]; operations: CashOperation[] };
+type SessionRecap = CashSession & { 
+  session_id: number; 
+  seller: string; 
+  register: string; 
+  handoffs: { seller: string; previous_seller?: string | null; acknowledged_at: string }[]; 
+  operations: CashOperation[] 
+};
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const money = (value: number) => `${value.toLocaleString("fr-FR")} FCFA`;
-const operationLabel = (value: string) => ({ sale: "Vente", cash_in: "Encaissement", cash_out: "Retrait", refund: "Remboursement", adjustment_in: "Ajustement entrant", adjustment_out: "Ajustement sortant" }[value] ?? value);
+const operationLabel = (value: string) => ({ 
+  sale: "Vente", 
+  cash_in: "Encaissement", 
+  cash_out: "Retrait", 
+  refund: "Remboursement", 
+  adjustment_in: "Ajustement entrant", 
+  adjustment_out: "Ajustement sortant" 
+}[value] ?? value);
+
 const dateTime = (value?: string | null) =>
   value ? new Date(value).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" }) : "En cours";
 
@@ -39,6 +53,7 @@ export default function CashPage() {
   const [amount, setAmount] = useState("");
   const [closeAmount, setCloseAmount] = useState("");
   const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
+  const [selectedRecap, setSelectedRecap] = useState<SessionRecap | null>(null);
   const [message, setMessage] = useState("");
   const [isClosing, setIsClosing] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -157,9 +172,11 @@ export default function CashPage() {
             </div>
             <div className={styles.closeBox}>
               <p>La fermeture compare le montant théorique avec le comptage physique.</p>
-              {isAdmin && <button type="button" className={styles.primaryButton} onClick={() => setIsCloseModalOpen(true)}>
-                Clôturer la caisse
-              </button>}
+              {isAdmin && (
+                <button type="button" className={styles.primaryButton} onClick={() => setIsCloseModalOpen(true)}>
+                  Clôturer la caisse
+                </button>
+              )}
             </div>
           </article>
         ) : (
@@ -234,7 +251,13 @@ export default function CashPage() {
           </div>
           <div className={styles.recapTable}>
             {recaps.map((recap) => (
-              <article key={recap.session_id} className={styles.recapCard}>
+              <article 
+                key={recap.session_id} 
+                className={styles.recapCard} 
+                onClick={() => setSelectedRecap(recap)}
+                role="button"
+                tabIndex={0}
+              >
                 <div className={styles.recapCardHeader}>
                   <div>
                     <strong>
@@ -244,36 +267,37 @@ export default function CashPage() {
                       Session #{recap.session_id} · {dateTime(recap.opened_at)} → {dateTime(recap.closed_at)}
                     </small>
                   </div>
-                  <b className={recap.closing_difference === 0 ? styles.good : styles.warning}>
-                    {recap.status === "closed" ? money(recap.closing_difference ?? 0) : "En cours"}
-                  </b>
+                  <div className={styles.recapHeaderRight}>
+                    <b className={recap.closing_difference === 0 ? styles.good : styles.warning}>
+                      {recap.status === "closed" ? money(recap.closing_difference ?? 0) : "En cours"}
+                    </b>
+                    <span className={styles.viewBadge}>
+                      <Eye size={13} />
+                      <span className={styles.viewText}>Détails</span>
+                      <ChevronRight size={14} className={styles.mobileChevron} />
+                    </span>
+                  </div>
                 </div>
+
                 <div className={styles.recapMetrics}>
                   <span>
                     Ouverture
                     <strong>{money(recap.actual_opening_amount)}</strong>
                   </span>
                   <span>
-                    Théorique fermeture
+                    Théorique
                     <strong>{money(recap.expected_closing_amount ?? 0)}</strong>
                   </span>
                   <span>
-                    Compté fermeture
+                    Compté
                     <strong>{recap.actual_closing_amount == null ? "-" : money(recap.actual_closing_amount)}</strong>
                   </span>
                 </div>
-                {recap.handoffs.length > 1 && <div className={styles.handoffHistory}><small>Passations</small>{recap.handoffs.map((handoff, index) => <span key={`${recap.session_id}-${handoff.acknowledged_at}`}>{index + 1}. {handoff.seller} · {dateTime(handoff.acknowledged_at)}</span>)}</div>}
+
+                {/* Prévisualisation restreinte des opérations pour un aperçu rapide */}
                 {recap.operations.length > 0 ? (
-                  <div className={styles.operations}>
-                    <small>Détail des opérations</small>
-                    {recap.operations.map((operation) => (
-                      <div key={operation.id}>
-                        <span>
-                          {operationLabel(operation.operation_type)} · {dateTime(operation.created_at)}
-                        </span>
-                        <strong>{money(operation.amount)}</strong>
-                      </div>
-                    ))}
+                  <div className={styles.operationsPreview}>
+                    <small>{recap.operations.length} opération(s) enregistrée(s)</small>
                   </div>
                 ) : (
                   <small className={styles.noOperations}>Aucune opération complémentaire</small>
@@ -284,6 +308,92 @@ export default function CashPage() {
         </section>
       )}
 
+      {/* Modal de détail du récapitulatif (au clic sur une carte) */}
+      {selectedRecap && (
+        <div className={styles.modalBackdrop} onClick={() => setSelectedRecap(null)}>
+          <div className={`${styles.modal} ${styles.recapModal}`} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <div>
+                <p className={styles.eyebrow}>Session #{selectedRecap.session_id}</p>
+                <h2>Détails · {selectedRecap.register}</h2>
+              </div>
+              <button type="button" className={styles.closeButton} onClick={() => setSelectedRecap(null)}>
+                <X size={18} aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className={styles.recapDetailBody}>
+              <div className={styles.detailRow}>
+                <span>Caissier principal</span>
+                <strong>{selectedRecap.seller}</strong>
+              </div>
+              <div className={styles.detailRow}>
+                <span>Période</span>
+                <strong>{dateTime(selectedRecap.opened_at)} → {dateTime(selectedRecap.closed_at)}</strong>
+              </div>
+
+              <div className={styles.recapMetricsModal}>
+                <div>
+                  <span>Ouverture</span>
+                  <strong>{money(selectedRecap.actual_opening_amount)}</strong>
+                </div>
+                <div>
+                  <span>Théorique</span>
+                  <strong>{money(selectedRecap.expected_closing_amount ?? 0)}</strong>
+                </div>
+                <div>
+                  <span>Compté</span>
+                  <strong>{selectedRecap.actual_closing_amount == null ? "-" : money(selectedRecap.actual_closing_amount)}</strong>
+                </div>
+                <div>
+                  <span>Écart final</span>
+                  <strong className={selectedRecap.closing_difference === 0 ? styles.good : styles.warning}>
+                    {selectedRecap.status === "closed" ? money(selectedRecap.closing_difference ?? 0) : "En cours"}
+                  </strong>
+                </div>
+              </div>
+
+              {selectedRecap.handoffs.length > 1 && (
+                <div className={styles.handoffHistory}>
+                  <small>Historique des passations</small>
+                  {selectedRecap.handoffs.map((handoff, index) => (
+                    <span key={`${selectedRecap.session_id}-${handoff.acknowledged_at}`}>
+                      {index + 1}. {handoff.seller} · {dateTime(handoff.acknowledged_at)}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              <div className={styles.operationsFull}>
+                <small>Détail complet des opérations ({selectedRecap.operations.length})</small>
+                {selectedRecap.operations.length > 0 ? (
+                  <div className={styles.operationsList}>
+                    {selectedRecap.operations.map((operation) => (
+                      <div key={operation.id} className={styles.operationItem}>
+                        <div>
+                          <strong>{operationLabel(operation.operation_type)}</strong>
+                          <small>{dateTime(operation.created_at)}</small>
+                        </div>
+                        <span className={styles.operationAmount}>{money(operation.amount)}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <small className={styles.noOperations}>Aucune opération complémentaire effectuée pendant cette session.</small>
+                )}
+              </div>
+            </div>
+
+            <div className={styles.modalActions}>
+              <button type="button" className={styles.primaryButton} onClick={() => setSelectedRecap(null)}>
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de clôture de caisse */}
       {isCloseModalOpen && openSession && (
         <div className={styles.modalBackdrop} onClick={() => setIsCloseModalOpen(false)}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
