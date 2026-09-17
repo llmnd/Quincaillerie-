@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { ArrowUpRight, Grid } from "lucide-react";
 import AppShell, { applications } from "../../components/AppShell";
 import styles from "./page.module.css";
 
@@ -12,45 +13,85 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const value = window.localStorage.getItem("quincaillerie_user");
-    if (value) setUser(JSON.parse(value) as User);
+    if (value) {
+      try {
+        setUser(JSON.parse(value) as User);
+      } catch (e) {
+        console.error("Erreur de lecture du profil utilisateur", e);
+      }
+    }
   }, []);
 
-  const visibleApps = applications.filter((application) => application.roles.includes(user?.role ?? "seller"));
+  const visibleApps = applications.filter((application) =>
+    application.roles.includes(user?.role ?? "seller")
+  );
+
+  const firstName = user?.full_name ? user.full_name.split(" ")[0] : "";
 
   return (
     <AppShell>
-      <header className={styles.header}>
-        <div>
-          <p className={styles.eyebrow}>Espace de travail</p>
-          <h1>Bonjour{user?.full_name ? `, ${user.full_name.split(" ")[0]}` : ""}</h1>
-          <p>Choisissez une application pour commencer</p>
-        </div>
-        {user?.role && (
-          <span className={styles.role}>
-            {user.role === "admin" ? "Administrateur" : "Vendeur"}
-          </span>
-        )}
-      </header>
+      <div className={styles.container}>
+        {/* EN-TÊTE ÉDITORIAL ZARA */}
+        <header className={styles.header}>
+          <div className={styles.headerInfo}>
+            <span className={styles.eyebrow}>
+              <Grid size={12} className={styles.eyebrowIcon} />
+              ESPACE D'EXPLOITATION
+            </span>
+            <h1 className={styles.title}>
+              {firstName ? `BONJOUR, ${firstName.toUpperCase()}` : "TABLEAU DE BORD"}
+            </h1>
+            <p className={styles.subtitle}>
+              Sélectionnez un module pour accéder à vos outils de gestion.
+            </p>
+          </div>
 
-      <section className={styles.appGrid} aria-label="Applications disponibles">
-        {visibleApps.map((application) => {
-          const ApplicationIcon = application.icon;
-          return <Link href={application.href} key={application.href} className={styles.appCard}>
-            <span className={styles.appIcon}><ApplicationIcon size={20} strokeWidth={1.8} /></span>
-            <div className={styles.appContent}>
-              <strong>{application.label}</strong>
-              <small>{application.description}</small>
+          {user?.role && (
+            <div className={styles.roleTag}>
+              <span className={styles.roleDot} />
+              <span className={styles.roleText}>
+                {user.role === "admin" ? "ADMINISTRATEUR" : "VENDEUR"}
+              </span>
             </div>
-          </Link>;
-        })}
-      </section>
+          )}
+        </header>
 
-      {visibleApps.length === 0 && (
-        <section className={styles.emptyPanel}>
-          <h2>Votre activité</h2>
-          <p>Les données apparaîtront ici. Créez votre première vente ou ajoutez vos produits pour commencer.</p>
-        </section>
-      )}
+        {/* GRILLE D'APPLICATIONS */}
+        {visibleApps.length > 0 ? (
+          <section className={styles.appGrid} aria-label="Applications disponibles">
+            {visibleApps.map((application) => {
+              const ApplicationIcon = application.icon;
+              return (
+                <Link
+                  href={application.href}
+                  key={application.href}
+                  className={styles.appCard}
+                >
+                  <div className={styles.cardHeader}>
+                    <div className={styles.appIconWrapper}>
+                      <ApplicationIcon size={18} strokeWidth={1.5} />
+                    </div>
+                    <ArrowUpRight size={16} className={styles.arrowIcon} />
+                  </div>
+
+                  <div className={styles.appContent}>
+                    <strong className={styles.appName}>{application.label}</strong>
+                    <small className={styles.appDescription}>{application.description}</small>
+                  </div>
+                </Link>
+              );
+            })}
+          </section>
+        ) : (
+          <section className={styles.emptyPanel}>
+            <h2>AUCUNE APPLICATION DISPONIBLE</h2>
+            <p>
+              Votre compte ne dispose pas des autorisations nécessaires pour accéder aux modules.
+              Veuillez contacter votre administrateur.
+            </p>
+          </section>
+        )}
+      </div>
     </AppShell>
   );
 }
