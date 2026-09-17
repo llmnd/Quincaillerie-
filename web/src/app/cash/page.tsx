@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { X, ChevronDown, History } from "lucide-react";
 import AppShell from "../../components/AppShell";
+import { authHeaders } from "../../lib/auth";
 import styles from "./page.module.css";
 
 type Register = { id: number; name: string; code: string };
@@ -59,6 +60,7 @@ export default function CashPage() {
   const [registerName, setRegisterName] = useState("");
   const [registerCode, setRegisterCode] = useState("");
   const [isCreatingRegister, setIsCreatingRegister] = useState(false);
+  const [registerError, setRegisterError] = useState("");
   
   // Accordéons
   const [showHistory, setShowHistory] = useState(false);
@@ -91,7 +93,7 @@ export default function CashPage() {
   }, [isCloseModalOpen, isRegisterModalOpen]);
 
   const headers = (): Record<string, string> => {
-    return {};
+    return authHeaders() as Record<string, string>;
   };
 
   async function load() {
@@ -149,27 +151,35 @@ export default function CashPage() {
   async function createRegister(event: FormEvent) {
     event.preventDefault();
     setIsCreatingRegister(true);
-    const response = await fetch(`${API_URL}/api/v1/cash/registers`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...headers() },
-      credentials: "include",
-      body: JSON.stringify({ name: registerName.trim(), code: registerCode.trim().toUpperCase() }),
-    });
+    setRegisterError("");
 
-    if (!response.ok) {
-      setMessage(response.status === 409 ? "Ce code de caisse existe déjà." : "Impossible de créer cette caisse.");
+    try {
+      const response = await fetch(`${API_URL}/api/v1/cash/registers`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...headers() },
+        credentials: "include",
+        body: JSON.stringify({ name: registerName.trim(), code: registerCode.trim().toUpperCase() }),
+      });
+
+      if (!response.ok) {
+        const detail = await response.json().catch(() => null) as { detail?: string | { msg?: string }[] } | null;
+        const validationMessage = Array.isArray(detail?.detail) ? detail.detail[0]?.msg : detail?.detail;
+        setRegisterError(response.status === 409 ? "Ce code de caisse existe déjà." : validationMessage || `Création impossible (${response.status}).`);
+        return;
+      }
+
+      const register = await response.json() as Register;
+      setRegisters((current) => [...current, register]);
+      setRegisterId(String(register.id));
+      setRegisterName("");
+      setRegisterCode("");
+      setIsRegisterModalOpen(false);
+      setMessage("Caisse créée. Vous pouvez maintenant ouvrir la session.");
+    } catch {
+      setRegisterError("Serveur inaccessible. Vérifiez votre connexion puis réessayez.");
+    } finally {
       setIsCreatingRegister(false);
-      return;
     }
-
-    const register = await response.json() as Register;
-    setRegisters((current) => [...current, register]);
-    setRegisterId(String(register.id));
-    setRegisterName("");
-    setRegisterCode("");
-    setIsRegisterModalOpen(false);
-    setMessage("Caisse créée. Vous pouvez maintenant ouvrir la session.");
-    setIsCreatingRegister(false);
   }
 
   async function confirmClose() {
@@ -204,7 +214,7 @@ export default function CashPage() {
           </div>
           <div className={styles.headerActions}>
             {isAdmin && (
-              <button type="button" className={styles.addRegisterButton} onClick={() => setIsRegisterModalOpen(true)}>
+              <button type="button" className={styles.addRegisterButton} onClick={() => { setRegisterError(""); setIsRegisterModalOpen(true); }}>
                 + NOUVELLE CAISSE
               </button>
             )}
@@ -433,6 +443,7 @@ export default function CashPage() {
 
               <div className={styles.registerFormBody}>
                 <p className={styles.modalIntro}>Créez une caisse pour qu’elle soit disponible à l’ouverture d’une session.</p>
+                {registerError && <p className={styles.registerError} role="alert">{registerError}</p>}
                 <div className={styles.modalInputGroup}>
                   <label htmlFor="registerName">Nom de la caisse</label>
                   <input id="registerName" required minLength={2} maxLength={100} autoFocus value={registerName} onChange={(event) => setRegisterName(event.target.value)} placeholder="Caisse principale" />
