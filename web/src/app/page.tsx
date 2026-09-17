@@ -15,7 +15,7 @@ const features = [
   {
     number: "03",
     title: "Centraliser l'activité",
-    text: "Clients, rapports et données unifiées dans un espace simple.",
+    text: "Clients, rapports et données unifiées dans un espace épuré.",
   },
 ];
 
@@ -59,10 +59,25 @@ export default function Home() {
             <div className={styles.phoneNotch} />
             <div className={styles.phoneScreen}>
               <div className={styles.phoneBar}><span>09:41</span><b>ERP</b><span>•••</span></div>
-              <div className={styles.phoneGreeting}><small>TABLEAU DE BORD</small><strong>Bonjour, équipe</strong></div>
-              <div className={styles.phoneBalance}><span>Solde caisse</span><strong>73 500 FCFA</strong><small>+12,8% aujourd'hui</small></div>
-              <div className={styles.phoneStats}><div><small>Ventes</small><strong>24</strong></div><div><small>Stock</small><strong>186</strong></div></div>
-              <div className={styles.phoneActivity}><small>ACTIVITÉ RÉCENTE</small><div><i />Vente comptoir<b>4 000</b></div><div><i />Réassort stock<b>+32</b></div><div><i />Passation caisse<b>18:42</b></div></div>
+              <div className={styles.phoneGreeting}>
+                <small>Tableau de bord</small>
+                <strong>Bonjour, équipe</strong>
+              </div>
+              <div className={styles.phoneBalance}>
+                <span>Solde caisse</span>
+                <strong>73 500 FCFA</strong>
+                <small>+12,8% aujourd'hui</small>
+              </div>
+              <div className={styles.phoneStats}>
+                <div><small>Ventes</small><strong>24</strong></div>
+                <div><small>Stock</small><strong>186</strong></div>
+              </div>
+              <div className={styles.phoneActivity}>
+                <small>Activité récente</small>
+                <div><span>Vente comptoir</span><b>4 000 FCFA</b></div>
+                <div><span>Réassort stock</span><b>+32</b></div>
+                <div><span>Passation caisse</span><b>18:42</b></div>
+              </div>
             </div>
           </div>
         </div>

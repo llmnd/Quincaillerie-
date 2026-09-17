@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { X, ChevronDown, Plus, History } from "lucide-react";
+import { X, ChevronDown, History } from "lucide-react";
 import AppShell from "../../components/AppShell";
 import styles from "./page.module.css";
 
@@ -31,7 +31,9 @@ type SessionRecap = CashSession & {
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
 const money = (value: number) => `${value.toLocaleString("fr-FR")} FCFA`;
+
 const operationLabel = (value: string) => ({ 
   sale: "Vente", 
   cash_in: "Encaissement", 
@@ -54,13 +56,34 @@ export default function CashPage() {
   const [closeAmount, setCloseAmount] = useState("");
   const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
   
-  // États de révélation au clic (Accordéons)
+  // Accordéons
   const [showHistory, setShowHistory] = useState(false);
   const [expandedRecapId, setExpandedRecapId] = useState<number | null>(null);
 
   const [message, setMessage] = useState("");
   const [isClosing, setIsClosing] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+
+  // Verrouillage du scroll en arrière-plan & gestion de la touche Échap
+  useEffect(() => {
+    if (isCloseModalOpen) {
+      document.body.style.overflow = "hidden";
+      
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === "Escape") {
+          setIsCloseModalOpen(false);
+        }
+      };
+
+      window.addEventListener("keydown", handleKeyDown);
+      return () => {
+        document.body.style.overflow = "";
+        window.removeEventListener("keydown", handleKeyDown);
+      };
+    } else {
+      document.body.style.overflow = "";
+    }
+  }, [isCloseModalOpen]);
 
   const headers = (): Record<string, string> => {
     const token = window.localStorage.getItem("quincaillerie_access_token");
@@ -266,7 +289,7 @@ export default function CashPage() {
           )}
         </section>
 
-        {/* ACCORDÉON 2 : RÉCAPITULATIFS DE CLÔTURE (CONTRÔLE) */}
+        {/* ACCORDÉON 2 : RÉCAPITULATIFS DE CLÔTURE */}
         {recaps.length > 0 && (
           <section className={styles.accordionSection}>
             <div className={styles.sectionHeaderZara}>
@@ -296,7 +319,6 @@ export default function CashPage() {
                       </div>
                     </button>
 
-                    {/* DÉTAILS RÉVÉLÉS AU CLIC */}
                     {isExpanded && (
                       <div className={styles.recapExpandedBody}>
                         <div className={styles.gridMetrics}>
@@ -356,13 +378,19 @@ export default function CashPage() {
           </section>
         )}
 
-        {/* MODAL DE CLÔTURE (MINIMALISTE ARCHITECTURAL) */}
+        {/* MODAL DE CLÔTURE */}
         {isCloseModalOpen && openSession && (
           <div className={styles.modalOverlay} onClick={() => setIsCloseModalOpen(false)}>
-            <div className={styles.zaraModal} onClick={(e) => e.stopPropagation()}>
+            <div 
+              className={styles.zaraModal} 
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="modal-title"
+            >
               <div className={styles.modalHeader}>
-                <h3>CLÔTURE DE SESSION</h3>
-                <button type="button" onClick={() => setIsCloseModalOpen(false)}>
+                <h3 id="modal-title">CLÔTURE DE SESSION</h3>
+                <button type="button" onClick={() => setIsCloseModalOpen(false)} aria-label="Fermer la fenêtre">
                   <X size={18} />
                 </button>
               </div>
@@ -381,7 +409,7 @@ export default function CashPage() {
                     min="0"
                     autoFocus
                     value={closeAmount}
-                    onChange={(e) => setCloseAmount(e.eTarget.value || e.target.value)}
+                    onChange={(e) => setCloseAmount(e.target.value)}
                     placeholder="0"
                   />
                 </div>
