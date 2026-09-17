@@ -123,6 +123,15 @@ export default function SalesPage() {
 
   const requiresHandoff = userRole === "seller" && handoff?.requires_acknowledgement;
 
+  useEffect(() => {
+    if (!requiresHandoff) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [requiresHandoff]);
+
   return (
     <AppShell hideTopbar>
       {!hasOpenSession && (

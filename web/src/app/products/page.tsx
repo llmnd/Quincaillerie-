@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { X } from "lucide-react";
 import AppShell from "../../components/AppShell";
 import styles from "./page.module.css";
 
@@ -16,6 +17,7 @@ export default function ProductsPage() {
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [form, setForm] = useState<ProductForm>(emptyForm);
 
   const isAdmin = typeof window !== "undefined" && JSON.parse(window.localStorage.getItem("quincaillerie_user") ?? "{}")?.role === "admin";
@@ -35,6 +37,15 @@ export default function ProductsPage() {
       .catch(() => setError("Le catalogue n'est pas disponible pour le moment."))
       .finally(() => setIsLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (!selectedProduct) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [selectedProduct]);
 
   const visibleProducts = useMemo(
     () =>
@@ -190,7 +201,7 @@ export default function ProductsPage() {
             <span>Actions</span>
           </div>
           {visibleProducts.map((product) => (
-            <div className={styles.row} key={product.id}>
+            <div className={styles.row} key={product.id} role="button" tabIndex={0} onClick={() => setSelectedProduct(product)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") setSelectedProduct(product); }}>
               <div>
                 <strong>{product.name}</strong>
                 <small>
@@ -204,10 +215,10 @@ export default function ProductsPage() {
               <div className={styles.actions}>
                 {isAdmin ? (
                   <>
-                    <button type="button" onClick={() => openEdit(product)}>
+                    <button type="button" onClick={(event) => { event.stopPropagation(); openEdit(product); }}>
                       Modifier
                     </button>
-                    <button type="button" onClick={() => archiveProduct(product)}>
+                    <button type="button" onClick={(event) => { event.stopPropagation(); archiveProduct(product); }}>
                       Archiver
                     </button>
                   </>
@@ -219,6 +230,8 @@ export default function ProductsPage() {
           ))}
         </div>
       )}
+
+      {selectedProduct && <div className={styles.modalBackdrop} role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedProduct(null); }}><section className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="product-detail-title"><div className={styles.modalHeader}><div><p className={styles.eyebrow}>Fiche produit</p><h2 id="product-detail-title">{selectedProduct.name}</h2></div><button type="button" className={styles.closeButton} onClick={() => setSelectedProduct(null)} aria-label="Fermer"><X size={18} /></button></div><div className={styles.detailGrid}><div><span>SKU</span><strong>{selectedProduct.sku}</strong></div><div><span>Catégorie</span><strong>{selectedProduct.category ?? "Sans catégorie"}</strong></div><div><span>Prix unitaire</span><strong>{selectedProduct.unit_price.toLocaleString("fr-FR")} FCFA</strong></div><div><span>Stock de départ</span><strong>{selectedProduct.initial_stock_quantity}</strong></div><div><span>Quantité vendue</span><strong>{selectedProduct.sold_quantity}</strong></div><div><span>Stock restant</span><strong className={styles.remaining}>{selectedProduct.remaining_stock}</strong></div><div><span>État</span><strong>{selectedProduct.is_active ? "Actif" : "Archivé"}</strong></div></div></section></div>}
     </AppShell>
   );
 }
