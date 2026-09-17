@@ -34,6 +34,17 @@ class CashSession(Base):
     closing_note: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
 
+class CashHandoff(Base):
+    __tablename__ = "cash_handoffs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    session_id: Mapped[int] = mapped_column(ForeignKey("cash_sessions.id"), nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    previous_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    acknowledged_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+
 class CashOperation(Base):
     __tablename__ = "cash_operations"
 

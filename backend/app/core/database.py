@@ -10,7 +10,7 @@ class Base(DeclarativeBase):
 
 from app.models.product import Product  # noqa: E402,F401
 from app.models.user import User  # noqa: E402,F401
-from app.models.cash import AuditLog, CashOperation, CashRegister, CashSession  # noqa: E402,F401
+from app.models.cash import AuditLog, CashHandoff, CashOperation, CashRegister, CashSession  # noqa: E402,F401
 
 connect_args = {}
 if settings.database_url.startswith("sqlite"):

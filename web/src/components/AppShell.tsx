@@ -3,18 +3,20 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { BarChart3, Bell, Boxes, LogOut, Menu, Package, Search, Settings, ShoppingCart, Users, WalletCards, X } from "lucide-react";
 import styles from "./AppShell.module.css";
 
 type User = { full_name?: string; email?: string; role?: "admin" | "seller" };
+type Application = { label: string; description: string; href: string; icon: typeof ShoppingCart; roles: string[] };
 
-const applications = [
-  { label: "Ventes", description: "Devis et commandes", href: "/sales", icon: "↗", roles: ["admin", "seller"] },
-  { label: "Caisse", description: "Sessions et clôtures", href: "/cash", icon: "▣", roles: ["admin", "seller"] },
-  { label: "Produits", description: "Catalogue et tarifs", href: "/products", icon: "□", roles: ["admin", "seller"] },
-  { label: "Clients", description: "Contacts et comptes", href: "/clients", icon: "◎", roles: ["admin", "seller"] },
-  { label: "Stock", description: "Inventaire et mouvements", href: "/stock", icon: "▦", roles: ["admin"] },
-  { label: "Rapports", description: "Analyse de l’activité", href: "/reports", icon: "⌁", roles: ["admin"] },
-  { label: "Administration", description: "Utilisateurs et droits", href: "/settings/users", icon: "⚙", roles: ["admin"] },
+const applications: Application[] = [
+  { label: "Ventes", description: "Devis et commandes", href: "/sales", icon: ShoppingCart, roles: ["admin", "seller"] },
+  { label: "Caisse", description: "Sessions et clôtures", href: "/cash", icon: WalletCards, roles: ["admin", "seller"] },
+  { label: "Produits", description: "Catalogue et tarifs", href: "/products", icon: Package, roles: ["admin", "seller"] },
+  { label: "Clients", description: "Contacts et comptes", href: "/clients", icon: Users, roles: ["admin", "seller"] },
+  { label: "Stock", description: "Inventaire et mouvements", href: "/stock", icon: Boxes, roles: ["admin"] },
+  { label: "Rapports", description: "Analyse de l’activité", href: "/reports", icon: BarChart3, roles: ["admin"] },
+  { label: "Administration", description: "Utilisateurs et droits", href: "/settings/users", icon: Settings, roles: ["admin"] },
 ];
 
 const sidebarItems = [
@@ -28,7 +30,7 @@ const sidebarItems = [
   { label: "Utilisateurs", href: "/settings/users", roles: ["admin"] },
 ];
 
-export default function AppShell({ children }: { children: React.ReactNode }) {
+export default function AppShell({ children, hideTopbar = false }: { children: React.ReactNode; hideTopbar?: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
   const [user, setUser] = useState<User | null>(null);
@@ -65,10 +67,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <span><small>Quincaillerie</small><strong>Studio ERP</strong></span>
         </Link>
 
-        <button type="button" className={styles.menuButton} onClick={() => setMenuOpen((open) => !open)} aria-expanded={menuOpen} aria-label="Ouvrir la navigation">
-          <span />
-          <span />
-          <span />
+        <button type="button" className={styles.menuButton} onClick={() => setMenuOpen((open) => !open)} aria-expanded={menuOpen} aria-label={menuOpen ? "Fermer la navigation" : "Ouvrir la navigation"}>
+          {menuOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
 
         <nav className={menuOpen ? styles.sidebarNavOpen : styles.sidebarNav} aria-label="Navigation de l’espace de travail">
@@ -83,15 +83,15 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         <div className={styles.userCard}>
           <span className={styles.avatar}>{(user.full_name ?? user.email ?? "U").slice(0, 1).toUpperCase()}</span>
           <div><strong>{user.full_name ?? "Utilisateur"}</strong><small>{role === "admin" ? "Administrateur" : "Vendeur"}</small></div>
-          <button type="button" onClick={logout} className={styles.logoutButton} aria-label="Se déconnecter">↪</button>
+          <button type="button" onClick={logout} className={styles.logoutButton} aria-label="Se déconnecter" title="Se déconnecter"><LogOut size={17} /></button>
         </div>
       </aside>
 
       <main className={styles.mainArea}>
-        <header className={styles.topbar}>
+        {!hideTopbar && <header className={styles.topbar}>
           <div className={styles.breadcrumb}><span>Studio ERP</span><b>/</b><strong>{pathname === "/dashboard" ? "Tableau de bord" : pathname.split("/").filter(Boolean).join(" / ")}</strong></div>
-          <div className={styles.topbarActions}><div className={styles.globalSearch}>⌕ <span>Rechercher…</span></div><span className={styles.notification}>●</span><span className={styles.company}>Ma société</span></div>
-        </header>
+          <div className={styles.topbarActions}><div className={styles.globalSearch}><Search size={15} aria-hidden="true" /><span>Rechercher…</span></div><span className={styles.notification} aria-label="Notifications"><Bell size={15} /></span><span className={styles.company}>Ma société</span></div>
+        </header>}
         <div className={styles.content}>{children}</div>
       </main>
     </div>

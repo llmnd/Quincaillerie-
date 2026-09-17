@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, require_roles
+from app.api.cash_routes import get_open_cash_session, handoff_is_acknowledged
 from app.models.cash import AuditLog, CashOperation, CashSession
 from app.models.user import User
 from app.models.product import Product
@@ -48,9 +49,11 @@ def create_sale(payload: SaleCreate, db: Session = Depends(get_db), current_user
     if not payload.items:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A sale must contain at least one item")
 
-    session = db.scalar(select(CashSession).where(CashSession.user_id == current_user.id, CashSession.status == "open"))
+    session = get_open_cash_session(db)
     if session is None:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Open a cash session before creating a sale")
+    if current_user.role != "admin" and not handoff_is_acknowledged(session.id, current_user.id, db):
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Acknowledge the cash handoff before creating a sale")
     if payload.payment_method not in {"cash", "card", "mobile_money", "other"}:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported payment method")
 

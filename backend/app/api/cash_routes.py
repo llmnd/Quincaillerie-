@@ -5,7 +5,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_roles
-from app.models.cash import AuditLog, CashOperation, CashRegister, CashSession
+from app.models.cash import AuditLog, CashHandoff, CashOperation, CashRegister, CashSession
 from app.models.sale import Sale
 from app.models.user import User
 from app.schemas.cash import CashOperationCreate, CashOperationRead, CashRegisterCreate, CashRegisterRead, CashSessionClose, CashSessionOpen, CashSessionRead
@@ -37,6 +37,42 @@ def calculate_expected_cash(session_id: int, db: Session) -> float:
     return expected
 
 
+def get_open_cash_session(db: Session) -> CashSession | None:
+    return db.scalar(select(CashSession).where(CashSession.status == "open").order_by(CashSession.id.desc()))
+
+
+def get_latest_handoff(session_id: int, db: Session) -> CashHandoff | None:
+    return db.scalar(select(CashHandoff).where(CashHandoff.session_id == session_id).order_by(CashHandoff.created_at.desc(), CashHandoff.id.desc()))
+
+
+def handoff_is_acknowledged(session_id: int, user_id: int, db: Session) -> bool:
+    latest = get_latest_handoff(session_id, db)
+    return latest is not None and latest.user_id == user_id
+
+
+def build_handoff_summary(session: CashSession, current_user: User, db: Session) -> dict[str, object]:
+    latest = get_latest_handoff(session.id, db)
+    previous_user = db.get(User, latest.user_id) if latest else db.get(User, session.user_id)
+    sales = db.scalars(select(Sale).where(Sale.session_id == session.id).order_by(Sale.sale_date)).all()
+    operations = db.scalars(select(CashOperation).where(CashOperation.session_id == session.id).order_by(CashOperation.created_at, CashOperation.id)).all()
+    cash_sales = sum(sale.total_amount for sale in sales if sale.payment_method == "cash")
+    withdrawals = sum(operation.amount for operation in operations if operation.operation_type in {"cash_out", "refund", "adjustment_out"})
+    last_operation = operations[-1] if operations else None
+    return {
+        "session_id": session.id,
+        "register_id": session.register_id,
+        "current_user": current_user.full_name,
+        "previous_seller": previous_user.full_name if previous_user else None,
+        "handoff_at": latest.created_at if latest else session.opened_at,
+        "theoretical_balance": calculate_expected_cash(session.id, db),
+        "sales_total": sum(sale.total_amount for sale in sales),
+        "cash_collected": cash_sales,
+        "withdrawals": withdrawals,
+        "last_operation": {"type": last_operation.operation_type, "amount": last_operation.amount, "reason": last_operation.reason, "created_at": last_operation.created_at} if last_operation else None,
+        "requires_acknowledgement": latest is None or latest.user_id != current_user.id,
+    }
+
+
 @router.get("/audit")
 def list_audit_logs(db: Session = Depends(get_db), _: User = Depends(require_roles("admin"))) -> list[dict[str, object]]:
     rows = db.execute(select(AuditLog).order_by(AuditLog.id.desc())).scalars().all()
@@ -53,6 +89,68 @@ def list_audit_logs(db: Session = Depends(get_db), _: User = Depends(require_rol
         "after_data": row.after_data,
         "created_at": row.created_at,
     } for row in rows]
+
+
+@router.get("/sessions/recap")
+def list_session_recaps(db: Session = Depends(get_db), _: User = Depends(require_roles("admin"))) -> list[dict[str, object]]:
+    sessions = db.scalars(select(CashSession).order_by(CashSession.id.desc())).all()
+    recaps = []
+    for session in sessions:
+        seller = db.get(User, session.user_id)
+        register = db.get(CashRegister, session.register_id)
+        operations = db.scalars(
+            select(CashOperation).where(CashOperation.session_id == session.id).order_by(CashOperation.created_at)
+        ).all()
+        handoffs = db.scalars(select(CashHandoff).where(CashHandoff.session_id == session.id).order_by(CashHandoff.created_at)).all()
+        recaps.append({
+            "session_id": session.id,
+            "status": session.status,
+            "seller": seller.full_name if seller else f"Utilisateur #{session.user_id}",
+            "register": register.name if register else f"Caisse #{session.register_id}",
+            "register_code": register.code if register else None,
+            "opened_at": session.opened_at,
+            "closed_at": session.closed_at,
+            "expected_opening_amount": session.expected_opening_amount,
+            "actual_opening_amount": session.actual_opening_amount,
+            "opening_difference": session.opening_difference,
+            "expected_closing_amount": session.expected_closing_amount,
+            "actual_closing_amount": session.actual_closing_amount,
+            "closing_difference": session.closing_difference,
+            "handoffs": [{
+                "seller": db.get(User, handoff.user_id).full_name if db.get(User, handoff.user_id) else f"Utilisateur #{handoff.user_id}",
+                "previous_seller": db.get(User, handoff.previous_user_id).full_name if handoff.previous_user_id and db.get(User, handoff.previous_user_id) else None,
+                "acknowledged_at": handoff.acknowledged_at,
+            } for handoff in handoffs],
+            "operations": [{
+                "id": operation.id,
+                "operation_type": operation.operation_type,
+                "amount": operation.amount,
+                "payment_method": operation.payment_method,
+                "reason": operation.reason,
+                "created_at": operation.created_at,
+            } for operation in operations],
+        })
+    return recaps
+
+
+@router.get("/sessions/current/handoff")
+def current_handoff(db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin", "seller"))) -> dict[str, object] | None:
+    session = get_open_cash_session(db)
+    return build_handoff_summary(session, current_user, db) if session else None
+
+
+@router.post("/sessions/current/handoff/acknowledge")
+def acknowledge_handoff(db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin", "seller"))) -> dict[str, object]:
+    session = get_open_cash_session(db)
+    if session is None:
+        raise HTTPException(status_code=409, detail="No open cash session")
+    latest = get_latest_handoff(session.id, db)
+    if latest is None or latest.user_id != current_user.id:
+        handoff = CashHandoff(session_id=session.id, user_id=current_user.id, previous_user_id=latest.user_id if latest else session.user_id)
+        db.add(handoff)
+        db.add(AuditLog(user_id=current_user.id, register_id=session.register_id, session_id=session.id, action="cash_handoff.acknowledged", entity_type="cash_handoff", after_data=f"previous_user_id={handoff.previous_user_id}"))
+        db.commit()
+    return build_handoff_summary(session, current_user, db)
 
 
 @router.get("/registers", response_model=list[CashRegisterRead])
@@ -83,6 +181,7 @@ def open_session(payload: CashSessionOpen, db: Session = Depends(get_db), curren
     session = CashSession(register_id=register.id, user_id=current_user.id, expected_opening_amount=expected, actual_opening_amount=payload.actual_opening_amount, opening_difference=payload.actual_opening_amount - expected, opening_note=payload.opening_note)
     db.add(session)
     db.flush()
+    db.add(CashHandoff(session_id=session.id, user_id=current_user.id))
     db.add(AuditLog(user_id=current_user.id, register_id=register.id, session_id=session.id, action="cash_session.opened", entity_type="cash_session", entity_id=session.id, amount=session.opening_difference, after_data=f"expected={expected};actual={payload.actual_opening_amount}"))
     db.commit()
     db.refresh(session)
@@ -92,8 +191,6 @@ def open_session(payload: CashSessionOpen, db: Session = Depends(get_db), curren
 @router.get("/sessions", response_model=list[CashSessionRead])
 def list_sessions(db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin", "seller"))) -> list[CashSession]:
     query = select(CashSession).order_by(CashSession.id.desc())
-    if current_user.role != "admin":
-        query = query.where(CashSession.user_id == current_user.id)
     return db.scalars(query).all()
 
 
@@ -102,7 +199,7 @@ def session_balance(session_id: int, db: Session = Depends(get_db), current_user
     session = db.get(CashSession, session_id)
     if session is None:
         raise HTTPException(status_code=404, detail="Cash session not found")
-    if current_user.role != "admin" and session.user_id != current_user.id:
+    if current_user.role != "admin" and not handoff_is_acknowledged(session.id, current_user.id, db):
         raise HTTPException(status_code=403, detail="This is not your cash session")
     return {
         "session_id": session.id,
@@ -118,8 +215,10 @@ def close_session(session_id: int, payload: CashSessionClose, db: Session = Depe
     session = db.get(CashSession, session_id)
     if session is None or session.status != "open":
         raise HTTPException(status_code=404, detail="Open cash session not found")
-    if current_user.role != "admin" and session.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="You can only close your own session")
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only an administrator can close the cash session")
+    if current_user.role != "admin" and not handoff_is_acknowledged(session.id, current_user.id, db):
+        raise HTTPException(status_code=403, detail="Acknowledge the cash handoff before recording operations")
     expected = calculate_expected_cash(session.id, db)
     session.expected_closing_amount = expected
     session.actual_closing_amount = payload.actual_closing_amount
@@ -138,8 +237,8 @@ def create_operation(payload: CashOperationCreate, db: Session = Depends(get_db)
     session = db.get(CashSession, payload.session_id)
     if session is None or session.status != "open":
         raise HTTPException(status_code=409, detail="An open cash session is required")
-    if current_user.role != "admin" and session.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="This is not your cash session")
+    if current_user.role != "admin" and not handoff_is_acknowledged(session.id, current_user.id, db):
+        raise HTTPException(status_code=403, detail="Acknowledge the cash handoff before recording operations")
     if payload.operation_type not in {"cash_in", "cash_out", "refund", "adjustment_in", "adjustment_out"}:
         raise HTTPException(status_code=400, detail="Unsupported cash operation")
     operation = CashOperation(register_id=session.register_id, session_id=session.id, user_id=current_user.id, operation_type=payload.operation_type, amount=payload.amount, payment_method=payload.payment_method, reason=payload.reason)

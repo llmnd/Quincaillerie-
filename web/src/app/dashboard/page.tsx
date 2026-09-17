@@ -20,19 +20,37 @@ export default function DashboardPage() {
   return (
     <AppShell>
       <header className={styles.header}>
-        <div><p className={styles.eyebrow}>Espace de travail</p><h1>Bonjour{user?.full_name ? `, ${user.full_name.split(" ")[0]}` : ""}.</h1><p>Choisissez une application pour commencer.</p></div>
-        <span className={styles.role}>{user?.role === "admin" ? "Administrateur" : "Vendeur"}</span>
+        <div>
+          <p className={styles.eyebrow}>Espace de travail</p>
+          <h1>Bonjour{user?.full_name ? `, ${user.full_name.split(" ")[0]}` : ""}</h1>
+          <p>Choisissez une application pour commencer</p>
+        </div>
+        {user?.role && (
+          <span className={styles.role}>
+            {user.role === "admin" ? "Administrateur" : "Vendeur"}
+          </span>
+        )}
       </header>
+
       <section className={styles.appGrid} aria-label="Applications disponibles">
-        {visibleApps.map((application) => (
-          <Link href={application.href} key={application.href} className={styles.appCard}>
-            <span className={styles.appIcon}>{application.icon}</span>
-            <span><strong>{application.label}</strong><small>{application.description}</small></span>
-            <span className={styles.arrow}>↗</span>
-          </Link>
-        ))}
+        {visibleApps.map((application) => {
+          const ApplicationIcon = application.icon;
+          return <Link href={application.href} key={application.href} className={styles.appCard}>
+            <span className={styles.appIcon}><ApplicationIcon size={20} strokeWidth={1.8} /></span>
+            <div className={styles.appContent}>
+              <strong>{application.label}</strong>
+              <small>{application.description}</small>
+            </div>
+          </Link>;
+        })}
       </section>
-      <section className={styles.emptyPanel}><p className={styles.eyebrow}>Votre activité</p><h2>Les données apparaîtront ici.</h2><p>Créez votre première vente ou ajoutez vos produits pour commencer à alimenter votre espace de travail.</p></section>
+
+      {visibleApps.length === 0 && (
+        <section className={styles.emptyPanel}>
+          <h2>Votre activité</h2>
+          <p>Les données apparaîtront ici. Créez votre première vente ou ajoutez vos produits pour commencer.</p>
+        </section>
+      )}
     </AppShell>
   );
 }

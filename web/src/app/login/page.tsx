@@ -46,30 +46,46 @@ export default function LoginPage() {
     <main className={styles.pageShell}>
       <Link href="/" className={styles.brand}>
         <span className={styles.brandMark}>Q</span>
-        <span><small>Quincaillerie</small><strong>Studio ERP</strong></span>
+        <span>
+          <small>Quincaillerie</small>
+          <strong>Studio ERP</strong>
+        </span>
       </Link>
 
       <section className={styles.loginLayout}>
         <div className={styles.intro}>
-          <p className={styles.eyebrow}>Espace professionnel</p>
-          <h1>Bienvenue dans votre espace de travail.</h1>
-          <p>Connectez-vous avec votre compte administrateur ou vendeur.</p>
+          <p className={styles.eyebrow}>Accès professionnel</p>
+          <h1>Connectez-vous.</h1>
         </div>
 
         <form className={styles.form} onSubmit={handleSubmit}>
           <div>
-            <label htmlFor="email">Email professionnel</label>
-            <input id="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" />
+            <label htmlFor="email">Email</label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              required
+              autoComplete="email"
+            />
           </div>
           <div>
             <label htmlFor="password">Mot de passe</label>
-            <input id="password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} required minLength={8} autoComplete="current-password" />
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              required
+              minLength={8}
+              autoComplete="current-password"
+            />
           </div>
-          {error ? <p className={styles.error} role="alert">{error}</p> : null}
+          {error && <p className={styles.error} role="alert">{error}</p>}
           <button type="submit" className={styles.submitButton} disabled={isSubmitting}>
             {isSubmitting ? "Connexion…" : "Se connecter"}
           </button>
-          <p className={styles.note}>L’administrateur crée et gère les comptes vendeurs.</p>
         </form>
       </section>
     </main>

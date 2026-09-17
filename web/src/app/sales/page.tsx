@@ -2,12 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { Minus, Plus, X } from "lucide-react";
 import AppShell from "../../components/AppShell";
 import styles from "./page.module.css";
 
 type Product = { id: number; name: string; sku: string; unit_price: number; stock_quantity: number };
 type Customer = { id: number; name: string; email?: string | null };
 type CartLine = Product & { quantity: number };
+type Handoff = { theoretical_balance: number; sales_total: number; cash_collected: number; withdrawals: number; previous_seller?: string | null; handoff_at: string; last_operation?: { type: string; amount: number } | null; requires_acknowledgement: boolean };
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export default function SalesPage() {
@@ -22,20 +24,28 @@ export default function SalesPage() {
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [discount, setDiscount] = useState("0");
   const [hasOpenSession, setHasOpenSession] = useState(false);
+  const [isPaymentStep, setIsPaymentStep] = useState(false);
+  const [handoff, setHandoff] = useState<Handoff | null>(null);
+  const [isAcknowledgingHandoff, setIsAcknowledgingHandoff] = useState(false);
+  const [userRole, setUserRole] = useState<"admin" | "seller">("seller");
 
   useEffect(() => {
     const token = window.localStorage.getItem("quincaillerie_access_token");
     const headers: Record<string, string> = {};
     if (token) headers.Authorization = `Bearer ${token}`;
+    const storedUser = window.localStorage.getItem("quincaillerie_user");
+    if (storedUser) setUserRole(JSON.parse(storedUser).role === "admin" ? "admin" : "seller");
     Promise.all([
       fetch(`${API_URL}/api/v1/products`, { headers }).then((response) => response.json()),
       fetch(`${API_URL}/api/v1/customers`, { headers }).then((response) => response.json()),
       fetch(`${API_URL}/api/v1/cash/sessions`, { headers }).then((response) => response.json()),
+      fetch(`${API_URL}/api/v1/cash/sessions/current/handoff`, { headers }).then((response) => response.ok ? response.json() : null),
     ])
-      .then(([productData, customerData, sessionData]) => {
+      .then(([productData, customerData, sessionData, handoffData]) => {
         setProducts(Array.isArray(productData) ? productData : []);
         setCustomers(Array.isArray(customerData) ? customerData : []);
         setHasOpenSession(Array.isArray(sessionData) && sessionData.some((session: { status: string }) => session.status === "open"));
+        setHandoff(handoffData);
       })
       .catch(() => setMessage("Impossible de charger les données de vente."))
       .finally(() => setIsLoading(false));
@@ -61,6 +71,15 @@ export default function SalesPage() {
     setCart((current) => current.filter((line) => line.id !== productId));
   }
 
+  function continueToPayment() {
+    if (cart.length === 0) {
+      setMessage("Ajoutez au moins un produit.");
+      return;
+    }
+    setMessage("");
+    setIsPaymentStep(true);
+  }
+
   async function submitSale() {
     if (cart.length === 0) {
       setMessage("Ajoutez au moins un produit.");
@@ -79,37 +98,147 @@ export default function SalesPage() {
       if (!response.ok) throw new Error();
       setCart([]);
       setSelectedCustomer("");
+      setIsPaymentStep(false);
       setMessage("Vente créée et enregistrée dans la session de caisse.");
     } catch {
-      setMessage("La vente n’a pas pu être créée. Vérifiez le stock disponible.");
+      setMessage("La vente n'a pas pu être créée. Vérifiez le stock disponible.");
     } finally {
       setIsSubmitting(false);
     }
   }
 
+  async function acknowledgeHandoff() {
+    const token = window.localStorage.getItem("quincaillerie_access_token");
+    setIsAcknowledgingHandoff(true);
+    try {
+      const response = await fetch(`${API_URL}/api/v1/cash/sessions/current/handoff/acknowledge`, { method: "POST", headers: token ? { Authorization: `Bearer ${token}` } : {} });
+      if (!response.ok) throw new Error();
+      setHandoff(await response.json());
+    } catch {
+      setMessage("Impossible d'enregistrer la prise en charge de la caisse.");
+    } finally {
+      setIsAcknowledgingHandoff(false);
+    }
+  }
+
+  const requiresHandoff = userRole === "seller" && handoff?.requires_acknowledgement;
+
   return (
-    <AppShell>
-      <header className={styles.pageHeader}><div><p className={styles.eyebrow}>Ventes</p><h1>Nouvelle vente</h1><p className={styles.description}>Le client est facultatif. Ajoutez les produits à vendre.</p></div><span className={hasOpenSession ? styles.status : styles.warning}>{hasOpenSession ? "Caisse ouverte" : "Caisse à ouvrir"}</span></header>
-      {!hasOpenSession ? <div className={styles.sessionNotice}>Une session de caisse ouverte est obligatoire pour valider une vente. <Link href="/cash">Ouvrir une caisse</Link></div> : null}
+    <AppShell hideTopbar>
+      {!hasOpenSession && (
+        <div className={styles.sessionNotice}>
+          <strong>Caisse à ouvrir.</strong> Une session ouverte est obligatoire pour valider une vente.{" "}
+          <Link href="/cash">Ouvrir une caisse</Link>
+        </div>
+      )}
+
       <div className={styles.salesLayout}>
         <section className={styles.catalogPanel}>
-          <div className={styles.panelHeader}><div><p className={styles.eyebrow}>Catalogue</p><h2>Ajouter des produits</h2></div><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Rechercher…" aria-label="Rechercher un produit" /></div>
-          {isLoading ? <div className={styles.state}>Chargement…</div> : null}
-          {!isLoading && products.length === 0 ? <div className={styles.state}>Aucun produit disponible.</div> : null}
-          <div className={styles.productList}>{filteredProducts.map((product) => <button type="button" className={styles.productRow} key={product.id} onClick={() => addProduct(product)} disabled={product.stock_quantity < 1}><span><strong>{product.name}</strong><small>{product.sku} · {product.stock_quantity} en stock</small></span><b>{product.unit_price.toLocaleString("fr-FR")} FCFA</b><i>+</i></button>)}</div>
+          <div className={styles.panelHeader}>
+            <div>
+              <p className={styles.eyebrow}>Catalogue</p>
+              <h2>Ajouter des produits</h2>
+            </div>
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Rechercher…"
+              aria-label="Rechercher un produit"
+            />
+          </div>
+
+          {isLoading && <div className={styles.state}>Chargement…</div>}
+          {!isLoading && products.length === 0 && <div className={styles.state}>Aucun produit disponible.</div>}
+
+          <div className={styles.productList}>
+            {filteredProducts.map((product) => (
+              <button
+                type="button"
+                className={styles.productRow}
+                key={product.id}
+                onClick={() => addProduct(product)}
+                disabled={product.stock_quantity < 1 || Boolean(requiresHandoff)}
+              >
+                <span>
+                  <strong>{product.name}</strong>
+                  <small>{product.sku} · {product.stock_quantity} en stock</small>
+                </span>
+                <b>{product.unit_price.toLocaleString("fr-FR")} FCFA</b>
+                <i><Plus size={16} aria-hidden="true" /></i>
+              </button>
+            ))}
+          </div>
         </section>
 
         <section className={styles.cartPanel}>
-          <div className={styles.panelHeader}><div><p className={styles.eyebrow}>Commande</p><h2>Panier</h2></div><span>{cart.length} ligne{cart.length > 1 ? "s" : ""}</span></div>
-          <label className={styles.customerLabel} htmlFor="customer">Client <span>(facultatif)</span></label>
-          <select id="customer" value={selectedCustomer} onChange={(event) => setSelectedCustomer(event.target.value)}><option value="">Vente comptoir / aucun client</option>{customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}</option>)}</select>
-          <div className={styles.saleOptions}><label htmlFor="payment">Paiement<select id="payment" value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value)}><option value="cash">Espèces</option><option value="card">Carte</option><option value="mobile_money">Mobile Money</option><option value="other">Autre</option></select></label><label htmlFor="discount">Remise FCFA<input id="discount" type="number" min="0" value={discount} onChange={(event) => setDiscount(event.target.value)} /></label></div>
-          <div className={styles.cartLines}>{cart.length === 0 ? <div className={styles.emptyCart}><span className={styles.cartIcon}>+</span><p>Votre panier est vide.</p></div> : cart.map((line) => <div className={styles.cartLine} key={line.id}><div><strong>{line.name}</strong><small>{line.unit_price.toLocaleString("fr-FR")} FCFA l’unité</small></div><div className={styles.quantity}><button type="button" onClick={() => updateQuantity(line.id, line.quantity - 1)}>-</button><span>{line.quantity}</span><button type="button" onClick={() => updateQuantity(line.id, line.quantity + 1)}>+</button></div><b>{(line.unit_price * line.quantity).toLocaleString("fr-FR")} FCFA</b><button type="button" className={styles.remove} onClick={() => removeProduct(line.id)}>×</button></div>)}</div>
-          <div className={styles.totalRow}><span>Total</span><strong>{total.toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} FCFA</strong></div>
-          {message ? <p className={styles.message} role="status">{message}</p> : null}
-          <button type="button" className={styles.primaryButton} onClick={submitSale} disabled={isSubmitting || cart.length === 0 || !hasOpenSession}>{isSubmitting ? "Enregistrement…" : "Confirmer la vente"}</button>
+          <div className={styles.panelHeader}>
+            <div>
+              <p className={styles.eyebrow}>Vente</p>
+              <h2>Nouvelle vente</h2>
+            </div>
+            <span>{cart.length} ligne{cart.length > 1 ? "s" : ""}</span>
+          </div>
+
+          {isPaymentStep && <div className={styles.paymentStep}><p className={styles.stepEyebrow}>Étape 2 sur 2</p><h3>Choisir le paiement</h3><div className={styles.saleOptions}><label htmlFor="payment">Paiement<select id="payment" value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value)}><option value="cash">Espèces</option><option value="card">Carte</option><option value="mobile_money">Mobile Money</option><option value="other">Autre</option></select></label><label htmlFor="discount">Remise FCFA<input id="discount" type="number" min="0" value={discount} onChange={(event) => setDiscount(event.target.value)} /></label></div></div>}
+
+          <div className={styles.cartLines}>
+            {cart.length === 0 ? (
+              <div className={styles.emptyCart}>
+                <span className={styles.cartIcon}>+</span>
+                <p>Votre panier est vide.</p>
+              </div>
+            ) : (
+              cart.map((line) => (
+                <div className={styles.cartLine} key={line.id}>
+                  <div>
+                    <strong>{line.name}</strong>
+                    <small>{line.unit_price.toLocaleString("fr-FR")} FCFA l'unité</small>
+                  </div>
+                  <div className={styles.quantity}>
+                    <button type="button" onClick={() => updateQuantity(line.id, line.quantity - 1)}>
+                      <Minus size={14} aria-hidden="true" />
+                    </button>
+                    <span>{line.quantity}</span>
+                    <button type="button" onClick={() => updateQuantity(line.id, line.quantity + 1)}>
+                      <Plus size={14} aria-hidden="true" />
+                    </button>
+                  </div>
+                  <b>{(line.unit_price * line.quantity).toLocaleString("fr-FR")} FCFA</b>
+                  <button type="button" className={styles.remove} onClick={() => removeProduct(line.id)}>
+                    <X size={16} aria-hidden="true" />
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+
+          <div className={styles.totalRow}>
+            <span>Total</span>
+            <strong>{total.toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} FCFA</strong>
+          </div>
+
+          {message && <p className={styles.message} role="status">{message}</p>}
+
+          <div className={styles.checkoutActions}>{isPaymentStep ? <><button type="button" className={styles.secondaryButton} onClick={() => setIsPaymentStep(false)} disabled={isSubmitting}>Retour au panier</button><button type="button" className={styles.primaryButton} onClick={submitSale} disabled={isSubmitting || cart.length === 0 || !hasOpenSession || Boolean(requiresHandoff)}>{isSubmitting ? "Enregistrement…" : "Confirmer la vente"}</button></> : <button type="button" className={styles.primaryButton} onClick={continueToPayment} disabled={cart.length === 0 || !hasOpenSession || Boolean(requiresHandoff)}>Passer au paiement</button>}</div>
+
+          <label className={styles.customerLabel} htmlFor="customer">
+            Client <span>(facultatif)</span>
+          </label>
+          <select
+            id="customer"
+            value={selectedCustomer}
+            onChange={(event) => setSelectedCustomer(event.target.value)}
+          >
+            <option value="">Vente comptoir / aucun client</option>
+            {customers.map((customer) => (
+              <option key={customer.id} value={customer.id}>
+                {customer.name}
+              </option>
+            ))}
+          </select>
         </section>
       </div>
+      {requiresHandoff && handoff && <div className={styles.handoffBackdrop}><section className={styles.handoffModal} role="dialog" aria-modal="true" aria-labelledby="handoff-title"><p className={styles.stepEyebrow}>Passation de caisse</p><h2 id="handoff-title">Prendre connaissance avant de vendre</h2><p className={styles.handoffIntro}>La caisse reste ouverte. Vérifiez la situation laissée par le vendeur précédent, puis confirmez votre prise en charge.</p><div className={styles.handoffMetrics}><div><span>Solde théorique actuel</span><strong>{handoff.theoretical_balance.toLocaleString("fr-FR")} FCFA</strong></div><div><span>Ventes réalisées</span><strong>{handoff.sales_total.toLocaleString("fr-FR")} FCFA</strong></div><div><span>Encaissements</span><strong>{handoff.cash_collected.toLocaleString("fr-FR")} FCFA</strong></div><div><span>Dépenses / retraits</span><strong>{handoff.withdrawals.toLocaleString("fr-FR")} FCFA</strong></div></div><div className={styles.handoffDetails}><span>Vendeur précédent <strong>{handoff.previous_seller ?? "Ouverture de journée"}</strong></span><span>Heure de passation <strong>{new Date(handoff.handoff_at).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}</strong></span><span>Dernière opération <strong>{handoff.last_operation ? `${handoff.last_operation.type} · ${handoff.last_operation.amount.toLocaleString("fr-FR")} FCFA` : "Aucune opération"}</strong></span></div><button type="button" className={styles.primaryButton} onClick={acknowledgeHandoff} disabled={isAcknowledgingHandoff}>{isAcknowledgingHandoff ? "Enregistrement…" : "J'ai pris connaissance du solde et des opérations"}</button></section></div>}
     </AppShell>
   );
 }

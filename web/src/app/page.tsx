@@ -5,17 +5,17 @@ const features = [
   {
     number: "01",
     title: "Vendre avec précision",
-    text: "Créez vos ventes, ajoutez vos produits et gardez chaque opération sous contrôle.",
+    text: "Créez vos ventes, gérez vos produits et maîtrisez chaque opération.",
   },
   {
     number: "02",
     title: "Piloter le stock",
-    text: "Une vision simple de vos références, de vos entrées et de vos sorties.",
+    text: "Vue claire de vos références, entrées et sorties en temps réel.",
   },
   {
     number: "03",
-    title: "Centraliser l’activité",
-    text: "Clients, fournisseurs et rapports réunis dans un espace conçu pour aller vite.",
+    title: "Centraliser l'activité",
+    text: "Clients, rapports et données unifiées dans un espace simple.",
   },
 ];
 
@@ -42,25 +42,25 @@ export default function Home() {
 
       <section className={styles.hero}>
         <div className={styles.heroContent}>
-          <p className={styles.eyebrow}>Gestion professionnelle, sans complication</p>
-          <h1>Le calme et la maîtrise pour chaque vente.</h1>
+          <p className={styles.eyebrow}>Gestion sans complication</p>
+          <h1>Clarté et contrôle à chaque vente.</h1>
           <p className={styles.heroText}>
-            Quincaillerie Studio ERP accompagne votre activité au quotidien : vendre, suivre,
-            organiser. Un logiciel clair pour les équipes qui travaillent vraiment sur le terrain.
+            Quincaillerie Studio ERP : un logiciel conçu pour votre activité au quotidien. 
+            Vendre, suivre, organiser. Simple et efficace.
           </p>
           <div className={styles.heroActions}>
-            <Link href="/login" className={styles.primaryButton}>Accéder à l’espace de vente</Link>
-            <a href="#solution" className={styles.textButton}>Découvrir la solution <span>↓</span></a>
+            <Link href="/login" className={styles.primaryButton}>Accéder à l'espace de vente</Link>
+            <a href="#solution" className={styles.textButton}>Découvrir <span>↓</span></a>
           </div>
         </div>
 
-        <div className={styles.heroArtwork} aria-label="Interface de gestion sans données">
+        <div className={styles.heroArtwork} aria-label="Interface de gestion">
           <div className={styles.artworkTop}>
-            <span>Votre espace de travail</span>
+            <span>Votre espace</span>
             <span className={styles.artworkDot} />
           </div>
           <div className={styles.artworkTitle}>
-            <small>Prêt à commencer</small>
+            <small>Prêt à démarrer</small>
             <strong>Construisez votre activité.</strong>
           </div>
           <div className={styles.artworkLines}>
@@ -78,11 +78,10 @@ export default function Home() {
 
       <section id="solution" className={styles.statement}>
         <p className={styles.eyebrow}>Une seule interface</p>
-        <h2>Tout ce dont votre quincaillerie a besoin. Rien de superflu.</h2>
-        <p>
-          Les données appartiennent à votre équipe. Le logiciel fournit le cadre, les outils et la
-          visibilité nécessaires pour les faire vivre.
-        </p>
+        <div>
+          <h2>Tout ce dont vous avez besoin. Rien de plus.</h2>
+          <p>Les données appartiennent à votre équipe. Le logiciel fournit les outils pour les faire vivre.</p>
+        </div>
       </section>
 
       <section id="fonctionnalites" className={styles.featureSection}>
@@ -104,7 +103,7 @@ export default function Home() {
       <section id="contact" className={styles.ctaSection}>
         <div>
           <p className={styles.eyebrow}>Quand vous êtes prêt</p>
-          <h2>Commencez avec un espace vide. Remplissez-le avec votre métier.</h2>
+          <h2>Commencez. Remplissez avec votre métier.</h2>
         </div>
         <Link href="/login" className={styles.primaryButton}>Se connecter</Link>
       </section>
