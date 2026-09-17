@@ -1,7 +1,7 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
-import { Activity, CalendarDays, CheckCircle2, ChevronRight, ClipboardList, Droplets, MapPinned, MoreHorizontal, Plus, Thermometer, Wheat } from "lucide-react";
+import { Activity, CalendarDays, CheckCircle2, ChevronRight, ClipboardList, Droplets, MapPinned, MoreHorizontal, Plus, Thermometer, Wheat, X } from "lucide-react";
 import AppShell from "../../components/AppShell";
 import { authHeaders } from "../../lib/auth";
 import styles from "./page.module.css";
@@ -97,6 +97,23 @@ export default function FarmingPage() {
       }
     }
   }, [activeForm, batches, healthForm.batch_id, eggForm.batch_id]);
+
+  useEffect(() => {
+    if (!activeForm) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setActiveForm(null);
+    };
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [activeForm]);
 
   function handleImageSelect(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -305,12 +322,15 @@ export default function FarmingPage() {
           </button>
         </div>
 
-        {/* FORMULAIRES INLINE */}
-        {activeForm === "batch" && (
+        {/* FORMULAIRE D'ACTION */}
+        {activeForm && (
+          <div className={styles.actionModalOverlay} onMouseDown={(event) => { if (event.target === event.currentTarget) setActiveForm(null); }}>
+            <section className={styles.actionModal} role="dialog" aria-modal="true" aria-labelledby="action-modal-title">
+              {activeForm === "batch" && (
           <form className={styles.formInlineCard} onSubmit={createBatch}>
             <div className={styles.formHeader}>
-              <h2>{editingBatchId ? "Modifier la Bande" : "Créer une Bande"}</h2>
-              <button type="button" className={styles.btnMinimal} onClick={() => { setEditingBatchId(null); setActiveForm(null); }}>✕</button>
+              <div><span className={styles.modalEyebrow}>Nouvelle opération</span><h2 id="action-modal-title">{editingBatchId ? "Modifier la bande" : "Créer une bande"}</h2></div>
+              <button type="button" className={styles.modalCloseButton} onClick={() => { setEditingBatchId(null); setActiveForm(null); }} aria-label="Fermer"><X size={18} /></button>
             </div>
             <div className={styles.gridInputs}>
               <div className={styles.inputField}><label>Référence du lot</label><input required placeholder="ex: Lot Pondeuses 04" value={batchForm.reference} onChange={e => setBatchForm({...batchForm, reference: e.target.value})} /></div>
@@ -337,13 +357,13 @@ export default function FarmingPage() {
             </div>
             <button className={styles.btnPrimary}>{editingBatchId ? "Enregistrer les modifications" : "Créer la bande"}</button>
           </form>
-        )}
+              )}
 
-        {activeForm === "health" && (
+              {activeForm === "health" && (
           <form className={styles.formInlineCard} onSubmit={createHealth}>
             <div className={styles.formHeader}>
-              <h2>Événement Sanitaire</h2>
-              <button type="button" className={styles.btnMinimal} onClick={() => setActiveForm(null)}>✕</button>
+              <div><span className={styles.modalEyebrow}>Suivi sanitaire</span><h2 id="action-modal-title">Événement sanitaire</h2></div>
+              <button type="button" className={styles.modalCloseButton} onClick={() => setActiveForm(null)} aria-label="Fermer"><X size={18} /></button>
             </div>
             <div className={styles.gridInputs}>
               <div className={styles.inputField}>
@@ -359,13 +379,13 @@ export default function FarmingPage() {
             </div>
             <button className={styles.btnPrimary}>Enregistrer l'événement</button>
           </form>
-        )}
+              )}
 
-        {activeForm === "egg" && (
+              {activeForm === "egg" && (
           <form className={styles.formInlineCard} onSubmit={createEgg}>
             <div className={styles.formHeader}>
-              <h2>Saisie de la Ponte Journalière</h2>
-              <button type="button" className={styles.btnMinimal} onClick={() => setActiveForm(null)}>✕</button>
+              <div><span className={styles.modalEyebrow}>Production du jour</span><h2 id="action-modal-title">Saisie de la ponte journalière</h2></div>
+              <button type="button" className={styles.modalCloseButton} onClick={() => setActiveForm(null)} aria-label="Fermer"><X size={18} /></button>
             </div>
             <div className={styles.gridInputs}>
               <div className={styles.inputField}>
@@ -383,6 +403,9 @@ export default function FarmingPage() {
             </div>
             <button className={styles.btnPrimary}>Enregistrer la récolte</button>
           </form>
+              )}
+            </section>
+          </div>
         )}
 
         {/* SLIDE-OVER DRAWER DETAILED VIEW */}

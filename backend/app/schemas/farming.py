@@ -37,7 +37,7 @@ class FarmingBatchCreate(BaseModel):
     species: str = Field(default="chicken", min_length=2, max_length=80)
     production_type: str = Field(default="broiler", min_length=2, max_length=40)
     breed: str | None = Field(default=None, max_length=120)
-    image_url: str | None = Field(default=None, max_length=1000)
+    image_url: str | None = None
     start_date: date = Field(default_factory=date.today)
     initial_count: int = Field(gt=0)
     notes: str | None = None
@@ -49,7 +49,7 @@ class FarmingBatchUpdate(BaseModel):
     species: str | None = Field(default=None, min_length=2, max_length=80)
     production_type: str | None = Field(default=None, min_length=2, max_length=40)
     breed: str | None = Field(default=None, max_length=120)
-    image_url: str | None = Field(default=None, max_length=1000)
+    image_url: str | None = None
     start_date: date | None = None
     initial_count: int | None = Field(default=None, gt=0)
     current_count: int | None = Field(default=None, ge=0)

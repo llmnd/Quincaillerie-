@@ -45,7 +45,7 @@ class FarmingBatch(Base):
     species: Mapped[str] = mapped_column(String(80), nullable=False, default="chicken")
     production_type: Mapped[str] = mapped_column(String(40), nullable=False)
     breed: Mapped[str | None] = mapped_column(String(120), nullable=True)
-    image_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    image_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     start_date: Mapped[date] = mapped_column(Date, nullable=False)
     initial_count: Mapped[int] = mapped_column(Integer, nullable=False)
     current_count: Mapped[int] = mapped_column(Integer, nullable=False)

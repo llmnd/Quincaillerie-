@@ -479,6 +479,112 @@ button.focusRow { cursor: pointer; }
   animation: fadeIn 0.25s ease-out;
 }
 
+.actionModalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  overflow-y: auto;
+  background: rgba(2, 6, 23, 0.78);
+  backdrop-filter: blur(10px);
+  animation: fadeIn 0.2s ease-out;
+}
+
+.actionModal {
+  width: min(760px, 100%);
+  max-height: min(820px, calc(100dvh - 48px));
+  overflow-y: auto;
+  border: 1px solid rgba(163, 230, 53, 0.2);
+  border-radius: 16px;
+  background: #111827;
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.48);
+  animation: modalRise 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.actionModal .formInlineCard {
+  margin: 0;
+  border: 0;
+  border-radius: 16px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.modalEyebrow {
+  display: block;
+  margin-bottom: 7px;
+  color: #a3e635;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.modalCloseButton {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #cbd5e1 !important;
+  cursor: pointer;
+}
+
+.modalCloseButton:hover,
+.modalCloseButton:focus-visible {
+  border-color: rgba(163, 230, 53, 0.6);
+  background: rgba(163, 230, 53, 0.12);
+  color: #d9f99d !important;
+}
+
+.modalCloseButton:focus-visible,
+.actionModal button:focus-visible,
+.actionModal input:focus-visible,
+.actionModal select:focus-visible {
+  outline: 2px solid #a3e635;
+  outline-offset: 2px;
+}
+
+@media (max-width: 600px) {
+  .actionModalOverlay {
+    display: block;
+    padding: 0;
+  }
+
+  .actionModal {
+    width: 100%;
+    min-height: 100dvh;
+    max-height: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .actionModal .formInlineCard {
+    min-height: 100dvh;
+    padding: 24px 18px 32px;
+    border-radius: 0;
+  }
+
+  .actionModal .formHeader {
+    margin-bottom: 28px;
+  }
+
+  .actionModal .gridInputs {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+}
+
+@keyframes modalRise {
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 .formHeader {
   display: flex;
   justify-content: space-between;
