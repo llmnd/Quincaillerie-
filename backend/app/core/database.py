@@ -13,6 +13,7 @@ from app.models.organization import Organization, OrganizationModule  # noqa: E4
 from app.models.user import User  # noqa: E402,F401
 from app.models.cash import AuditLog, CashHandoff, CashOperation, CashRegister, CashSession  # noqa: E402,F401
 from app.models.accounting import Account, Invoice, InvoiceLine, JournalEntry, JournalLine, Tax  # noqa: E402,F401
+from app.models.farming import FarmingBatch, FarmingBuilding, FarmingConsumption, FarmingEggProduction, FarmingHealthEvent, FarmingSite  # noqa: E402,F401
 
 connect_args = {}
 if settings.database_url.startswith("sqlite"):
@@ -76,6 +77,10 @@ def ensure_sqlite_schema() -> None:
             if "organization_id" not in columns:
                 connection.execute(text(f"ALTER TABLE {table_name} ADD COLUMN organization_id INTEGER"))
                 connection.execute(text(f"UPDATE {table_name} SET organization_id = :org_id WHERE organization_id IS NULL"), {"org_id": default_org_id})
+
+        farming_batch_columns = {column[1] for column in connection.execute(text("PRAGMA table_info(farming_batches)"))} if "farming_batches" in tables else set()
+        if "farming_batches" in tables and "image_url" not in farming_batch_columns:
+            connection.execute(text("ALTER TABLE farming_batches ADD COLUMN image_url VARCHAR(1000)"))
 
 
 if settings.app_env != "production":

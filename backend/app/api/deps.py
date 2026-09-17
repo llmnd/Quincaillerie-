@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import SessionLocal
+from app.core.modules import enabled_module_keys
 from app.core.security import decode_access_token, hash_password
 from app.models.organization import Organization
 from app.models.user import User
@@ -84,13 +85,7 @@ def require_module(module_key: str):
         organization = db.scalar(select(Organization).where(Organization.id == current_user.organization_id))
         if organization is None:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Organization not available")
-        module_enabled = db.scalar(
-            select(Organization.id).where(
-                Organization.id == organization.id,
-                Organization.modules.any(module_key=module_key, enabled=True),
-            )
-        )
-        if module_enabled is None:
+        if module_key not in enabled_module_keys(db, organization.id):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"Module '{module_key}' is not enabled for this organization")
         return current_user
 

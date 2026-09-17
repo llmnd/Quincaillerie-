@@ -6,16 +6,17 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, require_roles
+from app.api.deps import get_db, require_module, require_roles
 from app.api.cash_routes import get_open_cash_session, handoff_is_acknowledged
 from app.models.cash import AuditLog, CashOperation, CashSession
+from app.models.farming import FarmingBatch
 from app.models.user import User
 from app.models.product import Product
 from app.models.sale import Sale, SaleItem
 from app.models.stock_movement import StockMovement
 from app.schemas.sale import SaleCreate, SaleRead, SaleUpdate
 
-router = APIRouter(prefix="/sales", tags=["sales"])
+router = APIRouter(prefix="/sales", tags=["sales"], dependencies=[Depends(require_module("sales"))])
 
 
 @router.get("", response_model=list[SaleRead])
@@ -57,7 +58,9 @@ def create_sale(payload: SaleCreate, db: Session = Depends(get_db), current_user
     if payload.payment_method not in {"cash", "card", "mobile_money", "other"}:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported payment method")
 
-    sale = Sale(organization_id=current_user.organization_id, customer_id=payload.customer_id, user_id=current_user.id, session_id=session.id, status=payload.status, notes=payload.notes, discount_amount=payload.discount_amount, payment_method=payload.payment_method)
+    if payload.farming_batch_id is not None and db.scalar(select(FarmingBatch.id).where(FarmingBatch.id == payload.farming_batch_id, FarmingBatch.organization_id == current_user.organization_id)) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Farming batch not found")
+    sale = Sale(organization_id=current_user.organization_id, customer_id=payload.customer_id, farming_batch_id=payload.farming_batch_id, user_id=current_user.id, session_id=session.id, status=payload.status, notes=payload.notes, discount_amount=payload.discount_amount, payment_method=payload.payment_method)
     db.add(sale)
     db.flush()
 

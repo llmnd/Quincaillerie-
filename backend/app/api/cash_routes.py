@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.api.deps import require_roles
+from app.api.deps import require_module, require_roles
 from app.core.config import settings
 from app.models.cash import AuditLog, CashHandoff, CashOperation, CashRegister, CashSession
 from app.models.sale import Sale
@@ -12,7 +12,7 @@ from app.models.user import User
 from app.schemas.cash import CashOperationCreate, CashOperationRead, CashRegisterCreate, CashRegisterRead, CashSessionClose, CashSessionOpen, CashSessionRead
 from app.api.deps import get_db
 
-router = APIRouter(prefix="/cash", tags=["cash"])
+router = APIRouter(prefix="/cash", tags=["cash"], dependencies=[Depends(require_module("cash"))])
 
 
 def calculate_expected_cash(session_id: int, db: Session, organization_id: int | None = None) -> float:

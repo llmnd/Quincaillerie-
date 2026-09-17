@@ -5,13 +5,13 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.api.cash_routes import get_open_cash_session, handoff_is_acknowledged
-from app.api.deps import get_db, require_roles
+from app.api.deps import get_db, require_module, require_roles
 from app.models.accounting import Account, Invoice, InvoiceLine, JournalEntry, JournalLine, Tax
 from app.models.sale import Sale
 from app.models.user import User
 from app.schemas.accounting import AccountCreate, AccountRead, InvoiceRead, JournalEntryRead, TaxCreate, TaxRead
 
-router = APIRouter(prefix="/accounting", tags=["accounting"])
+router = APIRouter(prefix="/accounting", tags=["accounting"], dependencies=[Depends(require_module("accounting"))])
 
 
 @router.get("")

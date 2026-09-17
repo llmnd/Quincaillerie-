@@ -18,6 +18,7 @@ class Sale(Base):
     notes: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     session_id: Mapped[int | None] = mapped_column(ForeignKey("cash_sessions.id"), nullable=True)
+    farming_batch_id: Mapped[int | None] = mapped_column(ForeignKey("farming_batches.id"), nullable=True, index=True)
     discount_amount: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     payment_method: Mapped[str] = mapped_column(String(30), default="cash", nullable=False)
 

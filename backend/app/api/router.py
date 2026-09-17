@@ -5,11 +5,12 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.api.customer_routes import router as customer_router
-from app.api.deps import get_db
-from app.api.deps import require_roles
+from app.api.deps import get_db, require_module, require_roles
 from app.api.auth_routes import router as auth_router
 from app.api.accounting_routes import router as accounting_router
 from app.api.cash_routes import router as cash_router
+from app.api.farming_routes import router as farming_router
+from app.api.module_routes import router as module_router
 from app.api.sale_routes import router as sale_router
 from app.api.supplier_routes import router as supplier_router
 from app.models.product import Product
@@ -26,6 +27,8 @@ api_router.include_router(sale_router)
 api_router.include_router(auth_router)
 api_router.include_router(cash_router)
 api_router.include_router(accounting_router)
+api_router.include_router(module_router)
+api_router.include_router(farming_router)
 
 
 @api_router.get("/ping")
@@ -50,14 +53,14 @@ def product_read(product: Product, sold_quantity: int = 0) -> ProductRead:
     )
 
 
-@api_router.get("/products", response_model=list[ProductRead])
+@api_router.get("/products", response_model=list[ProductRead], dependencies=[Depends(require_module("products"))])
 def list_products(db: Session = Depends(get_db), current_user: object = Depends(require_roles("admin", "seller"))) -> list[ProductRead]:
     sold_subquery = select(func.coalesce(func.sum(SaleItem.quantity), 0)).where(SaleItem.product_id == Product.id, SaleItem.organization_id == current_user.organization_id).scalar_subquery()
     rows = db.execute(select(Product, sold_subquery.label("sold_quantity")).where(Product.is_active.is_(True), Product.organization_id == current_user.organization_id).order_by(Product.id)).all()
     return [product_read(product, int(sold_quantity)) for product, sold_quantity in rows]
 
 
-@api_router.post("/products", response_model=ProductRead, status_code=status.HTTP_201_CREATED)
+@api_router.post("/products", response_model=ProductRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_module("products"))])
 def create_product(payload: ProductCreate, db: Session = Depends(get_db), current_user: object = Depends(require_roles("admin"))) -> Product:
     existing = db.scalar(select(Product).where(Product.organization_id == current_user.organization_id, Product.sku == payload.sku))
     if existing is not None:
@@ -70,7 +73,7 @@ def create_product(payload: ProductCreate, db: Session = Depends(get_db), curren
     return product_read(product)
 
 
-@api_router.get("/products/{product_id}", response_model=ProductRead)
+@api_router.get("/products/{product_id}", response_model=ProductRead, dependencies=[Depends(require_module("products"))])
 def get_product(product_id: int, db: Session = Depends(get_db), current_user: object = Depends(require_roles("admin", "seller"))) -> ProductRead:
     product = db.scalar(select(Product).where(Product.id == product_id, Product.organization_id == current_user.organization_id))
     if product is None:
@@ -79,7 +82,7 @@ def get_product(product_id: int, db: Session = Depends(get_db), current_user: ob
     return product_read(product, int(sold_quantity))
 
 
-@api_router.put("/products/{product_id}", response_model=ProductRead)
+@api_router.put("/products/{product_id}", response_model=ProductRead, dependencies=[Depends(require_module("products"))])
 def update_product(product_id: int, payload: ProductUpdate, db: Session = Depends(get_db), current_user: object = Depends(require_roles("admin"))) -> ProductRead:
     product = db.scalar(select(Product).where(Product.id == product_id, Product.organization_id == current_user.organization_id))
     if product is None:
@@ -99,7 +102,7 @@ def update_product(product_id: int, payload: ProductUpdate, db: Session = Depend
     return product_read(product, int(sold_quantity))
 
 
-@api_router.delete("/products/{product_id}")
+@api_router.delete("/products/{product_id}", dependencies=[Depends(require_module("products"))])
 def delete_product(product_id: int, db: Session = Depends(get_db), current_user: object = Depends(require_roles("admin"))) -> dict[str, Any]:
     product = db.scalar(select(Product).where(Product.id == product_id, Product.organization_id == current_user.organization_id))
     if product is None:
@@ -110,12 +113,12 @@ def delete_product(product_id: int, db: Session = Depends(get_db), current_user:
     return {"message": "Product archived successfully"}
 
 
-@api_router.get("/stock-movements", response_model=list[StockMovementRead])
+@api_router.get("/stock-movements", response_model=list[StockMovementRead], dependencies=[Depends(require_module("stock"))])
 def list_stock_movements(db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin", "seller"))) -> list[StockMovement]:
     return db.scalars(select(StockMovement).where(StockMovement.organization_id == current_user.organization_id).order_by(StockMovement.id.desc())).all()
 
 
-@api_router.post("/stock-movements", response_model=StockMovementRead, status_code=status.HTTP_201_CREATED)
+@api_router.post("/stock-movements", response_model=StockMovementRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_module("stock"))])
 def create_stock_movement(payload: StockMovementCreate, db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin", "seller"))) -> StockMovement:
     product = db.scalar(select(Product).where(Product.id == payload.product_id, Product.organization_id == current_user.organization_id))
     if product is None:

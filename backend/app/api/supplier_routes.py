@@ -4,11 +4,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, require_roles
+from app.api.deps import get_db, require_module, require_roles
 from app.models.supplier import Supplier
 from app.schemas.supplier import SupplierCreate, SupplierRead, SupplierUpdate
 
-router = APIRouter(prefix="/suppliers", tags=["suppliers"])
+router = APIRouter(prefix="/suppliers", tags=["suppliers"], dependencies=[Depends(require_module("stock"))])
 
 
 @router.get("", response_model=list[SupplierRead])

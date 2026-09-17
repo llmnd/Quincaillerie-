@@ -18,6 +18,7 @@ class SaleItemRead(SaleItemCreate):
 
 class SaleCreate(BaseModel):
     customer_id: int | None = None
+    farming_batch_id: int | None = None
     status: str = "pending"
     notes: str | None = None
     discount_amount: float = Field(default=0, ge=0)
@@ -44,6 +45,7 @@ class SaleRead(BaseModel):
     notes: str | None = None
     user_id: int | None = None
     session_id: int | None = None
+    farming_batch_id: int | None = None
     discount_amount: float
     payment_method: str
     items: list[SaleItemRead]

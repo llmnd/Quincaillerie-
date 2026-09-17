@@ -293,3 +293,149 @@ def test_login_authenticates_with_httponly_cookie():
 
     products = cookie_client.get("/api/v1/products")
     assert products.status_code == 200
+
+
+def test_organization_modules_keep_core_features_and_gate_optional_ones():
+    email = f"modules-{uuid.uuid4().hex[:8]}@demo.test"
+    register = client.post(
+        "/api/v1/auth/register",
+        json={
+            "organization_name": f"Modules-{uuid.uuid4().hex[:6]}",
+            "full_name": "Modules Admin",
+            "email": email,
+            "password": "StrongPass123",
+        },
+    )
+    assert register.status_code == 201
+
+    modules = client.get("/api/v1/organization/modules")
+    assert modules.status_code == 200
+    module_map = {module["key"]: module for module in modules.json()}
+    assert module_map["sales"]["required"] is True
+    assert module_map["cash"]["required"] is True
+    assert module_map["accounting"]["enabled"] is True
+
+    disable_cash = client.patch("/api/v1/organization/modules/cash?enabled=false")
+    assert disable_cash.status_code == 400
+
+    disable_accounting = client.patch("/api/v1/organization/modules/accounting?enabled=false")
+    assert disable_accounting.status_code == 200
+    accounting_modules = client.get("/api/v1/organization/modules")
+    assert next(module for module in accounting_modules.json() if module["key"] == "accounting")["enabled"] is False
+
+
+def test_farming_batches_and_health_events_track_mortality():
+    email = f"farming-{uuid.uuid4().hex[:8]}@demo.test"
+    register = client.post(
+        "/api/v1/auth/register",
+        json={
+            "organization_name": f"Farm-{uuid.uuid4().hex[:6]}",
+            "full_name": "Farm Admin",
+            "email": email,
+            "password": "StrongPass123",
+        },
+    )
+    assert register.status_code == 201
+
+    site = client.post("/api/v1/farming/sites", json={"name": "Site principal"})
+    assert site.status_code == 201
+    building = client.post("/api/v1/farming/buildings", json={"site_id": site.json()["id"], "name": "Bâtiment A", "capacity": 500})
+    assert building.status_code == 201
+    batch = client.post(
+        "/api/v1/farming/batches",
+        json={
+            "building_id": building.json()["id"],
+            "reference": "BANDE-001",
+            "species": "chicken",
+            "production_type": "broiler",
+            "start_date": "2026-09-17",
+            "initial_count": 100,
+        },
+    )
+    assert batch.status_code == 201
+    event = client.post(
+        "/api/v1/farming/health-events",
+        json={
+            "batch_id": batch.json()["id"],
+            "event_date": "2026-09-18",
+            "event_type": "mortality",
+            "title": "Mortalité observée",
+            "mortality_count": 3,
+        },
+    )
+    assert event.status_code == 201
+    assert client.get("/api/v1/farming/batches").json()[0]["current_count"] == 97
+
+
+def test_farming_batch_admin_can_update_and_delete():
+    email = f"farming-admin-{uuid.uuid4().hex[:8]}@demo.test"
+    register = client.post(
+        "/api/v1/auth/register",
+        json={
+            "organization_name": f"FarmEdit-{uuid.uuid4().hex[:6]}",
+            "full_name": "Farm Admin",
+            "email": email,
+            "password": "StrongPass123",
+        },
+    )
+    assert register.status_code == 201
+
+    site = client.post("/api/v1/farming/sites", json={"name": "Site édition"})
+    assert site.status_code == 201
+    building = client.post("/api/v1/farming/buildings", json={"site_id": site.json()["id"], "name": "Bâtiment édition", "capacity": 150})
+    assert building.status_code == 201
+
+    batch = client.post(
+        "/api/v1/farming/batches",
+        json={
+            "building_id": building.json()["id"],
+            "reference": "BANDE-EDIT-001",
+            "production_type": "layer",
+            "start_date": "2026-09-17",
+            "initial_count": 80,
+            "breed": "ISA Brown",
+        },
+    )
+    assert batch.status_code == 201
+    batch_id = batch.json()["id"]
+
+    updated = client.put(
+        f"/api/v1/farming/batches/{batch_id}",
+        json={
+            "reference": "BANDE-EDIT-001-UPDATED",
+            "production_type": "layer",
+            "breed": "ISA Brown 2",
+            "initial_count": 90,
+            "current_count": 88,
+        },
+    )
+    assert updated.status_code == 200
+    assert updated.json()["reference"] == "BANDE-EDIT-001-UPDATED"
+    assert updated.json()["current_count"] == 88
+
+    deleted = client.delete(f"/api/v1/farming/batches/{batch_id}")
+    assert deleted.status_code == 200
+    assert client.get("/api/v1/farming/batches").json() == []
+
+
+def test_farming_consumption_decrements_stock_and_creates_traceability():
+    site = client.post("/api/v1/farming/sites", json={"name": "Site consommation"})
+    assert site.status_code == 201
+    building = client.post("/api/v1/farming/buildings", json={"site_id": site.json()["id"], "name": "Bâtiment consommation"})
+    assert building.status_code == 201
+    batch = client.post(
+        "/api/v1/farming/batches",
+        json={"building_id": building.json()["id"], "reference": "BANDE-CONS", "production_type": "broiler", "start_date": "2026-09-17", "initial_count": 50},
+    )
+    assert batch.status_code == 201
+    product = client.post(
+        "/api/v1/products",
+        json={"sku": "ALIMENT-CONS", "name": "Aliment élevage", "unit_price": 12, "stock_quantity": 20},
+    )
+    assert product.status_code == 201
+    consumption = client.post(
+        "/api/v1/farming/consumptions",
+        json={"batch_id": batch.json()["id"], "product_id": product.json()["id"], "quantity": 4, "consumed_at": "2026-09-18", "reason": "Ration du matin"},
+    )
+    assert consumption.status_code == 201
+    assert client.get(f"/api/v1/products/{product.json()['id']}").json()["stock_quantity"] == 16
