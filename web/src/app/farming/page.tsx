@@ -43,6 +43,7 @@ export default function FarmingPage() {
   const [editingBatchId, setEditingBatchId] = useState<number | null>(null);
   const [workspaceView, setWorkspaceView] = useState<"overview" | "batches" | "health" | "production">("overview");
   const [tasksOpen, setTasksOpen] = useState(false);
+  const [quickActionsOpen, setQuickActionsOpen] = useState(false);
 
   async function load() {
     try {
@@ -217,7 +218,6 @@ export default function FarmingPage() {
           <div>
             <span className={styles.eyebrow}>Exploitation avicole / Aujourd'hui</span>
             <h1>Centre d'élevage</h1>
-            <p>Une vue opérationnelle de vos bandes, de la santé et de la production.</p>
           </div>
           <div className={styles.headerDate}><CalendarDays size={16} /> {new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}</div>
         </header>
@@ -236,9 +236,14 @@ export default function FarmingPage() {
 
         <div className={styles.quickActions}>
           <span className={styles.quickLabel}>Actions rapides</span>
-          <button className={styles.btnMinimal} onClick={() => setActiveForm("egg")}><Plus size={14} /> Récolte d'œufs</button>
-          <button className={styles.btnMinimal} onClick={() => setActiveForm("health")}><Plus size={14} /> Événement sanitaire</button>
-          <button className={styles.btnPrimary} onClick={() => setActiveForm("batch")}><Plus size={14} /> Nouvelle bande</button>
+          <button type="button" className={styles.quickActionsToggle} onClick={() => setQuickActionsOpen(open => !open)} aria-expanded={quickActionsOpen} aria-label={quickActionsOpen ? "Masquer les actions rapides" : "Afficher les actions rapides"}>
+            <Plus size={18} />
+          </button>
+          <div className={quickActionsOpen ? styles.quickActionListOpen : styles.quickActionList}>
+            <button className={styles.btnMinimal} onClick={() => setActiveForm("egg")}><Plus size={14} /> Récolte d'œufs</button>
+            <button className={styles.btnMinimal} onClick={() => setActiveForm("health")}><Plus size={14} /> Événement sanitaire</button>
+            <button className={styles.btnPrimary} onClick={() => setActiveForm("batch")}><Plus size={14} /> Nouvelle bande</button>
+          </div>
         </div>
 
         <section className={styles.operationsGrid}>

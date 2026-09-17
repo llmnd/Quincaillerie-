@@ -285,10 +285,13 @@
 
 .quickActions { display: flex; align-items: center; gap: 8px; min-height: 58px; margin-bottom: 14px; padding: 9px 10px; border: 1px solid rgba(148, 163, 184, 0.12); border-radius: 10px; background: rgba(15, 23, 42, 0.34); box-shadow: 0 8px 24px rgba(2, 6, 23, 0.1); }
 .quickLabel { margin: 0 8px 0 3px; color: #94a3b8; font-size: 0.6rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; }
+.quickActionList, .quickActionListOpen { display: flex; align-items: center; gap: 8px; }
 .quickActions .btnMinimal, .quickActions .btnPrimary { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; }
 .quickActions .btnMinimal svg { color: #a3e635; }
 .quickActions .btnPrimary { margin-left: auto; border-color: #a3e635; background: #a3e635; color: #17210b !important; box-shadow: none; }
 .quickActions .btnPrimary:hover { background: #bef264; color: #17210b !important; }
+.quickActionsToggle { display: none; align-items: center; justify-content: center; width: 30px; height: 30px; margin-left: auto; padding: 0; border: 1px solid rgba(163, 230, 53, 0.32); border-radius: 7px; background: rgba(163, 230, 53, 0.08); color: #a3e635 !important; cursor: pointer; }
+.quickActionsToggle:hover { background: rgba(163, 230, 53, 0.16); }
 .taskToggle { display: inline-flex; align-items: center; gap: 7px; padding: 8px 11px; border: 1px solid rgba(163, 230, 53, 0.28); border-radius: 7px; background: rgba(163, 230, 53, 0.08); color: #d9f99d !important; font-size: 0.72rem; cursor: pointer; }
 .taskToggle:hover, .taskToggle[aria-expanded="true"] { border-color: rgba(163, 230, 53, 0.6); background: rgba(163, 230, 53, 0.15); }
 .taskToggle > span { display: grid; min-width: 18px; height: 18px; place-items: center; border-radius: 50%; background: #a3e635; color: #1a2e05; font-size: 0.58rem; font-weight: 700; }
@@ -754,11 +757,17 @@ button.focusRow { cursor: pointer; }
   .focusPanel { padding: 15px; }
   .productionSummary { justify-content: stretch; }
   .productionSummary .btnPrimary { width: 100%; justify-content: center; }
-  .quickActions { align-items: flex-start; flex-wrap: wrap; padding: 10px; }
-  .quickLabel { width: 100%; }
-  .quickActions .btnMinimal { order: 2; }
-  .quickActions .btnPrimary { order: 3; }
-  .quickActions .btnPrimary { margin-left: 0; }
+  .quickActions { align-items: center; flex-wrap: wrap; min-height: 0; gap: 0; margin: 7px 0 12px; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+  .quickLabel { margin: 0; font-size: 0.56rem; }
+  .quickActionsToggle { display: inline-flex; width: 40px; height: 0px; margin-left: auto; border-radius: 100%; }
+  .quickActionList { display: none; }
+  .quickActionListOpen { display: flex; flex-basis: 100%; flex-direction: row; align-items: center; gap: 16px; margin-top: 7px; padding: 7px 0 2px; overflow-x: auto; border-top: 1px solid rgba(148, 163, 184, 0.12); white-space: nowrap; }
+  .quickActions .btnMinimal, .quickActions .btnPrimary { min-height: 28px; padding: 2px 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; font-size: 0.72rem; font-weight: 500; }
+  .quickActions .btnMinimal { color: #cbd5e1 !important; }
+  .quickActions .btnMinimal:hover { background: transparent; color: #ffffff !important; }
+  .quickActions .btnPrimary { margin-left: 0; color: #a3e635 !important; font-weight: 700; }
+  .quickActions .btnPrimary:hover { background: transparent; color: #bef264 !important; }
+  .quickActions .btnMinimal svg, .quickActions .btnPrimary svg { width: 13px; height: 13px; }
   .contentGrid, .statsGrid {
     grid-template-columns: 1fr;
   }

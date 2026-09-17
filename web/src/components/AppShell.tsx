@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { BarChart3, Bell, Bird, Boxes, Calculator, LogOut, Menu, Package, Search, Settings, ShoppingCart, Users, WalletCards, X } from "lucide-react";
+import { BarChart3, Bell, Bird, Boxes, Calculator, Menu, Package, Search, Settings, ShoppingCart, Users, WalletCards, X } from "lucide-react";
 import styles from "./AppShell.module.css";
 
 type User = { full_name?: string; email?: string; role?: "admin" | "seller" };
@@ -71,13 +71,6 @@ export default function AppShell({ children, hideTopbar = false }: { children: R
   const visibleApps = applications.filter((application) => application.roles.includes(role) && (!application.moduleKey || enabledModules === null || enabledModules.has(application.moduleKey)));
   const visibleSidebar = sidebarItems.filter((item) => (!item.roles || item.roles.includes(role)) && (!item.moduleKey || enabledModules === null || enabledModules.has(item.moduleKey)));
 
-  function logout() {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/auth/logout`, { method: "POST", credentials: "include" }).catch(() => undefined);
-    window.localStorage.removeItem("quincaillerie_access_token");
-    window.localStorage.removeItem("quincaillerie_user");
-    router.replace("/");
-  }
-
   if (!user) return null;
 
   return (
@@ -97,9 +90,10 @@ export default function AppShell({ children, hideTopbar = false }: { children: R
         </nav>
 
         <div className={styles.userCard}>
-          <span className={styles.avatar}>{(user.full_name ?? user.email ?? "U").slice(0, 1).toUpperCase()}</span>
+          <button type="button" className={styles.avatarButton} onClick={() => router.push("/profile")} aria-label="Ouvrir mon profil" title="Mon profil">
+            {(user.full_name ?? user.email ?? "U").slice(0, 1).toUpperCase()}
+          </button>
           <div><strong>{user.full_name ?? "Utilisateur"}</strong><small>{role === "admin" ? "Administrateur" : "Vendeur"}</small></div>
-          <button type="button" onClick={logout} className={styles.logoutButton} aria-label="Se déconnecter" title="Se déconnecter"><LogOut size={17} /><span className={styles.logoutText}>Déconnexion</span></button>
         </div>
       </aside>
 
