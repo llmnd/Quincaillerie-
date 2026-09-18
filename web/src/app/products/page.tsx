@@ -139,7 +139,7 @@ export default function ProductsPage() {
           imageUrl = await readFileAsDataUrl(imageFile);
         }
       } catch {
-        setError("L'image n'a pas pu être téléversée.");
+        setError("L'image n'a pas pu être envoyée.");
         setIsUploadingImage(false);
         return;
       }
@@ -190,13 +190,13 @@ export default function ProductsPage() {
     <AppShell>
       <header className={styles.header}>
         <div>
-          <p className={styles.eyebrow}>Collection & Traçabilité</p>
+          <p className={styles.eyebrow}>Catalogue & Stock</p>
           <h1>Produits</h1>
-          <p>Consulter les stocks, prix et historique d'inventaire.</p>
+          <p>Consulter et gérer les références, prix et inventaires.</p>
         </div>
         {isAdmin && (
           <button type="button" className={styles.primaryButton} onClick={openCreate}>
-            <Plus size={16} aria-hidden="true" />
+            <Plus size={18} aria-hidden="true" />
             <span>Nouveau produit</span>
           </button>
         )}
@@ -204,43 +204,64 @@ export default function ProductsPage() {
 
       {showForm && (
         <form className={styles.createForm} onSubmit={saveProduct}>
-          <h2>{editingId ? "Modifier l'article" : "Nouvel article"}</h2>
-          <input
-            required
-            placeholder="SKU"
-            value={form.sku}
-            onChange={(event) => setForm({ ...form, sku: event.target.value })}
-          />
-          <input
-            required
-            placeholder="Nom de l'article"
-            value={form.name}
-            onChange={(event) => setForm({ ...form, name: event.target.value })}
-          />
-          <select
-            value={isNewCategory ? NEW_CATEGORY : form.category}
-            onChange={(event) => {
-              const newCategory = event.target.value === NEW_CATEGORY;
-              setIsNewCategory(newCategory);
-              setForm({ ...form, category: newCategory ? "" : event.target.value });
-            }}
-          >
-            <option value="">Sélectionner une catégorie</option>
-            {categories.map((category) => (
-              <option key={category} value={category}>{category}</option>
-            ))}
-            <option value={NEW_CATEGORY}>+ Nouvelle catégorie</option>
-          </select>
-          {isNewCategory && (
+          <h2>{editingId ? "Modifier le produit" : "Ajouter un produit"}</h2>
+          
+          <div className={styles.fieldGroup}>
+            <label htmlFor="sku">Référence (SKU)</label>
             <input
+              id="sku"
               required
-              placeholder="Nom de la nouvelle catégorie"
-              value={form.category}
-              onChange={(event) => setForm({ ...form, category: event.target.value })}
+              placeholder="ex: REF-8802"
+              value={form.sku}
+              onChange={(event) => setForm({ ...form, sku: event.target.value })}
             />
+          </div>
+
+          <div className={styles.fieldGroup}>
+            <label htmlFor="name">Nom du produit</label>
+            <input
+              id="name"
+              required
+              placeholder="ex: Marteau de charpentier"
+              value={form.name}
+              onChange={(event) => setForm({ ...form, name: event.target.value })}
+            />
+          </div>
+
+          <div className={styles.fieldGroup}>
+            <label htmlFor="category">Catégorie</label>
+            <select
+              id="category"
+              value={isNewCategory ? NEW_CATEGORY : form.category}
+              onChange={(event) => {
+                const newCategory = event.target.value === NEW_CATEGORY;
+                setIsNewCategory(newCategory);
+                setForm({ ...form, category: newCategory ? "" : event.target.value });
+              }}
+            >
+              <option value="">Sélectionner une catégorie</option>
+              {categories.map((category) => (
+                <option key={category} value={category}>{category}</option>
+              ))}
+              <option value={NEW_CATEGORY}>+ Nouvelle catégorie</option>
+            </select>
+          </div>
+
+          {isNewCategory && (
+            <div className={styles.fieldGroup}>
+              <label htmlFor="newCategory">Nom de la catégorie</label>
+              <input
+                id="newCategory"
+                required
+                placeholder="ex: Outillage manuel"
+                value={form.category}
+                onChange={(event) => setForm({ ...form, category: event.target.value })}
+              />
+            </div>
           )}
+
           <label className={styles.imageField}>
-            Visuel de l'article
+            <span>Image d'illustration</span>
             <input
               type="file"
               accept="image/*"
@@ -252,29 +273,42 @@ export default function ProductsPage() {
             />
             {imagePreview && <img src={imagePreview} alt="Aperçu" className={styles.imagePreview} />}
           </label>
-          <input
-            required
-            type="number"
-            min="0"
-            step="1"
-            placeholder="Prix (FCFA)"
-            value={form.unit_price}
-            onChange={(event) => setForm({ ...form, unit_price: event.target.value })}
-          />
-          <input
-            required
-            type="number"
-            min="0"
-            placeholder={editingId ? "Ajuster le stock" : "Stock initial"}
-            value={form.stock_quantity}
-            onChange={(event) => setForm({ ...form, stock_quantity: event.target.value })}
-          />
+
+          <div className={styles.fieldGroup}>
+            <label htmlFor="price">Prix unitaire (FCFA)</label>
+            <input
+              id="price"
+              required
+              type="number"
+              min="0"
+              step="1"
+              placeholder="ex: 15000"
+              value={form.unit_price}
+              onChange={(event) => setForm({ ...form, unit_price: event.target.value })}
+            />
+          </div>
+
+          <div className={styles.fieldGroup}>
+            <label htmlFor="stock">
+              {editingId ? "Ajustement stock restant" : "Stock de départ"}
+            </label>
+            <input
+              id="stock"
+              required
+              type="number"
+              min="0"
+              placeholder="ex: 50"
+              value={form.stock_quantity}
+              onChange={(event) => setForm({ ...form, stock_quantity: event.target.value })}
+            />
+          </div>
+
           <div className={styles.formActions}>
             <button type="button" className={styles.cancelButton} onClick={() => setShowForm(false)}>
               Annuler
             </button>
             <button type="submit" className={styles.primaryButton} disabled={isUploadingImage}>
-              {isUploadingImage ? "Enregistrement..." : "Enregistrer"}
+              {isUploadingImage ? "Envoie..." : "Enregistrer"}
             </button>
           </div>
         </form>
@@ -285,7 +319,7 @@ export default function ProductsPage() {
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           aria-label="Rechercher un produit"
-          placeholder="Rechercher par référence, désignation..."
+          placeholder="Rechercher une référence ou une désignation..."
         />
         <span>
           {visibleProducts.length} référence{visibleProducts.length > 1 ? "s" : ""}
@@ -293,10 +327,10 @@ export default function ProductsPage() {
       </section>
 
       {error && <div className={styles.state}>{error}</div>}
-      {isLoading && <div className={styles.state}>Chargement...</div>}
+      {isLoading && <div className={styles.state}>Chargement du catalogue...</div>}
       {!isLoading && !error && products.length === 0 && (
         <div className={styles.state}>
-          <p>Aucun produit enregistré.</p>
+          <p>Aucun produit dans le catalogue.</p>
         </div>
       )}
 
@@ -360,11 +394,11 @@ export default function ProductsPage() {
           <section className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="product-detail-title">
             <div className={styles.modalHeader}>
               <div>
-                <p className={styles.eyebrow}>Détails de l'article</p>
+                <p className={styles.eyebrow}>Fiche Produit</p>
                 <h2 id="product-detail-title">{selectedProduct.name}</h2>
               </div>
               <button type="button" className={styles.closeButton} onClick={() => setSelectedProduct(null)} aria-label="Fermer">
-                <X size={16} />
+                <X size={18} />
               </button>
             </div>
             {selectedProduct.image_url && (
