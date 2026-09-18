@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Plus, X } from "lucide-react";
 import AppShell from "../../components/AppShell";
+import { authHeaders } from "../../lib/auth";
 import styles from "./page.module.css";
 
 type Product = {
@@ -48,10 +49,9 @@ export default function ProductsPage() {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const isAdmin = typeof window !== "undefined" && JSON.parse(window.localStorage.getItem("quincaillerie_user") ?? "{}")?.role === "admin";
-  const tokenHeaders = (): Record<string, string> => ({});
 
   async function loadProducts() {
-    const response = await fetch(`${API_URL}/api/v1/products`, { headers: tokenHeaders(), credentials: "include" });
+    const response = await fetch(`${API_URL}/api/v1/products`, { headers: authHeaders(), credentials: "include" });
     if (!response.ok) throw new Error();
     setProducts(await response.json());
   }
@@ -148,7 +148,7 @@ export default function ProductsPage() {
 
     const response = await fetch(`${API_URL}/api/v1/products${editingId ? `/${editingId}` : ""}`, {
       method: editingId ? "PUT" : "POST",
-      headers: { "Content-Type": "application/json", ...tokenHeaders() },
+      headers: { "Content-Type": "application/json", ...authHeaders() },
       credentials: "include",
       body: JSON.stringify({
         ...form,
@@ -176,7 +176,7 @@ export default function ProductsPage() {
     if (!window.confirm(`Archiver « ${product.name} » ?`)) return;
     const response = await fetch(`${API_URL}/api/v1/products/${product.id}`, {
       method: "DELETE",
-      headers: tokenHeaders(),
+      headers: authHeaders(),
       credentials: "include",
     });
     if (!response.ok) {

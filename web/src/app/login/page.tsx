@@ -33,7 +33,11 @@ export default function LoginPage() {
       }
 
       const payload = await response.json();
+      const accessToken = typeof payload?.access_token === "string" ? payload.access_token : null;
       window.localStorage.removeItem("quincaillerie_access_token");
+      if (accessToken) {
+        window.localStorage.setItem("quincaillerie_access_token", accessToken);
+      }
       window.localStorage.setItem("quincaillerie_user", JSON.stringify(payload));
       router.push("/dashboard");
     } catch {

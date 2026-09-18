@@ -96,7 +96,11 @@ export default function SignupPage() {
       }
 
       const payload = await response.json();
-  window.localStorage.removeItem("quincaillerie_access_token");
+      const accessToken = typeof payload?.access_token === "string" ? payload.access_token : typeof payload?.user?.access_token === "string" ? payload.user.access_token : null;
+      window.localStorage.removeItem("quincaillerie_access_token");
+      if (accessToken) {
+        window.localStorage.setItem("quincaillerie_access_token", accessToken);
+      }
       window.localStorage.setItem("quincaillerie_user", JSON.stringify(payload.user ?? payload));
       router.push("/dashboard");
     } catch {
