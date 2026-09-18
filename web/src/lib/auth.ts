@@ -22,10 +22,10 @@ function getAccessTokenFromUser(user: unknown): string | null {
 
   const nestedUser = record.user;
   if (nestedUser && typeof nestedUser === "object") {
-    const nestedToken = typeof (nestedUser as Record<string, unknown>).access_token === "string"
-      ? (nestedUser as Record<string, unknown>).access_token
-      : null;
-    return nestedToken?.trim() ?? null;
+    const nestedToken = (nestedUser as Record<string, unknown>).access_token;
+    if (typeof nestedToken === "string") {
+      return nestedToken.trim();
+    }
   }
 
   return null;
