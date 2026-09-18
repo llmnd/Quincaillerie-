@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { BarChart3, Bell, Bird, Boxes, Calculator, Package, Search, Settings, ShoppingCart, Users, WalletCards } from "lucide-react";
-import { authHeaders } from "../lib/auth";
+import { authHeaders, getStoredUser, restoreAuthSession } from "../lib/auth";
 import styles from "./AppShell.module.css";
 
 type User = { full_name?: string; email?: string; role?: "admin" | "seller" };
@@ -43,30 +43,36 @@ export default function AppShell({ children, hideTopbar = false }: { children: R
   const router = useRouter();
   const pathname = usePathname();
 
-  const readStoredUser = (): User | null => {
-    if (typeof window === "undefined") return null;
-    try {
-      const storedUser = window.localStorage.getItem("quincaillerie_user");
-      if (!storedUser) return null;
-      const parsed = JSON.parse(storedUser) as User & { user?: User };
-      return parsed.user ?? parsed;
-    } catch {
-      return null;
-    }
-  };
-
   const [user, setUser] = useState<User | null>(null);
   const [enabledModules, setEnabledModules] = useState<Set<string> | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [organization, setOrganization] = useState<OrganizationProfile | null>(null);
 
   useEffect(() => {
-    const storedUser = readStoredUser();
-    setUser(storedUser);
+    let isMounted = true;
 
-    if (!storedUser) {
-      router.replace("/login");
-    }
+    const bootstrapSession = async () => {
+      const storedUser = getStoredUser() as User | null;
+      if (storedUser && isMounted) {
+        setUser(storedUser);
+      }
+
+      const restoredUser = await restoreAuthSession();
+      if (!isMounted) return;
+
+      const nextUser = (restoredUser ?? storedUser) as User | null;
+      setUser(nextUser);
+
+      if (!nextUser) {
+        router.replace("/login");
+      }
+    };
+
+    void bootstrapSession();
+
+    return () => {
+      isMounted = false;
+    };
   }, [router]);
 
   useEffect(() => {
