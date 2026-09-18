@@ -412,6 +412,45 @@
   white-space: nowrap;
 }
 
+.sectionMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.restoreButton,
+.archiveButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #12141a;
+  color: #d1d5db;
+  cursor: pointer;
+  transition: border-color 160ms ease, color 160ms ease, background 160ms ease;
+}
+
+.restoreButton {
+  padding: 6px 10px;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.archiveButton {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  flex: 0 0 auto;
+}
+
+.restoreButton:hover,
+.archiveButton:hover {
+  border-color: rgba(163, 230, 53, 0.5);
+  color: #d9f99d;
+  background: rgba(163, 230, 53, 0.04);
+}
+
 .activityList,
 .alertList { padding: 4px 20px 14px; }
 
@@ -422,6 +461,10 @@
   gap: 12px;
   padding: 13px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.activityRow {
+  min-width: 0;
 }
 
 .activityRow:last-child,
@@ -491,10 +534,12 @@
   .metricCard > span { min-height: 30px; line-height: 1.35; }
   .metricCard > strong { margin-top: 13px; font-size: 1.18rem; }
   .sectionHeader { padding: 17px 15px 14px; }
+  .sectionMeta { flex-direction: column; align-items: flex-end; gap: 4px; }
   .activityPanel, .alertPanel, .modulesSection { padding: 0 !important; }
   .activityList, .alertList { padding-inline: 15px; }
   .activityRow, .alertRow { min-height: 62px; padding: 16px 0; }
   .activityRow time { display: none; }
+  .archiveButton { width: 28px; height: 28px; }
   .moduleLinks { grid-template-columns: repeat(2, minmax(0, 1fr)); padding-inline: 15px; }
 }
 

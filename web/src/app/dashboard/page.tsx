@@ -1,9 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Activity, AlertCircle, ArrowUpRight, Bird, Boxes, CheckCircle2, Clock3, Grid, Package, RefreshCw, ShoppingCart, Users, WalletCards } from "lucide-react";
-import AppShell, { applications } from "../../components/AppShell";
+import { Activity, AlertCircle, Archive, Bird, Boxes, CheckCircle2, Clock3, Grid, Package, RefreshCw, ShoppingCart, Users, WalletCards } from "lucide-react";
+import AppShell from "../../components/AppShell";
 import { authHeaders } from "../../lib/auth";
 import styles from "./page.module.css";
 
@@ -53,6 +52,7 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [organization, setOrganization] = useState<OrganizationProfile | null>(null);
+  const [archivedActivityIds, setArchivedActivityIds] = useState<string[]>([]);
 
   async function fetchJson<T>(path: string): Promise<T | null> {
     try {
@@ -62,6 +62,30 @@ export default function DashboardPage() {
       return null;
     }
   }
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const stored = window.localStorage.getItem("quincaillerie_archived_activities");
+      if (stored) {
+        const parsed = JSON.parse(stored) as string[];
+        if (Array.isArray(parsed)) {
+          setArchivedActivityIds(parsed);
+        }
+      }
+    } catch (error) {
+      console.error("Erreur de lecture des activités archivées", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem("quincaillerie_archived_activities", JSON.stringify(archivedActivityIds));
+    } catch (error) {
+      console.error("Erreur de sauvegarde des activités archivées", error);
+    }
+  }, [archivedActivityIds]);
 
   useEffect(() => {
     let isMounted = true;
@@ -108,10 +132,6 @@ export default function DashboardPage() {
     };
   }, []);
 
-  const visibleApps = applications.filter((application) =>
-    application.roles.includes(user?.role ?? "seller")
-  );
-
   const firstName = user?.full_name ? user.full_name.split(" ")[0] : "";
   const todaySales = sales.filter((sale) => isToday(sale.sale_date));
   const todayRevenue = todaySales.reduce((total, sale) => total + sale.total_amount, 0);
@@ -125,7 +145,15 @@ export default function DashboardPage() {
     ...batches.slice(0, 4).map((batch) => ({ id: `batch-${batch.id}`, label: "Bande créée", detail: `${batch.reference} · ${batch.current_count} sujets`, time: batch.created_at, kind: "farm" as const })),
     ...healthEvents.slice(0, 4).map((event) => ({ id: `health-${event.id}`, label: event.title, detail: event.mortality_count ? `${event.mortality_count} perte${event.mortality_count > 1 ? "s" : ""}` : "Suivi sanitaire", time: event.event_date, kind: "farm" as const })),
     ...eggProductions.slice(0, 8).map((production) => ({ id: `egg-${production.id}`, label: "Récolte d'œufs", detail: `${production.quantity} œuf${production.quantity > 1 ? "s" : ""} · ${production.damaged_quantity} cassé${production.damaged_quantity > 1 ? "s" : ""}`, time: production.created_at, kind: "farm" as const })),
-  ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 8);
+  ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 16);
+
+  const visibleRecentActivities = recentActivities.filter((activity) => !archivedActivityIds.includes(activity.id));
+  const toggleArchiveActivity = (id: string) => {
+    setArchivedActivityIds((current) =>
+      current.includes(id) ? current.filter((entry) => entry !== id) : [...current, id]
+    );
+  };
+  const archiveCount = archivedActivityIds.length;
 
   const activityIcon = { sale: ShoppingCart, stock: Package, cash: WalletCards, farm: Bird };
 
@@ -192,8 +220,39 @@ export default function DashboardPage() {
 
         <div className={styles.dashboardGrid}>
           <section className={styles.activityPanel} aria-labelledby="activity-title">
-            <div className={styles.sectionHeader}><div><span className={styles.sectionKicker}><Activity size={13} /> Traçabilité</span><h2 id="activity-title">Activité récente</h2></div><span className={styles.updatedAt}>{lastUpdated ? `Mis à jour à ${lastUpdated.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}` : "Chargement…"}</span></div>
-            {recentActivities.length ? <div className={styles.activityList}>{recentActivities.map((item) => { const Icon = activityIcon[item.kind]; return <div className={styles.activityRow} key={item.id}><span className={`${styles.activityIcon} ${styles[item.kind]}`}><Icon size={16} /></span><div className={styles.activityCopy}><strong>{item.label}</strong><small>{item.detail}</small></div><time>{formatDate(item.time)}</time></div>; })}</div> : <div className={styles.emptyState}><Clock3 size={20} /><p>{isLoading ? "Lecture des opérations…" : "Aucune activité enregistrée pour le moment."}</p></div>}
+            <div className={styles.sectionHeader}>
+              <div>
+                <span className={styles.sectionKicker}><Activity size={13} /> Traçabilité</span>
+                <h2 id="activity-title">Activité récente</h2>
+              </div>
+              <div className={styles.sectionMeta}>
+                <span className={styles.updatedAt}>{lastUpdated ? `Mis à jour à ${lastUpdated.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}` : "Chargement…"}</span>
+                {archiveCount > 0 && (
+                  <button type="button" className={styles.restoreButton} onClick={() => setArchivedActivityIds([])}>
+                    Rétablir ({archiveCount})
+                  </button>
+                )}
+              </div>
+            </div>
+            {visibleRecentActivities.length ? (
+              <div className={styles.activityList}>
+                {visibleRecentActivities.map((item) => {
+                  const Icon = activityIcon[item.kind];
+                  return (
+                    <div className={styles.activityRow} key={item.id}>
+                      <span className={`${styles.activityIcon} ${styles[item.kind]}`}><Icon size={16} /></span>
+                      <div className={styles.activityCopy}><strong>{item.label}</strong><small>{item.detail}</small></div>
+                      <time>{formatDate(item.time)}</time>
+                      <button type="button" className={styles.archiveButton} onClick={() => toggleArchiveActivity(item.id)} aria-label={`Archiver ${item.label}`} title="Archiver cette activité">
+                        <Archive size={14} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className={styles.emptyState}><Clock3 size={20} /><p>{archiveCount > 0 ? "Aucune activité visible dans le flux courant." : (isLoading ? "Lecture des opérations…" : "Aucune activité enregistrée pour le moment.")}</p></div>
+            )}
           </section>
 
           <aside className={styles.alertPanel} aria-labelledby="attention-title">
