@@ -21,6 +21,7 @@ export default function SalesPage() {
   const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const [noticeType, setNoticeType] = useState<"success" | "error" | "info">("info");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [discount, setDiscount] = useState("0");
@@ -66,6 +67,12 @@ export default function SalesPage() {
   const filteredProducts = products.filter((product) => `${product.name} ${product.sku}`.toLowerCase().includes(search.toLowerCase()));
   const total = useMemo(() => cart.reduce((sum, line) => sum + line.unit_price * line.quantity, 0), [cart]);
 
+  useEffect(() => {
+    if (!message) return;
+    const timeout = window.setTimeout(() => setMessage(""), 2600);
+    return () => window.clearTimeout(timeout);
+  }, [message]);
+
   function addProduct(product: Product) {
     setMessage("");
     setCart((current) => {
@@ -85,6 +92,7 @@ export default function SalesPage() {
 
   function continueToPayment() {
     if (cart.length === 0) {
+      setNoticeType("error");
       setMessage("Ajoutez au moins un produit.");
       return;
     }
@@ -99,6 +107,7 @@ export default function SalesPage() {
     }
 
     setIsSubmitting(true);
+    setNoticeType("info");
     setMessage("");
     try {
       const response = await fetch(`${API_URL}/api/v1/sales`, {
@@ -113,6 +122,7 @@ export default function SalesPage() {
         const detail = typeof payload?.detail === "string" ? payload.detail : "Erreur inconnue.";
         const normalized = detail.toLowerCase();
 
+        setNoticeType("error");
         if (normalized.includes("stock")) {
           setMessage(`Vente non validée : ${detail}`);
         } else if (normalized.includes("caisse") || normalized.includes("cash session") || normalized.includes("open a cash session") || normalized.includes("acknowledge")) {
@@ -128,8 +138,10 @@ export default function SalesPage() {
       setCart([]);
       setSelectedCustomer("");
       setIsPaymentStep(false);
+      setNoticeType("success");
       setMessage("Vente créée et enregistrée dans la session de caisse.");
     } catch {
+      setNoticeType("error");
       setMessage("La vente n'a pas pu être créée. Vérifiez les informations saisies.");
     } finally {
       setIsSubmitting(false);
@@ -258,7 +270,15 @@ export default function SalesPage() {
             <strong>{total.toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} FCFA</strong>
           </div>
 
-          {message && <p className={styles.message} role="status">{message}</p>}
+          {message && (
+            <div className={styles.statusModalBackdrop} onClick={() => setMessage("")}>
+              <div className={`${styles.statusModal} ${noticeType === "success" ? styles.success : styles.error}`} role="status" aria-live="polite" onClick={(event) => event.stopPropagation()}>
+                <div className={styles.statusModalHeader}>{noticeType === "success" ? "Succès" : "Attention"}</div>
+                <h3 className={styles.statusModalTitle}>{noticeType === "success" ? "Vente enregistrée" : "Vente non validée"}</h3>
+                <p className={styles.statusModalMessage}>{message}</p>
+              </div>
+            </div>
+          )}
 
           <div className={styles.checkoutActions}>{isPaymentStep ? <><button type="button" className={styles.secondaryButton} onClick={() => setIsPaymentStep(false)} disabled={isSubmitting}>Retour au panier</button><button type="button" className={styles.primaryButton} onClick={submitSale} disabled={isSubmitting || cart.length === 0 || !hasOpenSession || Boolean(requiresHandoff)}>{isSubmitting ? "Enregistrement…" : "Confirmer la vente"}</button></> : <button type="button" className={styles.primaryButton} onClick={continueToPayment} disabled={cart.length === 0 || !hasOpenSession || Boolean(requiresHandoff)}>Passer au paiement</button>}</div>
 
