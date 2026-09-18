@@ -13,7 +13,7 @@ organization_router = APIRouter(prefix="/organization", tags=["organization"])
 
 class OrganizationProfileUpdate(BaseModel):
     name: str = Field(min_length=2, max_length=255)
-    logo: str | None = Field(default=None, max_length=2048)
+    logo: str | None = Field(default=None, max_length=2_000_000)
 
 
 @organization_router.get("/profile")

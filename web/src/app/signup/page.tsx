@@ -37,6 +37,15 @@ export default function SignupPage() {
     reader.readAsDataURL(file);
   }
 
+  function readFileAsDataUrl(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
+      reader.onerror = () => reject(new Error("Impossible de lire l’image."));
+      reader.readAsDataURL(file);
+    });
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
@@ -45,23 +54,26 @@ export default function SignupPage() {
     try {
       let logoUrl = "";
       if (organizationLogoFile) {
-        if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
-          setError("La configuration Cloudinary est absente.");
-          return;
+        if (CLOUDINARY_CLOUD_NAME && CLOUDINARY_UPLOAD_PRESET) {
+          try {
+            const uploadData = new FormData();
+            uploadData.append("file", organizationLogoFile);
+            uploadData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+            const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+              method: "POST",
+              body: uploadData,
+            });
+            if (uploadResponse.ok) {
+              logoUrl = (await uploadResponse.json()).secure_url ?? "";
+            }
+          } catch {
+            logoUrl = "";
+          }
         }
 
-        const uploadData = new FormData();
-        uploadData.append("file", organizationLogoFile);
-        uploadData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
-        const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
-          method: "POST",
-          body: uploadData,
-        });
-        if (!uploadResponse.ok) {
-          setError("La photo de l’entreprise n’a pas pu être envoyée.");
-          return;
+        if (!logoUrl) {
+          logoUrl = await readFileAsDataUrl(organizationLogoFile);
         }
-        logoUrl = (await uploadResponse.json()).secure_url ?? "";
       }
 
       const response = await fetch(`${API_URL}/api/v1/auth/register`, {

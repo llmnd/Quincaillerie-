@@ -88,25 +88,37 @@ export default function ProductsPage() {
     setShowForm(true);
   }
 
+  function readFileAsDataUrl(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
+      reader.onerror = () => reject(new Error("Impossible de lire l’image."));
+      reader.readAsDataURL(file);
+    });
+  }
+
   async function saveProduct(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
     let imageUrl = form.image_url || null;
     if (imageFile) {
-      if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
-        setError("La configuration Cloudinary est absente.");
-        return;
-      }
       setIsUploadingImage(true);
       try {
-        const uploadData = new FormData();
-        uploadData.append("file", imageFile);
-        uploadData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
-        const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, { method: "POST", body: uploadData });
-        if (!uploadResponse.ok) throw new Error("Cloudinary upload failed");
-        imageUrl = (await uploadResponse.json()).secure_url;
+        if (CLOUDINARY_CLOUD_NAME && CLOUDINARY_UPLOAD_PRESET) {
+          const uploadData = new FormData();
+          uploadData.append("file", imageFile);
+          uploadData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+          const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, { method: "POST", body: uploadData });
+          if (uploadResponse.ok) {
+            imageUrl = (await uploadResponse.json()).secure_url;
+          }
+        }
+
+        if (!imageUrl) {
+          imageUrl = await readFileAsDataUrl(imageFile);
+        }
       } catch {
-        setError("L'image n'a pas pu être envoyée vers Cloudinary.");
+        setError("L'image n'a pas pu être envoyée.");
         setIsUploadingImage(false);
         return;
       }

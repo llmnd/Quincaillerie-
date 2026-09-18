@@ -13,6 +13,8 @@
 
 html {
   height: 100%;
+  -webkit-user-magnifiable: no;
+  overscroll-behavior: none;
 }
 
 html,
@@ -30,6 +32,7 @@ body {
   font-family: var(--font-geist-sans), "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  touch-action: manipulation;
 }
 
 h1,
@@ -60,6 +63,7 @@ select,
 textarea,
 button {
   color: #17252d;
+  font-size: 16px;
 }
 
 input::placeholder,

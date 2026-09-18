@@ -38,6 +38,15 @@ export default function OrganizationSettings() {
     setPreview(URL.createObjectURL(file));
   }
 
+  function readFileAsDataUrl(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
+      reader.onerror = () => reject(new Error("Impossible de lire l’image."));
+      reader.readAsDataURL(file);
+    });
+  }
+
   async function saveProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsSaving(true);
@@ -46,13 +55,23 @@ export default function OrganizationSettings() {
     try {
       let logo = profile.logo ?? null;
       if (logoFile) {
-        if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) throw new Error("Configuration Cloudinary absente.");
-        const data = new FormData();
-        data.append("file", logoFile);
-        data.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
-        const upload = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, { method: "POST", body: data });
-        if (!upload.ok) throw new Error("La photo n’a pas pu être envoyée.");
-        logo = (await upload.json()).secure_url ?? logo;
+        if (CLOUDINARY_CLOUD_NAME && CLOUDINARY_UPLOAD_PRESET) {
+          try {
+            const data = new FormData();
+            data.append("file", logoFile);
+            data.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+            const upload = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, { method: "POST", body: data });
+            if (upload.ok) {
+              logo = (await upload.json()).secure_url ?? logo;
+            }
+          } catch {
+            logo = null;
+          }
+        }
+
+        if (!logo) {
+          logo = await readFileAsDataUrl(logoFile);
+        }
       }
       const response = await fetch(`${API_URL}/api/v1/organization/profile`, {
         method: "PUT",
