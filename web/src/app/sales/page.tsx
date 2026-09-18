@@ -103,17 +103,34 @@ export default function SalesPage() {
     try {
       const response = await fetch(`${API_URL}/api/v1/sales`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders() },
         credentials: "include",
         body: JSON.stringify({ customer_id: selectedCustomer ? Number(selectedCustomer) : null, status: "pending", discount_amount: Number(discount), payment_method: paymentMethod, items: cart.map((line) => ({ product_id: line.id, quantity: line.quantity, unit_price: line.unit_price })) }),
       });
-      if (!response.ok) throw new Error();
+
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const detail = typeof payload?.detail === "string" ? payload.detail : "Erreur inconnue.";
+        const normalized = detail.toLowerCase();
+
+        if (normalized.includes("stock")) {
+          setMessage(`Vente non validée : ${detail}`);
+        } else if (normalized.includes("caisse") || normalized.includes("cash session") || normalized.includes("open a cash session") || normalized.includes("acknowledge")) {
+          setMessage("Une caisse ouverte est obligatoire pour valider une vente.");
+        } else if (normalized.includes("payment")) {
+          setMessage("Le mode de paiement sélectionné est invalide.");
+        } else {
+          setMessage(`La vente n'a pas pu être créée : ${detail}`);
+        }
+        return;
+      }
+
       setCart([]);
       setSelectedCustomer("");
       setIsPaymentStep(false);
       setMessage("Vente créée et enregistrée dans la session de caisse.");
     } catch {
-      setMessage("La vente n'a pas pu être créée. Vérifiez le stock disponible.");
+      setMessage("La vente n'a pas pu être créée. Vérifiez les informations saisies.");
     } finally {
       setIsSubmitting(false);
     }
@@ -122,7 +139,11 @@ export default function SalesPage() {
   async function acknowledgeHandoff() {
     setIsAcknowledgingHandoff(true);
     try {
-      const response = await fetch(`${API_URL}/api/v1/cash/sessions/current/handoff/acknowledge`, { method: "POST", credentials: "include" });
+      const response = await fetch(`${API_URL}/api/v1/cash/sessions/current/handoff/acknowledge`, {
+        method: "POST",
+        headers: authHeaders(),
+        credentials: "include",
+      });
       if (!response.ok) throw new Error();
       setHandoff(await response.json());
     } catch {
