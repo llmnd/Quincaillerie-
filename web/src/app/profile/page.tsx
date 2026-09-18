@@ -17,18 +17,17 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export default function ProfilePage() {
   const router = useRouter();
-  const [profile, setProfile] = useState<Profile>({});
-
-  useEffect(() => {
-    const storedUser = window.localStorage.getItem("quincaillerie_user");
-    if (storedUser) {
-      try {
-        setProfile(JSON.parse(storedUser) as Profile);
-      } catch {
-        setProfile({});
-      }
+  const [profile] = useState<Profile>(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      const storedUser = window.localStorage.getItem("quincaillerie_user");
+      if (!storedUser) return {};
+      const parsed = JSON.parse(storedUser) as Profile & { user?: Profile };
+      return parsed.user ?? parsed;
+    } catch {
+      return {};
     }
-  }, []);
+  });
 
   function logout() {
     fetch(`${API_URL}/api/v1/auth/logout`, { method: "POST", credentials: "include" }).catch(() => undefined);
@@ -63,7 +62,7 @@ export default function ProfilePage() {
           <div className={styles.infoGrid}>
             <div className={styles.infoItem}><UserRound size={17} /><span><small>Nom complet</small><strong>{name}</strong></span></div>
             <div className={styles.infoItem}><Mail size={17} /><span><small>Adresse email</small><strong>{profile.email || "Non renseignée"}</strong></span></div>
-            <div className={styles.infoItem}><ShieldCheck size={17} /><span><small>Niveau d'accès</small><strong>{profile.role === "admin" ? "Administrateur" : "Vendeur"}</strong></span></div>
+            <div className={styles.infoItem}><ShieldCheck size={17} /><span><small>Niveau d&apos;accès</small><strong>{profile.role === "admin" ? "Administrateur" : "Vendeur"}</strong></span></div>
           </div>
 
           <div className={styles.profileActions}>

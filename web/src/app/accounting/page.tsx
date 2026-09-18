@@ -44,17 +44,57 @@ export default function AccountingPage() {
       throw new Error();
     }
 
-    setTaxes(await taxResponse.json());
-    setSales(await saleResponse.json());
-    setInvoices(await invoiceResponse.json());
-    setTrialBalance(await trialResponse.json());
-    setJournal(await journalResponse.json());
-    setReports({ balance: await balanceResponse.json(), income: await incomeResponse.json(), vat: await vatResponse.json() });
-    setMessage("");
+    const [nextTaxes, nextSales, nextInvoices, nextTrialBalance, nextJournal, nextBalance, nextIncome, nextVat] = await Promise.all([
+      taxResponse.json() as Promise<Tax[]>,
+      saleResponse.json() as Promise<Sale[]>,
+      invoiceResponse.json() as Promise<Invoice[]>,
+      trialResponse.json() as Promise<TrialRow[]>,
+      journalResponse.json() as Promise<JournalEntry[]>,
+      balanceResponse.json() as Promise<{ total_assets: number; total_liabilities: number }>,
+      incomeResponse.json() as Promise<{ revenue_total: number; expense_total: number; net_result: number }>,
+      vatResponse.json() as Promise<{ taxable_base: number; tax_amount: number; total_amount: number }>,
+    ]);
+
+    return {
+      taxes: nextTaxes,
+      sales: nextSales,
+      invoices: nextInvoices,
+      trialBalance: nextTrialBalance,
+      journal: nextJournal,
+      reports: {
+        balance: nextBalance,
+        income: nextIncome,
+        vat: nextVat,
+      },
+    };
   }
 
   useEffect(() => {
-    load().catch(() => setMessage("La comptabilité n'est pas disponible pour le moment."));
+    let isMounted = true;
+
+    const initializeAccounting = async () => {
+      try {
+        const data = await load();
+        if (!isMounted) return;
+        setTaxes(data.taxes);
+        setSales(data.sales);
+        setInvoices(data.invoices);
+        setTrialBalance(data.trialBalance);
+        setJournal(data.journal);
+        setReports(data.reports);
+        setMessage("");
+      } catch {
+        if (isMounted) {
+          setMessage("La comptabilité n'est pas disponible pour le moment.");
+        }
+      }
+    };
+
+    void initializeAccounting();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const invoicedSaleIds = new Set(invoices.map((invoice) => invoice.sale_id));
@@ -133,7 +173,7 @@ export default function AccountingPage() {
             <strong>{money(reports.balance.total_assets)}</strong>
           </article>
           <article>
-            <span>Chiffre d'affaires</span>
+            <span>Chiffre d&apos;affaires</span>
             <strong>{money(reports.income.revenue_total)}</strong>
           </article>
           <article>

@@ -26,6 +26,22 @@ const isToday = (value: string) => new Date(value).toDateString() === new Date()
 
 export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const value = window.localStorage.getItem("quincaillerie_user");
+      if (!value) {
+        setUser(null);
+        return;
+      }
+      const parsed = JSON.parse(value) as User & { user?: User };
+      setUser(parsed.user ?? parsed);
+    } catch (error) {
+      console.error("Erreur de lecture du profil utilisateur", error);
+      setUser(null);
+    }
+  }, []);
   const [sales, setSales] = useState<Sale[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [movements, setMovements] = useState<StockMovement[]>([]);
@@ -47,46 +63,49 @@ export default function DashboardPage() {
     }
   }
 
-  async function loadActivity() {
-    setIsLoading(true);
-    const [saleData, productData, movementData, sessionData, batchData, healthData, eggData, customerData] = await Promise.all([
-      fetchJson<Sale[]>("/api/v1/sales"),
-      fetchJson<Product[]>("/api/v1/products"),
-      fetchJson<StockMovement[]>("/api/v1/stock-movements"),
-      fetchJson<CashSession[]>("/api/v1/cash/sessions"),
-      fetchJson<Batch[]>("/api/v1/farming/batches"),
-      fetchJson<HealthEvent[]>("/api/v1/farming/health-events"),
-      fetchJson<EggProduction[]>("/api/v1/farming/egg-productions"),
-      fetchJson<{ id: number }[]>("/api/v1/customers"),
-    ]);
-    if (saleData) setSales(saleData);
-    if (productData) setProducts(productData);
-    if (movementData) setMovements(movementData);
-    if (sessionData) setSessions(sessionData);
-    if (batchData) setBatches(batchData);
-    if (healthData) setHealthEvents(healthData);
-    if (eggData) setEggProductions(eggData);
-    if (customerData) setCustomerCount(customerData.length);
-    setLastUpdated(new Date());
-    setIsLoading(false);
-  }
-
-  async function loadOrganization() {
-    const organizationData = await fetchJson<OrganizationProfile>("/api/v1/organization/profile");
-    if (organizationData) setOrganization(organizationData);
-  }
-
   useEffect(() => {
-    const value = window.localStorage.getItem("quincaillerie_user");
-    if (value) {
+    let isMounted = true;
+
+    const initializeDashboard = async () => {
+      setIsLoading(true);
+
       try {
-        setUser(JSON.parse(value) as User);
-      } catch (e) {
-        console.error("Erreur de lecture du profil utilisateur", e);
+        const [saleData, productData, movementData, sessionData, batchData, healthData, eggData, customerData, organizationData] = await Promise.all([
+          fetchJson<Sale[]>("/api/v1/sales"),
+          fetchJson<Product[]>("/api/v1/products"),
+          fetchJson<StockMovement[]>("/api/v1/stock-movements"),
+          fetchJson<CashSession[]>("/api/v1/cash/sessions"),
+          fetchJson<Batch[]>("/api/v1/farming/batches"),
+          fetchJson<HealthEvent[]>("/api/v1/farming/health-events"),
+          fetchJson<EggProduction[]>("/api/v1/farming/egg-productions"),
+          fetchJson<{ id: number }[]>("/api/v1/customers"),
+          fetchJson<OrganizationProfile>("/api/v1/organization/profile"),
+        ]);
+
+        if (!isMounted) return;
+
+        if (saleData) setSales(saleData);
+        if (productData) setProducts(productData);
+        if (movementData) setMovements(movementData);
+        if (sessionData) setSessions(sessionData);
+        if (batchData) setBatches(batchData);
+        if (healthData) setHealthEvents(healthData);
+        if (eggData) setEggProductions(eggData);
+        if (customerData) setCustomerCount(customerData.length);
+        if (organizationData) setOrganization(organizationData);
+        setLastUpdated(new Date());
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
-    }
-    void loadActivity();
-    void loadOrganization();
+    };
+
+    void initializeDashboard();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const visibleApps = applications.filter((application) =>
@@ -117,7 +136,7 @@ export default function DashboardPage() {
           <div className={styles.headerInfo}>
             <span className={styles.eyebrow}>
               <Grid size={12} className={styles.eyebrowIcon} />
-              ESPACE D'EXPLOITATION
+              ESPACE D&apos;EXPLOITATION
             </span>
             <h1 className={styles.title}>
               {firstName ? `BONJOUR, ${firstName.toUpperCase()}` : "TABLEAU DE BORD"}
@@ -135,12 +154,37 @@ export default function DashboardPage() {
               </div>
             )}
             <span>{new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}</span>
-            <button type="button" className={styles.refreshButton} onClick={() => void loadActivity()} aria-label="Actualiser l’activité" title="Actualiser"><RefreshCw size={15} className={isLoading ? styles.spinning : ""} /></button>
+            <button type="button" className={styles.refreshButton} onClick={() => {
+              setIsLoading(true);
+              void (async () => {
+                const [saleData, productData, movementData, sessionData, batchData, healthData, eggData, customerData] = await Promise.all([
+                  fetchJson<Sale[]>("/api/v1/sales"),
+                  fetchJson<Product[]>("/api/v1/products"),
+                  fetchJson<StockMovement[]>("/api/v1/stock-movements"),
+                  fetchJson<CashSession[]>("/api/v1/cash/sessions"),
+                  fetchJson<Batch[]>("/api/v1/farming/batches"),
+                  fetchJson<HealthEvent[]>("/api/v1/farming/health-events"),
+                  fetchJson<EggProduction[]>("/api/v1/farming/egg-productions"),
+                  fetchJson<{ id: number }[]>("/api/v1/customers"),
+                ]);
+
+                if (saleData) setSales(saleData);
+                if (productData) setProducts(productData);
+                if (movementData) setMovements(movementData);
+                if (sessionData) setSessions(sessionData);
+                if (batchData) setBatches(batchData);
+                if (healthData) setHealthEvents(healthData);
+                if (eggData) setEggProductions(eggData);
+                if (customerData) setCustomerCount(customerData.length);
+                setLastUpdated(new Date());
+                setIsLoading(false);
+              })();
+            }} aria-label="Actualiser l’activité" title="Actualiser"><RefreshCw size={15} className={isLoading ? styles.spinning : ""} /></button>
           </div>
         </header>
 
         <section className={styles.metricGrid} aria-label="Indicateurs de l'organisation">
-          <article className={`${styles.metricCard} ${styles.metricAccent}`}><span>Chiffre d'affaires du jour</span><strong>{isLoading ? "—" : formatMoney(todayRevenue)}</strong><small><ShoppingCart size={13} /> {todaySales.length} vente{todaySales.length > 1 ? "s" : ""}</small></article>
+          <article className={`${styles.metricCard} ${styles.metricAccent}`}><span>Chiffre d&apos;affaires du jour</span><strong>{isLoading ? "—" : formatMoney(todayRevenue)}</strong><small><ShoppingCart size={13} /> {todaySales.length} vente{todaySales.length > 1 ? "s" : ""}</small></article>
           <article className={styles.metricCard}><span>État de la caisse</span><strong>{openSession ? "ACTIVE" : "FERMÉE"}</strong><small className={openSession ? styles.good : styles.muted}><WalletCards size={13} /> {openSession ? `Caisse #${openSession.register_id}` : "Aucune session ouverte"}</small></article>
           <article className={styles.metricCard}><span>Stock à surveiller</span><strong>{lowStockProducts.length}</strong><small className={lowStockProducts.length ? styles.warning : styles.good}><Boxes size={13} /> référence{lowStockProducts.length > 1 ? "s" : ""} concernée{lowStockProducts.length > 1 ? "s" : ""}</small></article>
           <article className={styles.metricCard}><span>Équipe & relations</span><strong>{customerCount}</strong><small><Users size={13} /> clients enregistrés · {activeBatches.length} bande{activeBatches.length > 1 ? "s" : ""} active{activeBatches.length > 1 ? "s" : ""}</small></article>

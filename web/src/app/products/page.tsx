@@ -47,19 +47,47 @@ export default function ProductsPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState("");
   const [isUploadingImage, setIsUploadingImage] = useState(false);
-
-  const isAdmin = typeof window !== "undefined" && JSON.parse(window.localStorage.getItem("quincaillerie_user") ?? "{}")?.role === "admin";
+  const [isAdmin] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      const storedUser = window.localStorage.getItem("quincaillerie_user");
+      if (!storedUser) return false;
+      const parsed = JSON.parse(storedUser) as { role?: "admin" | "seller"; user?: { role?: "admin" | "seller" } };
+      return (parsed.user?.role ?? parsed.role) === "admin";
+    } catch {
+      return false;
+    }
+  });
 
   async function loadProducts() {
     const response = await fetch(`${API_URL}/api/v1/products`, { headers: authHeaders(), credentials: "include" });
-    if (!response.ok) throw new Error();
-    setProducts(await response.json());
+    if (!response.ok) throw new Error("Le catalogue n'est pas disponible.");
+    return response.json() as Promise<Product[]>;
   }
 
   useEffect(() => {
-    loadProducts()
-      .catch(() => setError("Le catalogue n'est pas disponible."))
-      .finally(() => setIsLoading(false));
+    let isMounted = true;
+
+    const fetchProducts = async () => {
+      try {
+        const nextProducts = await loadProducts();
+        if (!isMounted) return;
+        setProducts(nextProducts);
+      } catch {
+        if (!isMounted) return;
+        setError("Le catalogue n'est pas disponible.");
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void fetchProducts();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -261,7 +289,7 @@ export default function ProductsPage() {
           )}
 
           <label className={styles.imageField}>
-            <span>Image d'illustration</span>
+            <span>Image d&apos;illustration</span>
             <input
               type="file"
               accept="image/*"

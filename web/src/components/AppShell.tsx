@@ -42,19 +42,31 @@ const sidebarItems = [
 export default function AppShell({ children, hideTopbar = false }: { children: React.ReactNode; hideTopbar?: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
+
+  const readStoredUser = (): User | null => {
+    if (typeof window === "undefined") return null;
+    try {
+      const storedUser = window.localStorage.getItem("quincaillerie_user");
+      if (!storedUser) return null;
+      const parsed = JSON.parse(storedUser) as User & { user?: User };
+      return parsed.user ?? parsed;
+    } catch {
+      return null;
+    }
+  };
+
   const [user, setUser] = useState<User | null>(null);
   const [enabledModules, setEnabledModules] = useState<Set<string> | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [organization, setOrganization] = useState<OrganizationProfile | null>(null);
 
   useEffect(() => {
-    const storedUser = window.localStorage.getItem("quincaillerie_user");
+    const storedUser = readStoredUser();
+    setUser(storedUser);
+
     if (!storedUser) {
       router.replace("/login");
-      return;
     }
-
-    setUser(JSON.parse(storedUser) as User);
   }, [router]);
 
   useEffect(() => {
@@ -81,10 +93,15 @@ export default function AppShell({ children, hideTopbar = false }: { children: R
       .catch(() => setOrganization(null));
   }, [user]);
 
-  const role = user?.role ?? "seller";
-  const visibleSidebar = sidebarItems.filter((item) => (!item.roles || item.roles.includes(role)) && (!item.moduleKey || enabledModules === null || enabledModules.has(item.moduleKey)));
-
-  if (!user) return null;
+  const effectiveUser = user ?? { full_name: "Utilisateur", email: "", role: "seller" as const };
+  const role: "admin" | "seller" = effectiveUser.role ?? "seller";
+  const visibleSidebar = sidebarItems.filter((item) => {
+    const allowedByRole = !item.roles || item.roles.includes(role);
+    if (!allowedByRole) return false;
+    const moduleKey = item.moduleKey ?? "";
+    return enabledModules === null || moduleKey.length === 0 || enabledModules.has(moduleKey);
+  });
+  const safeUser = effectiveUser;
 
   return (
     <div className={styles.shell}>
@@ -105,7 +122,7 @@ export default function AppShell({ children, hideTopbar = false }: { children: R
           <span className={styles.navLabel}>Espace de travail</span>
           {visibleSidebar.map((item) => (
             <Link
-              key={item.href}
+              key={`${item.href}-${item.label}`}
               href={item.href}
               onClick={() => setMenuOpen(false)}
               className={pathname === item.href ? styles.navActive : styles.navItem}
@@ -123,10 +140,10 @@ export default function AppShell({ children, hideTopbar = false }: { children: R
             aria-label="Ouvrir mon profil"
             title="Mon profil"
           >
-            {(user.full_name ?? user.email ?? "U").slice(0, 1).toUpperCase()}
+            {(safeUser.full_name ?? safeUser.email ?? "U").slice(0, 1).toUpperCase()}
           </button>
           <div>
-            <strong>{user.full_name ?? "Utilisateur"}</strong>
+            <strong>{safeUser.full_name ?? "Utilisateur"}</strong>
             <small>{role === "admin" ? "Administrateur" : "Vendeur"}</small>
           </div>
         </div>

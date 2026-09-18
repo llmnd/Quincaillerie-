@@ -22,21 +22,41 @@ export default function ReportsPage() {
   const [statusFilter, setStatusFilter] = useState("all");
 
   useEffect(() => {
-    const headers: Record<string, string> = {};
+    let isMounted = true;
 
-    Promise.all([
-      fetch(`${API_URL}/api/v1/sales`, { headers, credentials: "include" }),
-      fetch(`${API_URL}/api/v1/customers`, { headers, credentials: "include" }),
-      fetch(`${API_URL}/api/v1/products`, { headers, credentials: "include" }),
-    ])
-      .then(async ([salesResponse, customersResponse, productsResponse]) => {
-        if (!salesResponse.ok) throw new Error();
-        setSales(await salesResponse.json());
-        if (customersResponse.ok) setCustomers(await customersResponse.json());
-        if (productsResponse.ok) setProducts(await productsResponse.json());
+    const loadReports = async () => {
+      const headers: Record<string, string> = {};
+
+      try {
+        const [salesResponse, customersResponse, productsResponse] = await Promise.all([
+          fetch(`${API_URL}/api/v1/sales`, { headers, credentials: "include" }),
+          fetch(`${API_URL}/api/v1/customers`, { headers, credentials: "include" }),
+          fetch(`${API_URL}/api/v1/products`, { headers, credentials: "include" }),
+        ]);
+
+        if (!salesResponse.ok) throw new Error("Rapports indisponibles");
+
+        const nextSales = await salesResponse.json() as Sale[];
+        const nextCustomers = customersResponse.ok ? await customersResponse.json() as Customer[] : [];
+        const nextProducts = productsResponse.ok ? await productsResponse.json() as Product[] : [];
+
+        if (!isMounted) return;
+        setSales(nextSales);
+        setCustomers(nextCustomers);
+        setProducts(nextProducts);
         setMessage("");
-      })
-      .catch(() => setMessage("Les rapports ne sont pas disponibles pour le moment."));
+      } catch {
+        if (isMounted) {
+          setMessage("Les rapports ne sont pas disponibles pour le moment.");
+        }
+      }
+    };
+
+    void loadReports();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const customerNames = useMemo(() => new Map(customers.map((customer) => [customer.id, customer.name])), [customers]);
@@ -53,7 +73,7 @@ export default function ReportsPage() {
         <div>
           <p className={styles.eyebrow}>Analyse commerciale</p>
           <h1>Rapports de ventes</h1>
-          <p>Chiffre d'affaires, articles vendus et historique des opérations.</p>
+          <p>Chiffre d&apos;affaires, articles vendus et historique des opérations.</p>
         </div>
         <span className={styles.period}>Données enregistrées</span>
       </header>
@@ -64,7 +84,7 @@ export default function ReportsPage() {
         <>
           <section className={styles.kpiGrid}>
             <article>
-              <span>Chiffre d'affaires</span>
+              <span>Chiffre d&apos;affaires</span>
               <strong>{money(revenue)}</strong>
               <small>Somme des ventes</small>
             </article>

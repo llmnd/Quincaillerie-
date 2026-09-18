@@ -16,8 +16,15 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 function authHeaders(): HeadersInit {
   const storedUser = window.localStorage.getItem("quincaillerie_user");
-  const accessToken = storedUser ? (JSON.parse(storedUser) as { access_token?: string }).access_token : undefined;
-  return accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
+  if (!storedUser) return {};
+
+  try {
+    const parsed = JSON.parse(storedUser) as { access_token?: string; user?: { access_token?: string } };
+    const accessToken = parsed.user?.access_token ?? parsed.access_token;
+    return accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
+  } catch {
+    return {};
+  }
 }
 
 export default function ModulesPage() {

@@ -49,12 +49,12 @@ export default function Home() {
             Vendre, gérer les stocks, organiser les équipes et faire grandir votre activité sans friction.
           </p>
           <div className={styles.heroActions}>
-            <Link href="/login" className={styles.primaryButton}>Accéder à l'espace de vente</Link>
+            <Link href="/login" className={styles.primaryButton}>Accéder à l&apos;espace de vente</Link>
             <a href="#solution" className={styles.textButton}>Découvrir <span>↓</span></a>
           </div>
         </div>
 
-        <div className={styles.heroArtwork} aria-label="Aperçu de l'interface de gestion sur mobile">
+        <div className={styles.heroArtwork} aria-label="Aperçu de l&apos;interface de gestion sur mobile">
           <div className={styles.phone}>
             <div className={styles.phoneNotch} />
             <div className={styles.phoneScreen}>
@@ -66,7 +66,7 @@ export default function Home() {
               <div className={styles.phoneBalance}>
                 <span>Solde caisse</span>
                 <strong>73 500 FCFA</strong>
-                <small>+12,8% aujourd'hui</small>
+                <small>+12,8% aujourd&apos;hui</small>
               </div>
               <div className={styles.phoneStats}>
                 <div><small>Ventes</small><strong>24</strong></div>

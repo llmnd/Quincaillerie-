@@ -53,18 +53,40 @@ export default function FarmingPage() {
         fetch(`${API_URL}/api/v1/farming/health-events`, { headers: authHeaders(), credentials: "include" }),
         fetch(`${API_URL}/api/v1/farming/egg-productions`, { headers: authHeaders(), credentials: "include" }),
       ]);
-      if (bRes.ok) setBatches(await bRes.json());
+
+      const nextBatches = bRes.ok ? await bRes.json() : null;
+      const nextHealthEvents = hRes.ok ? await hRes.json() : null;
+      const nextEggProductions = eRes.ok ? await eRes.json() : null;
+
+      if (bRes.ok) setBatches(nextBatches as Batch[]);
       else console.error("Impossible de charger les bandes d'élevage", bRes.status);
-      if (hRes.ok) setHealthEvents(await hRes.json());
+      if (hRes.ok) setHealthEvents(nextHealthEvents as HealthEvent[]);
       else console.error("Impossible de charger les événements sanitaires", hRes.status);
-      if (eRes.ok) setEggProductions(await eRes.json());
+      if (eRes.ok) setEggProductions(nextEggProductions as EggProduction[]);
       else console.error("Impossible de charger les productions d'œufs", eRes.status);
     } catch (err) {
       console.error("Erreur de chargement:", err);
     }
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchInitialData = async () => {
+      try {
+        if (!isMounted) return;
+        await load();
+      } catch (error) {
+        console.error("Erreur de chargement initial:", error);
+      }
+    };
+
+    void fetchInitialData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   function openForm(form: "batch" | "health" | "egg") {
     if (form === "health") {
@@ -222,8 +244,8 @@ export default function FarmingPage() {
         
         <header className={styles.workspaceHeader}>
           <div>
-            <span className={styles.eyebrow}>Exploitation avicole / Aujourd'hui</span>
-            <h1>Centre d'élevage</h1>
+            <span className={styles.eyebrow}>Exploitation avicole / Aujourd&apos;hui</span>
+            <h1>Centre d&apos;élevage</h1>
           </div>
           <div className={styles.headerDate}><CalendarDays size={16} /> {new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}</div>
         </header>
@@ -246,7 +268,7 @@ export default function FarmingPage() {
             <Plus size={18} />
           </button>
           <div className={quickActionsOpen ? styles.quickActionListOpen : styles.quickActionList}>
-            <button className={styles.btnMinimal} onClick={() => openForm("egg")}><Plus size={14} /> Récolte d'œufs</button>
+            <button className={styles.btnMinimal} onClick={() => openForm("egg")}><Plus size={14} /> <p>Récolte d&apos;œufs</p></button>
             <button className={styles.btnMinimal} onClick={() => openForm("health")}><Plus size={14} /> Événement sanitaire</button>
             <button className={styles.btnPrimary} onClick={() => openForm("batch")}><Plus size={14} /> Nouvelle bande</button>
           </div>
@@ -265,7 +287,7 @@ export default function FarmingPage() {
           </aside>}
 
           <div className={styles.farmBoard}>
-            <div className={styles.boardToolbar}><div><span className={styles.panelKicker}>Plan de l'exploitation</span><h2>Zones d'élevage</h2></div><button className={styles.iconButton} aria-label="Ajouter une zone" title="Ajouter une zone"><Plus size={17} /></button></div>
+            <div className={styles.boardToolbar}><div><span className={styles.panelKicker}>Plan de l&apos;exploitation</span><h2>Zones d&apos;élevage</h2></div><button className={styles.iconButton} aria-label="Ajouter une zone" title="Ajouter une zone"><Plus size={17} /></button></div>
             <div className={styles.mapCanvas}>
               <img src={DECOR_FARM_IMAGE} alt="Vue aérienne de l'exploitation" />
               <div className={styles.mapShade} />
@@ -277,7 +299,7 @@ export default function FarmingPage() {
           </div>
 
           <aside className={styles.insightRail}>
-            <div className={styles.panelHeading}><div><span className={styles.panelKicker}>Surveillance</span><h2>État de l'élevage</h2></div><Activity size={17} /></div>
+            <div className={styles.panelHeading}><div><span className={styles.panelKicker}>Surveillance</span><h2>État de l&apos;élevage</h2></div><Activity size={17} /></div>
             <div className={styles.insightMetric}><span>Effectif vivant</span><strong>{totalBirds.toLocaleString("fr-FR")}</strong><small><span className={styles.goodText}>+ stable</span> sur {activeBatches.length} bandes</small></div>
             <div className={styles.insightMetric}><span>Production moyenne</span><strong>{productionRate.toLocaleString("fr-FR")} <em>œuf / sujet</em></strong><div className={styles.progressTrack}><span style={{ width: `${Math.min(productionRate * 100, 100)}%` }} /></div></div>
             <div className={styles.insightMetric}><span>Alertes sanitaires</span><strong className={mortalityTotal > 0 ? styles.alertText : styles.goodText}>{mortalityTotal || 0}</strong><small>{mortalityTotal > 0 ? "pertes signalées" : "aucune perte signalée"}</small></div>
@@ -297,7 +319,7 @@ export default function FarmingPage() {
                 <div className={styles.productionSummary}><button className={styles.btnPrimary} onClick={() => openForm("egg")}><Plus size={14} /> Saisir une récolte</button></div>
               )}
               {workspaceView === "batches" && (
-                <div className={styles.tabList}><h3 className={styles.sectionTitle}>Bandes d'élevage</h3>{batches.length === 0 ? <p className={styles.emptyState}>Aucune bande enregistrée</p> : <div className={styles.listGroup}>{batches.map(batch => <div key={batch.id} className={styles.listItem} onClick={() => setSelectedBatch(batch)}><div className={styles.batchLead}><img src={batch.image_url && batch.image_url.trim() !== "" ? batch.image_url : DECOR_FARM_IMAGE} alt={batch.reference} className={styles.batchThumb} /><div className={styles.itemInfo}><h4>{batch.reference}</h4><p>{batch.production_type === "layer" ? "Pondeuses" : "Poulets de chair"} · {batch.breed || "Standard"}</p></div></div><div className={styles.itemValue}><strong>{batch.current_count} sujets</strong><span className={styles.statusBadge}>{batch.status === "active" ? "Actif" : batch.status}</span></div></div>)}</div>}</div>
+                <div className={styles.tabList}><h3 className={styles.sectionTitle}>Bandes d&apos;élevage</h3>{batches.length === 0 ? <p className={styles.emptyState}>Aucune bande enregistrée</p> : <div className={styles.listGroup}>{batches.map(batch => <div key={batch.id} className={styles.listItem} onClick={() => setSelectedBatch(batch)}><div className={styles.batchLead}><img src={batch.image_url && batch.image_url.trim() !== "" ? batch.image_url : DECOR_FARM_IMAGE} alt={batch.reference} className={styles.batchThumb} /><div className={styles.itemInfo}><h4>{batch.reference}</h4><p>{batch.production_type === "layer" ? "Pondeuses" : "Poulets de chair"} · {batch.breed || "Standard"}</p></div></div><div className={styles.itemValue}><strong>{batch.current_count} sujets</strong><span className={styles.statusBadge}>{batch.status === "active" ? "Actif" : batch.status}</span></div></div>)}</div>}</div>
               )}
               {workspaceView === "health" && (
                 <div className={styles.tabList}><h3 className={styles.sectionTitle}>Journal sanitaire</h3>{healthEvents.length === 0 ? <p className={styles.emptyState}>Aucun événement sanitaire récent</p> : <div className={styles.listGroup}>{latestHealthEvents.slice(0, 12).map(event => <div key={event.id} className={styles.listItem}><div className={styles.itemInfo}><h4>{event.title}</h4><p>{event.event_type.toUpperCase()} · {new Date(event.event_date).toLocaleDateString("fr-FR")}</p></div><div className={styles.itemValue}><strong style={{ color: event.mortality_count > 0 ? "#f43f5e" : "#10b981" }}>{event.mortality_count ? `-${event.mortality_count} pertes` : "Conforme"}</strong><span>{event.mortality_count > 0 ? "À surveiller" : "Suivi"}</span></div></div>)}</div>}</div>
@@ -325,7 +347,7 @@ export default function FarmingPage() {
               <div className={styles.inputField}><label>Référence du lot</label><input required placeholder="ex: Lot Pondeuses 04" value={batchForm.reference} onChange={e => setBatchForm({...batchForm, reference: e.target.value})} /></div>
               <div className={styles.inputField}><label>Type de production</label><select value={batchForm.production_type} onChange={e => setBatchForm({...batchForm, production_type: e.target.value})}><option value="broiler">Poulets de chair</option><option value="layer">Pondeuses</option></select></div>
               <div className={styles.inputField}><label>Souche / Race</label><input placeholder="ex: Cobb 500, ISA Brown" value={batchForm.breed} onChange={e => setBatchForm({...batchForm, breed: e.target.value})} /></div>
-              <div className={styles.inputField}><label>Date d'arrivée</label><input type="date" value={batchForm.start_date} onChange={e => setBatchForm({...batchForm, start_date: e.target.value})} /></div>
+              <div className={styles.inputField}><label>Date d&apos;arrivée</label><input type="date" value={batchForm.start_date} onChange={e => setBatchForm({...batchForm, start_date: e.target.value})} /></div>
               <div className={styles.inputField}><label>Effectif initial</label><input type="number" required placeholder="1000" value={batchForm.initial_count} onChange={e => setBatchForm({...batchForm, initial_count: e.target.value})} /></div>
               <div className={styles.inputField}>
                 <label>Image du lot</label>
@@ -337,7 +359,7 @@ export default function FarmingPage() {
                   id="batch-image-upload"
                 />
                 <label htmlFor="batch-image-upload" className={styles.btnMinimal} style={{ display: "inline-flex", justifyContent: "center", width: "100%", cursor: "pointer" }}>
-                  {batchForm.image_url ? "Changer l'image" : "Choisir une image"}
+                  {batchForm.image_url ? "Changer l&apos;image" : "Choisir une image"}
                 </label>
                 {batchForm.image_url && (
                   <img src={batchForm.image_url} alt="Preview du lot" style={{ width: "100%", height: "112px", objectFit: "cover", borderRadius: "12px", marginTop: "10px" }} />
@@ -362,11 +384,11 @@ export default function FarmingPage() {
                   {activeBatches.map(b => <option key={b.id} value={b.id}>{b.reference} ({b.current_count} sujets)</option>)}
                 </select>
               </div>
-              <div className={styles.inputField}><label>Type d'intervention</label><select value={healthForm.event_type} onChange={e => setHealthForm({...healthForm, event_type: e.target.value})}><option value="vaccination">Vaccination</option><option value="treatment">Traitement</option><option value="mortality">Mortalité constatée</option></select></div>
+              <div className={styles.inputField}><label>Type d&apos;intervention</label><select value={healthForm.event_type} onChange={e => setHealthForm({...healthForm, event_type: e.target.value})}><option value="vaccination">Vaccination</option><option value="treatment">Traitement</option><option value="mortality">Mortalité constatée</option></select></div>
               <div className={styles.inputField}><label>Intitulé / Soin</label><input required placeholder="ex: Vaccin Gumboro Booster" value={healthForm.title} onChange={e => setHealthForm({...healthForm, title: e.target.value})} /></div>
               <div className={styles.inputField}><label>Pertes (mortalité)</label><input type="number" value={healthForm.mortality_count} onChange={e => setHealthForm({...healthForm, mortality_count: e.target.value})} /></div>
             </div>
-            <button className={styles.btnPrimary}>Enregistrer l'événement</button>
+            <button className={styles.btnPrimary}>Enregistrer l&apos;événement</button>
           </form>
               )}
 
@@ -433,7 +455,7 @@ export default function FarmingPage() {
                   </div>
 
                   <div className={styles.drawerCard}>
-                    <label>Date d'installation</label>
+                    <label>Date d&apos;installation</label>
                     <span style={{ fontSize: "1.1rem" }}>{new Date(selectedBatch.start_date).toLocaleDateString("fr-FR")}</span>
                   </div>
 

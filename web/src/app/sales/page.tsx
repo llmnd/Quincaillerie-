@@ -29,18 +29,19 @@ export default function SalesPage() {
   const [isPaymentStep, setIsPaymentStep] = useState(false);
   const [handoff, setHandoff] = useState<Handoff | null>(null);
   const [isAcknowledgingHandoff, setIsAcknowledgingHandoff] = useState(false);
-  const [userRole, setUserRole] = useState<"admin" | "seller">("seller");
+  const [userRole] = useState<"admin" | "seller">(() => {
+    if (typeof window === "undefined") return "seller";
+    try {
+      const storedUser = window.localStorage.getItem("quincaillerie_user");
+      if (!storedUser) return "seller";
+      const parsed = JSON.parse(storedUser) as { role?: "admin" | "seller"; user?: { role?: "admin" | "seller" } };
+      return (parsed.user?.role ?? parsed.role) === "admin" ? "admin" : "seller";
+    } catch {
+      return "seller";
+    }
+  });
 
   useEffect(() => {
-    const storedUser = window.localStorage.getItem("quincaillerie_user");
-    if (storedUser) {
-      try {
-        setUserRole(JSON.parse(storedUser).role === "admin" ? "admin" : "seller");
-      } catch {
-        setMessage("Session utilisateur invalide. Reconnectez-vous.");
-      }
-    }
-
     const headers = authHeaders();
     const loadResource = async <T,>(path: string, fallback: T): Promise<T> => {
       try {
@@ -245,7 +246,7 @@ export default function SalesPage() {
                 <div className={styles.cartLine} key={line.id}>
                   <div>
                     <strong>{line.image_url ? <img src={line.image_url} alt="" className={styles.cartThumb} /> : null}{line.name}</strong>
-                    <small>{line.unit_price.toLocaleString("fr-FR")} FCFA l'unité</small>
+                    <small>{line.unit_price.toLocaleString("fr-FR")} FCFA par unité</small>
                   </div>
                   <div className={styles.quantity}>
                     <button type="button" onClick={() => updateQuantity(line.id, line.quantity - 1)}>
@@ -299,7 +300,7 @@ export default function SalesPage() {
           </select>
         </section>
       </div>
-      {requiresHandoff && handoff && <div className={styles.handoffBackdrop}><section className={styles.handoffModal} role="dialog" aria-modal="true" aria-labelledby="handoff-title"><p className={styles.stepEyebrow}>Passation de caisse</p><h2 id="handoff-title">Prendre connaissance avant de vendre</h2><p className={styles.handoffIntro}>La caisse reste ouverte. Vérifiez la situation laissée par le vendeur précédent, puis confirmez votre prise en charge.</p><div className={styles.handoffMetrics}><div><span>Solde théorique actuel</span><strong>{handoff.theoretical_balance.toLocaleString("fr-FR")} FCFA</strong></div><div><span>Ventes réalisées</span><strong>{handoff.sales_total.toLocaleString("fr-FR")} FCFA</strong></div><div><span>Encaissements</span><strong>{handoff.cash_collected.toLocaleString("fr-FR")} FCFA</strong></div><div><span>Dépenses / retraits</span><strong>{handoff.withdrawals.toLocaleString("fr-FR")} FCFA</strong></div></div><div className={styles.handoffDetails}><span>Vendeur précédent <strong>{handoff.previous_seller ?? "Ouverture de journée"}</strong></span><span>Heure de passation <strong>{new Date(handoff.handoff_at).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}</strong></span><span>Dernière opération <strong>{handoff.last_operation ? `${handoff.last_operation.type} · ${handoff.last_operation.amount.toLocaleString("fr-FR")} FCFA` : "Aucune opération"}</strong></span></div><button type="button" className={styles.primaryButton} onClick={acknowledgeHandoff} disabled={isAcknowledgingHandoff}>{isAcknowledgingHandoff ? "Enregistrement…" : "J'ai pris connaissance du solde et des opérations"}</button></section></div>}
+      {requiresHandoff && handoff && <div className={styles.handoffBackdrop}><section className={styles.handoffModal} role="dialog" aria-modal="true" aria-labelledby="handoff-title"><p className={styles.stepEyebrow}>Passation de caisse</p><h2 id="handoff-title">Prendre connaissance avant de vendre</h2><p className={styles.handoffIntro}>La caisse reste ouverte. Vérifiez la situation laissée par le vendeur précédent, puis confirmez votre prise en charge.</p><div className={styles.handoffMetrics}><div><span>Solde théorique actuel</span><strong>{handoff.theoretical_balance.toLocaleString("fr-FR")} FCFA</strong></div><div><span>Ventes réalisées</span><strong>{handoff.sales_total.toLocaleString("fr-FR")} FCFA</strong></div><div><span>Encaissements</span><strong>{handoff.cash_collected.toLocaleString("fr-FR")} FCFA</strong></div><div><span>Dépenses / retraits</span><strong>{handoff.withdrawals.toLocaleString("fr-FR")} FCFA</strong></div></div><div className={styles.handoffDetails}><span>Vendeur précédent <strong>{handoff.previous_seller ?? "Ouverture de journée"}</strong></span><span>Heure de passation <strong>{new Date(handoff.handoff_at).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}</strong></span><span>Dernière opération <strong>{handoff.last_operation ? `${handoff.last_operation.type} · ${handoff.last_operation.amount.toLocaleString("fr-FR")} FCFA` : "Aucune opération"}</strong></span></div><button type="button" className={styles.primaryButton} onClick={acknowledgeHandoff} disabled={isAcknowledgingHandoff}>{isAcknowledgingHandoff ? "Enregistrement…" : "Je prends connaissance du solde et des opérations"}</button></section></div>}
     </AppShell>
   );
 }

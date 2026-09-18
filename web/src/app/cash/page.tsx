@@ -70,7 +70,17 @@ export default function CashPage() {
 
   const [message, setMessage] = useState("");
   const [isClosing, setIsClosing] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      const storedUser = window.localStorage.getItem("quincaillerie_user");
+      if (!storedUser) return false;
+      const parsed = JSON.parse(storedUser) as { role?: "admin" | "seller"; user?: { role?: "admin" | "seller" } };
+      return (parsed.user?.role ?? parsed.role) === "admin";
+    } catch {
+      return false;
+    }
+  });
 
   // Verrouillage du scroll en arrière-plan & gestion de la touche Échap
   useEffect(() => {
@@ -111,9 +121,25 @@ export default function CashPage() {
   }
 
   useEffect(() => {
-    const storedUser = window.localStorage.getItem("quincaillerie_user");
-    if (storedUser) setIsAdmin(JSON.parse(storedUser).role === "admin");
-    load().catch(() => setMessage("Impossible de charger les caisses."));
+    let isMounted = true;
+
+    const initializeCashPage = async () => {
+      try {
+        await load();
+        if (!isMounted) return;
+        setBalance(null);
+      } catch {
+        if (isMounted) {
+          setMessage("Impossible de charger les caisses.");
+        }
+      }
+    };
+
+    void initializeCashPage();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const openSession = sessions.find((session) => session.status === "open");
@@ -123,14 +149,30 @@ export default function CashPage() {
   const closingDifference = physicalClosing - expectedCash;
 
   useEffect(() => {
-    if (!openSession) {
-      setBalance(null);
-      return;
-    }
-    fetch(`${API_URL}/api/v1/cash/sessions/${openSession.id}/balance`, { headers: headers(), credentials: "include" })
-      .then((response) => (response.ok ? response.json() : null))
-      .then(setBalance)
-      .catch(() => setBalance(null));
+    if (!openSession) return;
+
+    let isMounted = true;
+
+    const fetchBalance = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/v1/cash/sessions/${openSession.id}/balance`, {
+          headers: headers(),
+          credentials: "include",
+        });
+        if (!isMounted) return;
+        setBalance(response.ok ? await response.json() : null);
+      } catch {
+        if (isMounted) {
+          setBalance(null);
+        }
+      }
+    };
+
+    void fetchBalance();
+
+    return () => {
+      isMounted = false;
+    };
   }, [openSession?.id]);
 
   async function open(event: FormEvent) {
@@ -310,7 +352,7 @@ export default function CashPage() {
             onClick={() => setShowHistory(!showHistory)}
           >
             <span className={styles.accordionTitle}>
-              <History size={16} /> HISTORIQUE D'EXPLOITATION ({sessions.length})
+              <History size={16} /> HISTORIQUE D&apos;EXPLOITATION ({sessions.length})
             </span>
             <ChevronDown size={16} className={`${styles.chevron} ${showHistory ? styles.chevronRotated : ''}`} />
           </button>

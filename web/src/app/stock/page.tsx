@@ -11,7 +11,41 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export default function StockPage() {
   const [products, setProducts] = useState<Product[]>([]); const [movements, setMovements] = useState<Movement[]>([]); const [search, setSearch] = useState(""); const [message, setMessage] = useState("Chargement de l’inventaire…");
-  useEffect(() => { Promise.all([fetch(`${API_URL}/api/v1/products`, { headers: authHeaders(), credentials: "include" }), fetch(`${API_URL}/api/v1/stock-movements`, { headers: authHeaders(), credentials: "include" })]).then(async ([productsResponse, movementsResponse]) => { if (!productsResponse.ok) throw new Error(); const productData = await productsResponse.json(); setProducts(Array.isArray(productData) ? productData : []); if (movementsResponse.ok) setMovements(await movementsResponse.json()); setMessage(""); }).catch(() => setMessage("L’inventaire n’est pas disponible pour le moment.")); }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadInventory = async () => {
+      try {
+        const [productsResponse, movementsResponse] = await Promise.all([
+          fetch(`${API_URL}/api/v1/products`, { headers: authHeaders(), credentials: "include" }),
+          fetch(`${API_URL}/api/v1/stock-movements`, { headers: authHeaders(), credentials: "include" }),
+        ]);
+
+        if (!productsResponse.ok) throw new Error("Inventaire indisponible");
+
+        const productData = await productsResponse.json();
+        const nextProducts = Array.isArray(productData) ? productData : [];
+        const nextMovements = movementsResponse.ok ? await movementsResponse.json() : [];
+
+        if (!isMounted) return;
+        setProducts(nextProducts);
+        setMovements(nextMovements);
+        setMessage("");
+      } catch {
+        if (isMounted) {
+          setMessage("L’inventaire n’est pas disponible pour le moment.");
+        }
+      }
+    };
+
+    void loadInventory();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const filteredProducts = products.filter((product) => `${product.name} ${product.sku} ${product.category ?? ""}`.toLowerCase().includes(search.toLowerCase()));
   return <AppShell><header className={styles.header}><div><p className={styles.eyebrow}>Contrôle des opérations</p><h1>Stock & inventaire</h1><p>Une vue complète des produits, des ventes et des quantités restantes.</p></div><span className={styles.countBadge}>{products.length} produit{products.length > 1 ? "s" : ""}</span></header>
     <section className={styles.toolbar}><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Rechercher par nom, SKU ou catégorie…" aria-label="Rechercher dans l’inventaire" /><span>{filteredProducts.length} résultat{filteredProducts.length > 1 ? "s" : ""}</span></section>
