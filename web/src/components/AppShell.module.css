@@ -135,6 +135,14 @@
 	font-weight: 400;
 }
 
+.companyLogo {
+	width: 26px;
+	height: 26px;
+	border: 1px solid rgba(255, 255, 255, 0.16);
+	border-radius: 4px;
+	object-fit: cover;
+}
+
 /* ==========================================================================
    NAVIGATION SIDEBAR
    ========================================================================== */
@@ -234,7 +242,7 @@
 }
 
 /* ==========================================================================
-   BOUTON HAMBURGER STYLE ZARA
+   BOUTON HAMBURGER
    ========================================================================== */
 .menuButton {
 	display: none;
@@ -249,7 +257,7 @@
 }
 
 /* ==========================================================================
-   AJUSTEMENTS MOBILE (CARTES PLUS GRANDES & ERGONOMIE)
+   AJUSTEMENTS MOBILE (MENU HAMBURGER EN 2 COLONNES)
    ========================================================================== */
 @media (max-width: 760px) {
 	.shell {
@@ -301,30 +309,44 @@
 		display: none;
 	}
 
+	/* Disposition en 2 colonnes à l'ouverture */
 	.sidebarNavOpen {
 		position: absolute;
 		top: 58px;
 		left: 0;
 		right: 0;
 		z-index: 25;
-		display: flex;
-		flex-direction: column;
-		gap: 0;
-		padding: 12px 0;
-		background: #171a24;
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 1px;
+		padding: 8px 0;
+		background: #242835;
 		border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-		box-shadow: 0 24px 48px rgba(0, 0, 0, 0.5);
+		box-shadow: 0 24px 48px rgba(0, 0, 0, 0.6);
+	}
+
+	.sidebarNavOpen .navLabel {
+		grid-column: 1 / -1;
+		margin: 8px 16px 4px;
+		background: #171a24;
 	}
 
 	.sidebarNavOpen .navItem,
 	.sidebarNavOpen .navActive {
-		padding: 16px 24px;
-		font-size: 0.82rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		text-align: center;
+		padding: 14px 12px;
+		font-size: 0.8rem;
+		background: #171a24; 
 		border-left: none;
 	}
 
 	.sidebarNavOpen .navActive {
-		border-left: 3px solid #82c8bc;
+		border-bottom: 2px solid #82c8bc;
+		color: #82c8bc;
+		font-weight: 500;
 	}
 
 	.userCard {
@@ -379,7 +401,6 @@
 		padding: 24px 7px 40px;
 	}
 
-	/* Cartes et conteneurs plus larges et lisibles sur mobile */
 	.content :global(section),
 	.content :global(article),
 	.content :global(form) {
@@ -387,7 +408,6 @@
 		margin-bottom: 20px;
 	}
 
-	/* Boutons et inputs plus grands pour un meilleur confort tactile */
 	.content :global(input),
 	.content :global(select),
 	.content :global(textarea),
@@ -407,12 +427,4 @@
 	.content :global(form) {
 		padding: 28px 18px !important;
 	}
-}
-
-.companyLogo {
-	width: 26px;
-	height: 26px;
-	border: 1px solid rgba(255,255,255,.16);
-	border-radius: 4px;
-	object-fit: cover;
 }

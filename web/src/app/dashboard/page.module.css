@@ -100,7 +100,7 @@
   gap: 28px;
   padding: 28px 24px;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  background: #14161b;
+  background: #14161b5c;
   text-decoration: none;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -313,9 +313,9 @@
   width: 34px;
   height: 34px;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: #12141a;
-  color: #b0b6c2;
+  border: 1px solid rgba(255, 255, 255, 0);
+  background: #12141a0f;
+  color: #dbdfe7;
   cursor: pointer;
 }
 
@@ -325,15 +325,15 @@
 .metricGrid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
+  gap: 6px;
   margin-bottom: 18px;
 }
 
 .metricCard {
   min-width: 0;
   padding: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: #14161b;
+  border: 1px solid rgba(255, 255, 255, 0);
+  background: #14161b77;
 }
 
 .metricCard > span,
@@ -341,8 +341,8 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #838a97;
-  font-size: 0.65rem;
+  color: #969ca9;
+  font-size: 0.95rem;
 }
 
 .metricCard > strong {
@@ -350,7 +350,7 @@
   margin: 14px 0 8px;
   overflow: hidden;
   color: #f7f8fa;
-  font-size: clamp(1.15rem, 2.4vw, 1.8rem);
+  font-size: clamp(1.7rem, 2.7vw, 1.9rem);
   font-weight: 300;
   letter-spacing: -0.04em;
   text-overflow: ellipsis;
@@ -372,8 +372,8 @@
 .activityPanel,
 .alertPanel,
 .modulesSection {
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: #14161b;
+  border: 1px solid rgba(255, 255, 255, 0);
+  background: #14161b79;
 }
 
 .activityPanel,
