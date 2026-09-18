@@ -1,8 +1,7 @@
 /* ==========================================================================
-   GLOBAL LAYOUT - PAGE NORMALE PLEINE LARGEUR
+   GLOBAL LAYOUT
    ========================================================================== */
 
-/* Conteneur principal pleine largeur, sans bords arrondis ni marge externe */
 .landingPage {
   width: 100%;
   min-height: 100vh;
@@ -15,7 +14,6 @@
   box-shadow: none;
 }
 
-/* Alignement du contenu interne au centre avec des marges propres */
 .header,
 .hero,
 .statement,
@@ -52,7 +50,7 @@
   width: 36px;
   height: 36px;
   place-items: center;
-  border-radius: 0; /* Alignement style Zara */
+  border-radius: 0;
   background: #4b4c72;
   color: #fff;
   font-weight: 600;
@@ -97,43 +95,104 @@
   color: #6ce1d1;
 }
 
+.mobileMenu {
+  width: min(420px, calc(100% - 64px));
+  margin: 0 auto 20px;
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: all 220ms ease;
+}
+
+.mobileMenuOpen {
+  opacity: 1;
+  max-height: 420px;
+}
+
+.mobileMenuInner {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 18px 16px;
+  background: rgba(24, 28, 36, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
 /* ==========================================================================
-   BOUTONS & CTAs - STYLE ZARA MINIMALISTE & ÉDITORIAL
+   BOUTONS & CTAs
    ========================================================================== */
 
-/* 1. Bouton "Se connecter" / Secondaire (Bordure fine, rectangulaire, majuscules) */
-.loginButton {
+.menuButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.75rem 1.6rem;
-  border: 1px solid rgba(237, 240, 245, 0.4);
-  border-radius: 0; /* Angles droits nets caractéristiques de Zara */
-  color: #edf0f5;
-  font-size: 0.7rem;
-  font-weight: 500;
-  letter-spacing: 0.2em; /* Kerning large minimaliste */
-  text-transform: uppercase;
-  text-decoration: none;
+  width: 48px;
+  height: 48px;
+  border: none;
   background: transparent;
+  padding: 0;
+  cursor: pointer;
   transition: all 250ms cubic-bezier(0.16, 1, 0.3, 1);
-  position: relative;
 }
 
-.loginButton:hover {
+.menuButton:hover {
+  background: rgba(108, 225, 209, 0.04);
+}
+
+.menuButtonInner {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  width: 18px;
+  height: 14px;
+}
+
+.menuLine {
+  display: block;
+  width: 100%;
+  height: 1px;
   background: #edf0f5;
-  color: #1a1f2a;
-  border-color: #edf0f5;
 }
 
-/* 2. Bouton Principal / CTA (Aplat contrasté haut de gamme) */
+.mobileLoginButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.9rem 1.2rem;
+  border: 1px solid rgba(108, 225, 209, 0.5);
+  background: rgba(108, 225, 209, 0.08);
+  color: #edf0f5;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  text-decoration: none;
+  font-size: 0.64rem;
+  font-weight: 600;
+}
+
+.mobileNav {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mobileNav a {
+  color: #dfe6f3;
+  text-decoration: none;
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
 .primaryButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 0.95rem 2.2rem;
   border: 1px solid #4b4c72;
-  border-radius: 0; /* Net et affûté */
+  border-radius: 0;
   background: #4b4c72;
   color: #ffffff;
   font-size: 0.72rem;
@@ -148,10 +207,8 @@
   background: #6ce1d1;
   border-color: #6ce1d1;
   color: #1a1f2a;
-  transform: none; /* Sobriété sans déplacement 3D */
 }
 
-/* 3. Bouton Lien Texte / Action secondaire avec soulignement minimaliste */
 .textButton {
   display: inline-flex;
   align-items: center;
@@ -188,11 +245,11 @@
 
 .hero {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.65fr);
-  gap: 64px;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.7fr);
+  gap: 48px;
   align-items: center;
-  min-height: 520px;
-  padding: 72px 0 80px;
+  min-height: 540px;
+  padding: 60px 0 80px;
 }
 
 .heroContent {
@@ -209,7 +266,7 @@
   font-weight: 600;
 }
 
-.hero h1 {
+.hero h2 {
   max-width: 640px;
   margin: 0;
   color: #f0f2f6;
@@ -237,30 +294,30 @@
 }
 
 /* ==========================================================================
-   ARTWORK MOBILES
+   TÉLÉPHONE - REPRODUCTION EXACTE DE L'IMAGE FISAFi / DASHBOARD
    ========================================================================== */
 
 .heroArtwork {
   display: flex;
-  min-height: 440px;
+  min-height: 520px;
   align-items: center;
   justify-content: center;
-  position: relative;
 }
 
 .phone {
   position: relative;
-  width: 220px;
-  height: 450px;
-  padding: 2px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 40px;
-  background: #090b10;
+  width: 270px;
+  height: 520px;
+  padding: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 38px;
+  background: #090a0f;
   box-shadow: 
-    0 25px 50px rgba(0, 0, 0, 0.4),
-    0 8px 24px rgba(108, 225, 209, 0.08);
-  transform: rotate(3deg);
-  transition: transform 400ms ease;
+    0 30px 60px rgba(0, 0, 0, 0.24),
+    0 4px 20px rgba(0, 0, 0, 0.16);
+  transform: rotate(1deg);
+  transition: transform 400ms cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 2px;
 }
 
 .phone:hover {
@@ -269,154 +326,280 @@
 
 .phoneNotch {
   position: absolute;
-  z-index: 10;
-  top: 9px;
+  z-index: 20;
+  top: 10px;
   left: 50%;
   width: 60px;
-  height: 15px;
+  height: 12px;
   transform: translateX(-50%);
   border-radius: 20px;
-  background: #000;
+  background: #090a0f;
 }
 
+/* Fond exact de l'image : Bleu très sombre / Anthracite (#181a24) */
 .phoneScreen {
   height: 100%;
   overflow: hidden;
-  padding: 26px 12px 14px;
-  border-radius: 38px;
-  background: #f1f4f1;
-  color: #14232b;
+  padding: 24px 12px 12px;
+  border-radius: 34px;
+  background: #181a24;
+  color: #e5e7eb;
   display: flex;
   flex-direction: column;
+  gap: 12px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
-.phoneBar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  color: #53636a;
-  font-size: 0.5rem;
-  font-weight: 600;
-  padding: 0 4px;
-}
-
-.phoneGreeting {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin-top: 18px;
-}
-
-.phoneGreeting small {
-  color: #708087;
-  font-size: 0.44rem;
-  letter-spacing: 0.12em;
-  font-weight: 600;
-}
-
-.phoneGreeting strong {
-  font-size: 0.9rem;
-  letter-spacing: -0.04em;
-  font-weight: 600;
-}
-
-.phoneBalance {
+/* En-tête ESPACE D'EXPLOITATION */
+.appHeader {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  margin-top: 14px;
-  padding: 12px;
-  border-radius: 10px;
-  background: #172b35;
-  color: #edf4f1;
+  margin-top: 6px;
 }
 
-.phoneBalance span {
-  font-size: 0.5rem;
-  color: #afc2c3;
-}
-
-.phoneBalance strong {
-  font-size: 1.15rem;
-  letter-spacing: -0.06em;
-  font-weight: 500;
-}
-
-.phoneBalance small {
-  color: #6ce1d1;
-  font-size: 0.46rem;
-  font-weight: 500;
-}
-
-.phoneStats {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  margin-top: 8px;
-}
-
-.phoneStats div {
+.appEyebrow {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 8px;
-  border-radius: 8px;
-  background: #dce8e2;
-}
-
-.phoneStats small {
-  color: #708087;
-  font-size: 0.48rem;
+  align-items: center;
+  gap: 4px;
+  color: #717786;
+  font-size: 0.45rem;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-}
-
-.phoneStats strong {
-  font-size: 0.85rem;
   font-weight: 600;
 }
 
-.phoneActivity {
+.iconGrid {
+  font-size: 0.6rem;
+  line-height: 1;
+}
+
+.appTitle {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+}
+
+.appSubtitle {
+  margin: 0;
+  color: #8c93a4;
+  font-size: 0.48rem;
+  line-height: 1.3;
+}
+
+/* Barre FISAFI & Date */
+.orgBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.orgBadge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: #0e1017;
+  padding: 3px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.orgIcon {
+  color: #dce4f6;
+}
+
+.orgBadge strong {
+  font-size: 0.48rem;
+  color: #ffffff;
+  letter-spacing: 0.05em;
+}
+
+.orgDate {
+  font-size: 0.48rem;
+  color: #9aa1b1;
+  font-weight: 400;
+}
+
+.refreshBtn {
+  background: #1e212e;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #9aa1b1;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  font-size: 0.55rem;
+  cursor: pointer;
+}
+
+/* Grille 2x2 des Cartes */
+.dashboardGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.dashCard {
+  background: #1e212e;
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 80px;
+}
+
+.highlightCard {
+  border-top: 2px solid #84cc16; /* Ligne verte supérieure exacte */
+}
+
+.cardLabel {
+  color: #8c93a4;
+  font-size: 0.43rem;
+  line-height: 1.2;
+}
+
+.cardValue {
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+
+.metricRow {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 2px;
+}
+
+.metricIcon,
+.metricIconRed {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  background: rgba(148, 163, 184, 0.12);
+  color: #dfe7f6;
+}
+
+.metricIconRed {
+  background: rgba(239, 68, 68, 0.12);
+  color: #fca5a5;
+}
+
+.cardSub {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #8c93a4;
+  font-size: 0.42rem;
+  margin-top: auto;
+}
+
+.greenText {
+  color: #84cc16; /* Couleur verte fidèle de l'image */
+}
+
+.warningText {
+  color: #fca5a5;
+}
+
+.redValue {
+  color: #f87171;
+}
+
+.cardSubText {
+  color: #8c93a4;
+  font-size: 0.38rem;
+  line-height: 1.2;
+  margin-top: auto;
+}
+
+/* Traçabilité / Activité récente */
+.tracabilityCard {
+  background: #1e212e;
+  padding: 10px 10px 14px;
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tracabilityHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tracabilityTitle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #84cc16;
+  font-size: 0.48rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+}
+
+.greenPulse {
+  font-size: 0.5rem;
+}
+
+.tracabilityTime {
+  color: #717786;
+  font-size: 0.42rem;
+}
+
+.tracabilitySub {
+  margin: 4px 0 0;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.activityList {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-top: 14px;
+  margin-top: 8px;
 }
 
-.phoneActivity > small {
-  color: #708087;
-  font-size: 0.44rem;
-  letter-spacing: 0.1em;
-  font-weight: 600;
+.activityRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.phoneActivity div {
-  display: grid;
-  grid-template-columns: 8px 1fr auto;
+.activityMeta {
+  display: flex;
   align-items: center;
   gap: 6px;
-  color: #34464d;
-  font-size: 0.5rem;
+  color: #dfe7f6;
+  font-size: 0.42rem;
+  line-height: 1.2;
 }
 
-.phoneActivity i {
-  width: 5px;
-  height: 5px;
+.activityDot {
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background: #54cfc1;
+  background: #84cc16;
+  box-shadow: 0 0 0 3px rgba(132, 204, 22, 0.18);
 }
 
-.phoneActivity b {
-  font-size: 0.5rem;
-  color: #172b35;
+.activityRow strong {
+  color: #ffffff;
+  font-size: 0.42rem;
   font-weight: 600;
-}
-
-.artworkTop,
-.artworkFooter,
-.artworkTitle,
-.artworkLines,
-.artworkDot {
-  display: none;
 }
 
 /* ==========================================================================
@@ -482,7 +665,7 @@
   background: #252936;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-top: 2px solid #4b4c72;
-  border-radius: 0; /* Alignement Zara */
+  border-radius: 0;
   transition: all 200ms ease;
 }
 
@@ -520,7 +703,7 @@
   justify-content: space-between;
   gap: 32px;
   padding: 56px 40px;
-  border-radius: 0; /* Rectangulaire */
+  border-radius: 0;
   background: #252936;
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -534,7 +717,7 @@
 }
 
 /* ==========================================================================
-   FOOTER - INSPIRATION ZARA / DESIGN ÉDITORIAL MINIMALISTE
+   FOOTER
    ========================================================================== */
 
 .footer {
@@ -553,7 +736,6 @@
   gap: 60px;
 }
 
-/* En-tête du Footer */
 .footerHeader {
   display: flex;
   justify-content: space-between;
@@ -585,7 +767,6 @@
   color: #6ce1d1;
 }
 
-/* Grille de Navigation */
 .footerNavGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr) 1.5fr;
@@ -625,7 +806,6 @@
   color: #edf0f5;
 }
 
-/* Newsletter Minimaliste */
 .footerNewsletter p {
   margin: 0 0 20px;
   color: #7c8a9d;
@@ -674,7 +854,6 @@
   transform: translateX(4px);
 }
 
-/* Meta Footer & Liens */
 .footerMeta {
   display: flex;
   justify-content: space-between;
@@ -730,6 +909,9 @@
   .nav {
     display: none;
   }
+  .mobileMenu {
+    width: min(1200px, calc(100% - 40px));
+  }
   .hero {
     grid-template-columns: 1fr;
     gap: 40px;
@@ -756,6 +938,47 @@
   .ctaSection {
     width: calc(100% - 32px);
   }
+
+  .header {
+    gap: 14px;
+    padding-bottom: 18px;
+    align-items: center;
+  }
+
+  .brand {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .brandMark {
+    width: 38px;
+    height: 38px;
+    font-size: 0.82rem;
+  }
+
+  .brand small {
+    font-size: 0.47rem;
+    letter-spacing: 0.18em;
+  }
+
+  .brand strong {
+    font-size: 0.78rem;
+  }
+
+  .menuButton {
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+  }
+
+  .mobileMenu {
+    width: calc(100% - 32px);
+  }
+
+  .mobileMenuInner {
+    padding: 16px 14px;
+  }
+
   .ctaSection {
     flex-direction: column;
     align-items: flex-start;

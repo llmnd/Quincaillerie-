@@ -1,4 +1,8 @@
+'use client';
+
 import Link from "next/link";
+import { useState } from "react";
+import { PackageSearch, Users, Warehouse, RefreshCcw } from "lucide-react";
 import styles from "./page.module.css";
 
 const features = [
@@ -35,6 +39,8 @@ const footerNav = [
 ];
 
 export default function Home() {
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
     <main className={styles.landingPage}>
       <header className={styles.header}>
@@ -52,47 +58,158 @@ export default function Home() {
           <a href="#contact">Contact</a>
         </nav>
 
-        <Link href="/login" className={styles.loginButton}>Se connecter</Link>
+        <button
+          type="button"
+          className={styles.menuButton}
+          aria-label={menuOpen ? "Fermer le menu" : "Ouvrir le menu"}
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen((open) => !open)}
+        >
+          <span className={styles.menuButtonInner}>
+            <span className={styles.menuLine}></span>
+            <span className={styles.menuLine}></span>
+          </span>
+        </button>
       </header>
+
+      <div className={`${styles.mobileMenu} ${menuOpen ? styles.mobileMenuOpen : ""}`} aria-live="polite">
+        <div className={styles.mobileMenuInner}>
+          <Link href="/login" className={styles.mobileLoginButton} onClick={() => setMenuOpen(false)}>
+            Se connecter
+          </Link>
+
+          <nav className={styles.mobileNav} aria-label="Menu mobile">
+            <a href="#solution" onClick={() => setMenuOpen(false)}>La solution</a>
+            <a href="#fonctionnalites" onClick={() => setMenuOpen(false)}>Fonctionnalités</a>
+            <a href="#contact" onClick={() => setMenuOpen(false)}>Contact</a>
+            <a href="#" onClick={() => setMenuOpen(false)}>Instagram</a>
+            <a href="/legal/support" onClick={() => setMenuOpen(false)}>Support</a>
+          </nav>
+        </div>
+      </div>
 
       <section className={styles.hero}>
         <div className={styles.heroContent}>
           <p className={styles.eyebrow}>ERP modulaire et multi-entreprises</p>
-          <h1>Une plateforme ERP prête à évoluer.</h1>
           <p className={styles.heroText}>
-            Studio ERP centralise les processus de votre organisation, sans verrouiller le système dans un seul métier.
-            Vendre, gérer les stocks, organiser les équipes et faire grandir votre activité sans friction.
+            Gérez votre activité. Gardez l’équilibre. Mizan.
           </p>
           <div className={styles.heroActions}>
-            <Link href="/login" className={styles.primaryButton}>Accéder à l&apos;espace de vente</Link>
+            <Link href="/login" className={styles.primaryButton}>Commencer</Link>
             <a href="#solution" className={styles.textButton}>Découvrir <span>↓</span></a>
           </div>
         </div>
 
-        <div className={styles.heroArtwork} aria-label="Aperçu de l&apos;interface de gestion sur mobile">
+        {/* PHONE REPRODUISANT EXACTEMENT L'INTERFACE DE L'IMAGE */}
+        <div className={styles.heroArtwork} aria-label="Aperçu de l'interface de gestion sur mobile">
           <div className={styles.phone}>
             <div className={styles.phoneNotch} />
             <div className={styles.phoneScreen}>
-              <div className={styles.phoneBar}><span>09:41</span><b>ERP</b><span>•••</span></div>
-              <div className={styles.phoneGreeting}>
-                <small>Tableau de bord</small>
-                <strong>Bonjour, équipe</strong>
+              
+              {/* En-tête : ESPACE D'EXPLOITATION & BONJOUR, ABDEL */}
+              <div className={styles.appHeader}>
+                <div className={styles.appEyebrow}>
+                  <span className={styles.iconGrid}>::</span> ESPACE D'EXPLOITATION
+                </div>
+                <h3 className={styles.appTitle}>BONJOUR, Lamine</h3>
+                <p className={styles.appSubtitle}>La situation de votre organisation, en un seul regard.</p>
               </div>
-              <div className={styles.phoneBalance}>
-                <span>Solde caisse</span>
-                <strong>73 500 FCFA</strong>
-                <small>+12,8% aujourd&apos;hui</small>
+
+              {/* Ligne Organisation & Date */}
+              <div className={styles.orgBar}>
+                <div className={styles.orgBadge}>
+                  <Warehouse size={10} strokeWidth={2} className={styles.orgIcon} />
+                  <strong>Company</strong>
+                </div>
+                <span className={styles.orgDate}>Vendredi 18 Septembre</span>
+                <button className={styles.refreshBtn} aria-label="Rafraîchir">
+                  <RefreshCcw size={12} strokeWidth={2} />
+                </button>
               </div>
-              <div className={styles.phoneStats}>
-                <div><small>Ventes</small><strong>24</strong></div>
-                <div><small>Stock</small><strong>186</strong></div>
+
+              {/* Grille de 4 cartes d'indicateurs */}
+              <div className={styles.dashboardGrid}>
+                
+                {/* Carte 1 : Chiffre d'affaires (avec bordure verte supérieure) */}
+                <div className={`${styles.dashCard} ${styles.highlightCard}`}>
+                  <span className={styles.cardLabel}>Chiffre d'affaires du jour</span>
+                  <strong className={styles.cardValue}>35 000 FCFA</strong>
+                  <div className={styles.cardSub}>
+                    <span>🛒</span> 5 ventes
+                  </div>
+                </div>
+
+                {/* Carte 2 : État de la caisse */}
+                <div className={styles.dashCard}>
+                  <span className={styles.cardLabel}>État de la caisse</span>
+                  <strong className={styles.cardValue}>ACTIVE</strong>
+                  <div className={`${styles.cardSub} ${styles.greenText}`}>
+                    <span>✉</span> Caisse #6
+                  </div>
+                </div>
+
+                {/* Carte 3 : Stock à surveiller */}
+                <div className={styles.dashCard}>
+                  <span className={styles.cardLabel}>Stock à surveiller</span>
+                  <div className={styles.metricRow}>
+                    <span className={styles.metricIconRed}><PackageSearch size={11} strokeWidth={2.2} /></span>
+                    <strong className={`${styles.cardValue} ${styles.redValue}`}>4</strong>
+                  </div>
+                  <div className={`${styles.cardSub} ${styles.warningText}`}>
+                    <span>•</span> références critiques
+                  </div>
+                </div>
+
+                {/* Carte 4 : Équipe & relations */}
+                <div className={styles.dashCard}>
+                  <span className={styles.cardLabel}>Équipe & relations</span>
+                  <div className={styles.metricRow}>
+                    <span className={styles.metricIcon}><Users size={11} strokeWidth={2.2} /></span>
+                    <strong className={styles.cardValue}>2</strong>
+                  </div>
+                  <div className={styles.cardSubText}>
+                    2 équipes actives · 0 alertes
+                  </div>
+                </div>
+
               </div>
-              <div className={styles.phoneActivity}>
-                <small>Activité récente</small>
-                <div><span>Vente comptoir</span><b>4 000 FCFA</b></div>
-                <div><span>Réassort stock</span><b>+32</b></div>
-                <div><span>Passation caisse</span><b>18:42</b></div>
+
+              {/* Section TRAÇABILITÉ */}
+              <div className={styles.tracabilityCard}>
+                <div className={styles.tracabilityHeader}>
+                  <div className={styles.tracabilityTitle}>
+                    <span className={styles.greenPulse}></span>
+                    <span>TRAÇABILITÉ</span>
+                  </div>
+                  <span className={styles.tracabilityTime}>Mis à jour à 17:32</span>
+                </div>
+                <h4 className={styles.tracabilitySub}>Activité récente</h4>
+
+                <div className={styles.activityList}>
+                  <div className={styles.activityRow}>
+                    <div className={styles.activityMeta}>
+                      <span className={styles.activityDot}></span>
+                      <span>Vente comptoir</span>
+                    </div>
+                    <strong>4 000 FCFA</strong>
+                  </div>
+                  <div className={styles.activityRow}>
+                    <div className={styles.activityMeta}>
+                      <span className={styles.activityDot}></span>
+                      <span>Réassort stock</span>
+                    </div>
+                    <strong>+32</strong>
+                  </div>
+                  <div className={styles.activityRow}>
+                    <div className={styles.activityMeta}>
+                      <span className={styles.activityDot}></span>
+                      <span>Passation caisse</span>
+                    </div>
+                    <strong>18:42</strong>
+                  </div>
+                </div>
               </div>
+
             </div>
           </div>
         </div>
@@ -130,7 +247,6 @@ export default function Home() {
         <Link href="/login" className={styles.primaryButton}>Se connecter</Link>
       </section>
 
-      {/* FOOTER INNOVANT / STYLE ZARA */}
       <footer className={styles.footer}>
         <div className={styles.footerInner}>
           <div className={styles.footerHeader}>
