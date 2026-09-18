@@ -1,0 +1,92 @@
+"use client";
+
+import { ChangeEvent, FormEvent, useEffect, useState } from "react";
+import { Check, ImagePlus } from "lucide-react";
+import { authHeaders } from "../../../lib/auth";
+import styles from "./page.module.css";
+
+type OrganizationProfile = { name: string; logo?: string | null };
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+const CLOUDINARY_UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+
+export default function OrganizationSettings() {
+  const [profile, setProfile] = useState<OrganizationProfile>({ name: "", logo: "" });
+  const [preview, setPreview] = useState("");
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/v1/organization/profile`, { headers: authHeaders(), credentials: "include" })
+      .then((response) => response.ok ? response.json() as Promise<OrganizationProfile> : null)
+      .then((data) => { if (data) { setProfile(data); setPreview(data.logo ?? ""); } })
+      .catch(() => setError("Impossible de charger l’identité de l’entreprise."));
+  }, []);
+
+  function selectLogo(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/") || file.size > 1_500_000) {
+      setError("Choisissez une image de moins de 1,5 Mo.");
+      return;
+    }
+    setError("");
+    setLogoFile(file);
+    setPreview(URL.createObjectURL(file));
+  }
+
+  async function saveProfile(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsSaving(true);
+    setError("");
+    setMessage("");
+    try {
+      let logo = profile.logo ?? null;
+      if (logoFile) {
+        if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) throw new Error("Configuration Cloudinary absente.");
+        const data = new FormData();
+        data.append("file", logoFile);
+        data.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+        const upload = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, { method: "POST", body: data });
+        if (!upload.ok) throw new Error("La photo n’a pas pu être envoyée.");
+        logo = (await upload.json()).secure_url ?? logo;
+      }
+      const response = await fetch(`${API_URL}/api/v1/organization/profile`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        credentials: "include",
+        body: JSON.stringify({ name: profile.name.trim(), logo }),
+      });
+      if (!response.ok) throw new Error("La sauvegarde de l’identité a échoué.");
+      const updated = await response.json() as OrganizationProfile;
+      setProfile(updated);
+      setPreview(updated.logo ?? "");
+      setLogoFile(null);
+      setMessage("Identité de l’entreprise mise à jour.");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Impossible de sauvegarder les changements.");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  return (
+    <section className={styles.organizationCard}>
+      <div className={styles.organizationCardHeader}>
+        <div><p className={styles.eyebrow}>Identité</p><h2>Votre entreprise</h2><p>Ce nom et ce logo apparaissent dans le dashboard et la barre de navigation.</p></div>
+        <span className={styles.organizationMark}><ImagePlus size={18} /></span>
+      </div>
+      <form className={styles.organizationForm} onSubmit={saveProfile}>
+        <label>Nom de l’entreprise<input required minLength={2} value={profile.name} onChange={(event) => setProfile({ ...profile, name: event.target.value })} /></label>
+        <label>Logo de l’entreprise<input type="file" accept="image/*" onChange={selectLogo} /></label>
+        {preview ? <img src={preview} alt="Aperçu du logo" className={styles.organizationPreview} /> : <div className={styles.organizationEmpty}>Aucun logo</div>}
+        <button type="submit" className={styles.primaryButton} disabled={isSaving}>{isSaving ? "Enregistrement…" : <><Check size={16} /> Enregistrer l’identité</>}</button>
+      </form>
+      {message ? <p className={styles.organizationSuccess}>{message}</p> : null}
+      {error ? <p className={styles.organizationError} role="alert">{error}</p> : null}
+    </section>
+  );
+}

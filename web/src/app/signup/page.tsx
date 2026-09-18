@@ -1,20 +1,41 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { ChangeEvent, FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "../login/page.module.css";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+const CLOUDINARY_UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 
 export default function SignupPage() {
   const router = useRouter();
   const [organizationName, setOrganizationName] = useState("");
+  const [organizationLogo, setOrganizationLogo] = useState("");
+  const [organizationLogoFile, setOrganizationLogoFile] = useState<File | null>(null);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  function handleLogoChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setError("Sélectionnez une image valide.");
+      return;
+    }
+    if (file.size > 1_500_000) {
+      setError("L’image doit faire moins de 1,5 Mo.");
+      return;
+    }
+    const reader = new FileReader();
+    setOrganizationLogoFile(file);
+    reader.onload = () => setOrganizationLogo(typeof reader.result === "string" ? reader.result : "");
+    reader.readAsDataURL(file);
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -22,12 +43,34 @@ export default function SignupPage() {
     setIsSubmitting(true);
 
     try {
+      let logoUrl = "";
+      if (organizationLogoFile) {
+        if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UPLOAD_PRESET) {
+          setError("La configuration Cloudinary est absente.");
+          return;
+        }
+
+        const uploadData = new FormData();
+        uploadData.append("file", organizationLogoFile);
+        uploadData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+        const uploadResponse = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+          method: "POST",
+          body: uploadData,
+        });
+        if (!uploadResponse.ok) {
+          setError("La photo de l’entreprise n’a pas pu être envoyée.");
+          return;
+        }
+        logoUrl = (await uploadResponse.json()).secure_url ?? "";
+      }
+
       const response = await fetch(`${API_URL}/api/v1/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
           organization_name: organizationName,
+          organization_logo: logoUrl || null,
           full_name: fullName,
           email,
           password,
@@ -79,6 +122,11 @@ export default function SignupPage() {
               minLength={2}
             />
           </div>
+          <label className={styles.logoField} htmlFor="organizationLogo">
+            <span>Photo de l’entreprise <small>(facultatif)</small></span>
+            <input id="organizationLogo" type="file" accept="image/*" onChange={handleLogoChange} />
+            {organizationLogo ? <img src={organizationLogo} alt="Aperçu de l’entreprise" className={styles.logoPreview} /> : null}
+          </label>
           <div>
             <label htmlFor="fullName">Votre nom</label>
             <input

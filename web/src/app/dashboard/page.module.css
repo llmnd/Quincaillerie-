@@ -273,6 +273,41 @@
   white-space: nowrap;
 }
 
+.organizationIdentity {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 220px;
+  overflow: hidden;
+  color: #dfe4eb;
+  font-size: .68rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.organizationIdentity strong {
+  overflow: hidden;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.organizationLogo,
+.organizationFallback {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 4px;
+  background: #252a33;
+  color: #a3e635;
+  object-fit: cover;
+  font-size: .8rem;
+  font-weight: 700;
+}
+
 .refreshButton {
   display: grid;
   width: 34px;
@@ -440,8 +475,17 @@
   .moduleLinks { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
+@media (max-width: 760px) {
+  .container { max-width: none; margin-inline: 0; padding-inline: 0; }
+  .metricGrid { width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .metricCard { width: 100%; min-height: 156px; padding: 24px 16px !important; }
+  .metricCard > strong { font-size: 1.35rem; }
+}
+
 @media (max-width: 680px) {
-  .headerMeta { width: 100%; justify-content: space-between; }
+  .headerMeta { width: 100%; justify-content: space-between; gap: 8px; }
+  .organizationIdentity { max-width: 145px; font-size: .58rem; letter-spacing: .04em; }
+  .organizationLogo, .organizationFallback { width: 30px; height: 30px; }
   .metricGrid { gap: 8px; }
   .metricCard { min-height: 132px; padding: 20px 16px !important; }
   .metricCard > span { min-height: 30px; line-height: 1.35; }
@@ -455,7 +499,8 @@
 }
 
 @media (max-width: 420px) {
-  .metricGrid { grid-template-columns: 1fr 1fr; }
-  .metricCard { min-height: 142px; padding: 21px 14px !important; }
+  .container { padding-inline: 0; }
+  .metricGrid { width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+  .metricCard { min-height: 150px; padding: 22px 13px !important; }
   .moduleLinks { grid-template-columns: 1fr; }
 }

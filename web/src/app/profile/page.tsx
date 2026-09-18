@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { LogOut, Mail, ShieldCheck, UserRound } from "lucide-react";
 import { useRouter } from "next/navigation";
 import AppShell from "../../components/AppShell";
+import OrganizationSettings from "../settings/users/OrganizationSettings";
 import styles from "./page.module.css";
 
 type Profile = {
@@ -69,6 +70,7 @@ export default function ProfilePage() {
             <button type="button" className={styles.logoutButton} onClick={logout}><LogOut size={16} /> Se déconnecter</button>
           </div>
         </section>
+        {profile.role === "admin" ? <OrganizationSettings /> : null}
       </main>
     </AppShell>
   );

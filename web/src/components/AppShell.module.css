@@ -125,6 +125,9 @@
 }
 
 .company {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
 	color: #8e98aa;
 	font-size: 0.68rem;
 	letter-spacing: 0.2em;
@@ -361,6 +364,21 @@
 	.breadcrumb {
 		font-size: 0.72rem;
 	}
+
+	.company {
+		display: inline-flex;
+		max-width: 150px;
+		overflow: hidden;
+		font-size: 0.58rem;
+		letter-spacing: 0.08em;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.companyLogo {
+		width: 28px;
+		height: 28px;
+	}
 }
 
 /* Zone de contenu mobile agrandie */
@@ -404,4 +422,12 @@
 	.content :global(form) {
 		padding: 28px 18px !important;
 	}
+}
+
+.companyLogo {
+	width: 26px;
+	height: 26px;
+	border: 1px solid rgba(255,255,255,.16);
+	border-radius: 4px;
+	object-fit: cover;
 }

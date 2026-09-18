@@ -41,7 +41,7 @@ def bootstrap_admin(payload: BootstrapAdminRequest, db: Session = Depends(get_db
     if db.scalar(select(User.id).limit(1)) is not None:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="An initial user already exists")
 
-    organization = Organization(name=payload.organization_name.strip(), slug=(payload.organization_name.strip().lower().replace(" ", "-") or "organization"))
+    organization = Organization(name=payload.organization_name.strip(), slug=(payload.organization_name.strip().lower().replace(" ", "-") or "organization"), settings={"logo": payload.organization_logo} if payload.organization_logo else {})
     if db.scalar(select(Organization.id).where(Organization.slug == organization.slug)) is not None:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Organization name already exists")
 
@@ -70,6 +70,7 @@ def register_organization(payload: BootstrapAdminRequest, response: Response, db
     organization = Organization(
         name=payload.organization_name.strip(),
         slug=(payload.organization_name.strip().lower().replace(" ", "-") or "organization"),
+        settings={"logo": payload.organization_logo} if payload.organization_logo else {},
     )
     if db.scalar(select(Organization.id).where(Organization.slug == organization.slug)) is not None:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Organization name already exists")

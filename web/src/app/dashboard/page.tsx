@@ -16,6 +16,7 @@ type Batch = { id: number; reference: string; current_count: number; status: str
 type HealthEvent = { id: number; title: string; event_type: string; mortality_count: number; event_date: string };
 type EggProduction = { id: number; batch_id: number; production_date: string; quantity: number; damaged_quantity: number; created_at: string };
 type ActivityItem = { id: string; label: string; detail: string; time: string; kind: "sale" | "stock" | "cash" | "farm" };
+type OrganizationProfile = { name: string; logo?: string | null };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -35,6 +36,7 @@ export default function DashboardPage() {
   const [customerCount, setCustomerCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [organization, setOrganization] = useState<OrganizationProfile | null>(null);
 
   async function fetchJson<T>(path: string): Promise<T | null> {
     try {
@@ -69,6 +71,11 @@ export default function DashboardPage() {
     setIsLoading(false);
   }
 
+  async function loadOrganization() {
+    const organizationData = await fetchJson<OrganizationProfile>("/api/v1/organization/profile");
+    if (organizationData) setOrganization(organizationData);
+  }
+
   useEffect(() => {
     const value = window.localStorage.getItem("quincaillerie_user");
     if (value) {
@@ -79,6 +86,7 @@ export default function DashboardPage() {
       }
     }
     void loadActivity();
+    void loadOrganization();
   }, []);
 
   const visibleApps = applications.filter((application) =>
@@ -120,6 +128,12 @@ export default function DashboardPage() {
           </div>
 
           <div className={styles.headerMeta}>
+            {organization && (
+              <div className={styles.organizationIdentity}>
+                {organization.logo ? <img src={organization.logo} alt="" className={styles.organizationLogo} /> : <span className={styles.organizationFallback}>{organization.name.slice(0, 1).toUpperCase()}</span>}
+                <strong>{organization.name}</strong>
+              </div>
+            )}
             <span>{new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}</span>
             <button type="button" className={styles.refreshButton} onClick={() => void loadActivity()} aria-label="Actualiser l’activité" title="Actualiser"><RefreshCw size={15} className={isLoading ? styles.spinning : ""} /></button>
           </div>

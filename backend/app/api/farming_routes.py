@@ -174,7 +174,11 @@ def list_egg_productions(db: Session = Depends(get_db), current_user: User = Dep
 
 @router.post("/egg-productions", response_model=FarmingEggProductionRead, status_code=status.HTTP_201_CREATED)
 def create_egg_production(payload: FarmingEggProductionCreate, db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin", "seller"))) -> FarmingEggProduction:
-    batch = db.scalar(select(FarmingBatch).where(FarmingBatch.id == payload.batch_id, FarmingBatch.organization_id == current_user.organization_id, FarmingBatch.production_type == "layer", FarmingBatch.status == "active"))
+    batch = db.scalar(select(FarmingBatch).where(FarmingBatch.id == payload.batch_id, FarmingBatch.organization_id == current_user.organization_id, FarmingBatch.status == "active"))
+    if batch is not None:
+        normalized_production_type = batch.production_type.strip().lower().replace("é", "e").replace("è", "e")
+        if normalized_production_type not in {"layer", "layers", "pondeuse", "pondeuses", "ponte"}:
+            batch = None
     if batch is None:
         raise HTTPException(status_code=404, detail="Active layer batch not found")
     if payload.damaged_quantity > payload.quantity:

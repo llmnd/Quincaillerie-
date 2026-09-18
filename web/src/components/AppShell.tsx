@@ -4,10 +4,12 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { BarChart3, Bell, Bird, Boxes, Calculator, Package, Search, Settings, ShoppingCart, Users, WalletCards } from "lucide-react";
+import { authHeaders } from "../lib/auth";
 import styles from "./AppShell.module.css";
 
 type User = { full_name?: string; email?: string; role?: "admin" | "seller" };
 type ModuleState = { key: string; enabled: boolean };
+type OrganizationProfile = { name: string; logo?: string | null };
 type Application = { label: string; description: string; href: string; icon: typeof ShoppingCart; roles: string[]; moduleKey?: string };
 
 const applications: Application[] = [
@@ -43,6 +45,7 @@ export default function AppShell({ children, hideTopbar = false }: { children: R
   const [user, setUser] = useState<User | null>(null);
   const [enabledModules, setEnabledModules] = useState<Set<string> | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [organization, setOrganization] = useState<OrganizationProfile | null>(null);
 
   useEffect(() => {
     const storedUser = window.localStorage.getItem("quincaillerie_user");
@@ -65,6 +68,17 @@ export default function AppShell({ children, hideTopbar = false }: { children: R
       .then((response) => response.ok ? response.json() : [])
       .then((modules: ModuleState[]) => setEnabledModules(new Set(modules.filter((module) => module.enabled).map((module) => module.key))))
       .catch(() => setEnabledModules(new Set(sidebarItems.flatMap((item) => item.moduleKey ? [item.moduleKey] : []))));
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/organization/profile`, {
+      credentials: "include",
+      headers: authHeaders(),
+    })
+      .then((response) => response.ok ? response.json() as Promise<OrganizationProfile> : null)
+      .then(setOrganization)
+      .catch(() => setOrganization(null));
   }, [user]);
 
   const role = user?.role ?? "seller";
@@ -136,7 +150,10 @@ export default function AppShell({ children, hideTopbar = false }: { children: R
                 <Bell size={14} />
                 <span className={styles.notificationDot} />
               </button>
-              <span className={styles.company}>Ma société</span>
+              <span className={styles.company}>
+                {organization?.logo ? <img src={organization.logo} alt="" className={styles.companyLogo} /> : null}
+                {organization?.name ?? "Ma société"}
+              </span>
             </div>
           </header>
         )}
