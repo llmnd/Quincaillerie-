@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AppShell from "../../../components/AppShell";
+import { authHeaders } from "../../../lib/auth";
 import styles from "./page.module.css";
 
 type Module = {
@@ -14,32 +15,39 @@ type Module = {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
-function authHeaders(): HeadersInit {
-  const storedUser = window.localStorage.getItem("quincaillerie_user");
-  if (!storedUser) return {};
-
-  try {
-    const parsed = JSON.parse(storedUser) as { access_token?: string; user?: { access_token?: string } };
-    const accessToken = parsed.user?.access_token ?? parsed.access_token;
-    return accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
-  } catch {
-    return {};
-  }
-}
-
 export default function ModulesPage() {
   const [modules, setModules] = useState<Module[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
-  async function loadModules() {
-    const response = await fetch(`${API_URL}/api/v1/organization/modules`, { credentials: "include", headers: authHeaders() });
-    if (!response.ok) throw new Error("Impossible de charger les modules.");
-    setModules(await response.json());
-  }
-
   useEffect(() => {
-    loadModules().catch((reason: Error) => setError(reason.message)).finally(() => setIsLoading(false));
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const response = await fetch(`${API_URL}/api/v1/organization/modules`, { credentials: "include", headers: authHeaders() });
+        if (!response.ok) throw new Error("Impossible de charger les modules.");
+        const nextModules = (await response.json()) as Module[];
+        if (!cancelled) {
+          setModules(nextModules);
+          setError("");
+        }
+      } catch (reason) {
+        if (!cancelled) {
+          setError(reason instanceof Error ? reason.message : "Impossible de charger les modules.");
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   async function toggleModule(module: Module) {

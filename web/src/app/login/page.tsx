@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import { setStoredUser } from "../../lib/auth";
 import styles from "./page.module.css";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -42,11 +43,10 @@ export default function LoginPage() {
         accessToken = payload.access_token;
       }
 
-      window.localStorage.removeItem("quincaillerie_access_token");
       if (accessToken) {
         window.localStorage.setItem("quincaillerie_access_token", accessToken);
       }
-      window.localStorage.setItem("quincaillerie_user", JSON.stringify(normalizedUser));
+      setStoredUser(normalizedUser);
       router.push("/dashboard");
     } catch {
       setError("Le service est momentanément indisponible.");

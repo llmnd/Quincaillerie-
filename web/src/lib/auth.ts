@@ -11,6 +11,26 @@ const AUTH_STORAGE_KEY = "quincaillerie_user";
 const AUTH_TOKEN_KEY = "quincaillerie_access_token";
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
+function getAccessTokenFromUser(user: unknown): string | null {
+  if (!user || typeof user !== "object") return null;
+
+  const record = user as Record<string, unknown>;
+  const directToken = typeof record.access_token === "string" ? record.access_token : null;
+  if (directToken?.trim()) {
+    return directToken.trim();
+  }
+
+  const nestedUser = record.user;
+  if (nestedUser && typeof nestedUser === "object") {
+    const nestedToken = typeof (nestedUser as Record<string, unknown>).access_token === "string"
+      ? (nestedUser as Record<string, unknown>).access_token
+      : null;
+    return nestedToken?.trim() ?? null;
+  }
+
+  return null;
+}
+
 export function getStoredUser(): AuthUser | null {
   if (typeof window === "undefined") return null;
 
@@ -34,7 +54,16 @@ export function setStoredUser(user: unknown): void {
     ? ((user as { user?: unknown }).user ?? user)
     : user;
 
-  window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(normalized));
+  const accessToken = getAccessTokenFromUser(user) ?? getAccessTokenFromUser(normalized);
+  const nextStoredUser = normalized && typeof normalized === "object"
+    ? { ...(normalized as Record<string, unknown>), ...(accessToken ? { access_token: accessToken } : {}) }
+    : normalized;
+
+  if (accessToken) {
+    window.localStorage.setItem(AUTH_TOKEN_KEY, accessToken);
+  }
+
+  window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(nextStoredUser));
 }
 
 export function clearStoredAuth(): void {
@@ -52,9 +81,7 @@ export function getStoredAuthToken(): string | null {
   }
 
   const storedUser = getStoredUser();
-  if (!storedUser) return null;
-
-  const token = typeof storedUser.access_token === "string" ? storedUser.access_token : null;
+  const token = getAccessTokenFromUser(storedUser);
   return token?.trim() ?? null;
 }
 
