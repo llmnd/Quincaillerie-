@@ -19,6 +19,21 @@ const features = [
   },
 ];
 
+const footerNav = [
+  {
+    category: "PLATEFORME",
+    links: ["Fonctionnalités", "Documentation", "Open Source", "Nouveautés"],
+  },
+  {
+    category: "SERVICES",
+    links: ["Hébergement", "Assistance", "Partenaires", "Sur mesure"],
+  },
+  {
+    category: "ÉCOSYSTÈME",
+    links: ["Communauté", "Événements", "Blog", "Carrières"],
+  },
+];
+
 export default function Home() {
   return (
     <main className={styles.landingPage}>
@@ -115,9 +130,61 @@ export default function Home() {
         <Link href="/login" className={styles.primaryButton}>Se connecter</Link>
       </section>
 
+      {/* FOOTER INNOVANT / STYLE ZARA */}
       <footer className={styles.footer}>
-        <span>Studio ERP</span>
-        <span>ERP SaaS multi-entreprises</span>
+        <div className={styles.footerInner}>
+          <div className={styles.footerHeader}>
+            <span className={styles.footerLogo}>STUDIO ERP</span>
+            <div className={styles.countrySelector}>
+              <span>FR</span>
+              <span className={styles.chevron}>/</span>
+              <span>FCFA (F)</span>
+            </div>
+          </div>
+
+          <div className={styles.footerNavGrid}>
+            {footerNav.map((col) => (
+              <div key={col.category} className={styles.footerColumn}>
+                <h4>{col.category}</h4>
+                <ul>
+                  {col.links.map((link) => (
+                    <li key={link}>
+                      <a href="#">{link}</a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+
+            <div className={styles.footerNewsletter}>
+              <h4>NEWSLETTER</h4>
+              <p>Inscrivez-vous pour recevoir les dernières mises à jour architecturales.</p>
+              <div className={styles.newsletterForm}>
+                <input type="email" placeholder="ENTREZ VOTRE EMAIL" />
+                <button type="button">→</button>
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.footerMeta}>
+            <div className={styles.socialsZara}>
+              <a href="#">INSTAGRAM</a>
+              <a href="#">LINKEDIN</a>
+              <a href="#">GITHUB</a>
+              <a href="#">X</a>
+            </div>
+
+            <div className={styles.legalZara}>
+              <Link href="/legal/privacy">CONFIDENTIALITÉ</Link>
+              <Link href="/legal/support">CONDITIONS</Link>
+              <Link href="/legal/security">SÉCURITÉ</Link>
+            </div>
+          </div>
+
+          <div className={styles.footerBottomZara}>
+            <span>© 2026 STUDIO ERP — CONÇU POUR LA PERFORMANCE</span>
+          </div>
+        </div>
       </footer>
     </main>
   );

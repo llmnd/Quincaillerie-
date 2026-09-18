@@ -1,4 +1,13 @@
+import os
 import uuid
+from pathlib import Path
+
+os.environ["APP_ENV"] = "test"
+# Use a fresh SQLite file per test run so repeated runs do not reuse stale seeded data.
+TEST_DB = Path(__file__).resolve().parents[1] / "test_erp_platform.db"
+if TEST_DB.exists():
+    TEST_DB.unlink()
+os.environ["DATABASE_URL"] = f"sqlite:///{TEST_DB}"
 
 from fastapi.testclient import TestClient
 
@@ -11,7 +20,10 @@ client = TestClient(app)
 def test_health_check():
     response = client.get("/health")
     assert response.status_code == 200
-    assert response.json()["status"] == "ok"
+    body = response.json()
+    assert body["status"] == "ok"
+    assert body["database"] in {"ok", "degraded"}
+    assert "timestamp" in body
 
 
 def test_ping_endpoint():
@@ -226,6 +238,109 @@ def test_organization_profile_accepts_long_logo_data_urls():
     )
     assert update_response.status_code == 200
     assert update_response.json()["logo"] == logo_data
+
+
+def test_login_is_rate_limited_after_repeated_failures():
+    email = f"rate-limit-{uuid.uuid4().hex[:8]}@demo.test"
+    org_name = f"Rate Limit Org {uuid.uuid4().hex[:6]}"
+
+    register_response = client.post(
+        "/api/v1/auth/register",
+        json={
+            "organization_name": org_name,
+            "full_name": "Rate Limit Admin",
+            "email": email,
+            "password": "StrongPass123",
+        },
+    )
+    assert register_response.status_code == 201
+
+    for _ in range(5):
+        failure_response = client.post(
+            "/api/v1/auth/login",
+            json={"email": email, "password": "wrong-password"},
+        )
+        assert failure_response.status_code == 401
+
+    locked_response = client.post(
+        "/api/v1/auth/login",
+        json={"email": email, "password": "StrongPass123"},
+    )
+    assert locked_response.status_code == 429
+
+
+def test_sensitive_actions_generate_audit_entries():
+    email = f"audit-{uuid.uuid4().hex[:8]}@demo.test"
+    org_name = f"Audit Org {uuid.uuid4().hex[:6]}"
+
+    register_response = client.post(
+        "/api/v1/auth/register",
+        json={
+            "organization_name": org_name,
+            "full_name": "Audit Admin",
+            "email": email,
+            "password": "StrongPass123",
+        },
+    )
+    assert register_response.status_code == 201
+
+    login_response = client.post(
+        "/api/v1/auth/login",
+        json={"email": email, "password": "StrongPass123"},
+    )
+    assert login_response.status_code == 200
+    token = login_response.json()["access_token"]
+
+    module_response = client.patch(
+        "/api/v1/organization/modules/suppliers?enabled=false",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert module_response.status_code == 200
+
+    audit_list = client.get(
+        "/api/v1/cash/audit",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert audit_list.status_code == 200
+    actions = {entry["action"] for entry in audit_list.json()}
+    assert "auth.register" in actions
+    assert "auth.login" in actions
+    assert "organization.module.updated" in actions
+
+
+def test_disabled_cash_module_blocks_access():
+    email = f"cash-module-{uuid.uuid4().hex[:8]}@demo.test"
+    org_name = f"Cash Module Org {uuid.uuid4().hex[:6]}"
+
+    register_response = client.post(
+        "/api/v1/auth/register",
+        json={
+            "organization_name": org_name,
+            "full_name": "Cash Admin",
+            "email": email,
+            "password": "StrongPass123",
+        },
+    )
+    assert register_response.status_code == 201
+
+    login_response = client.post(
+        "/api/v1/auth/login",
+        json={"email": email, "password": "StrongPass123"},
+    )
+    assert login_response.status_code == 200
+    token = login_response.json()["access_token"]
+
+    disable_response = client.patch(
+        "/api/v1/organization/modules/cash?enabled=false",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert disable_response.status_code == 200
+
+    blocked_response = client.get(
+        "/api/v1/cash/registers",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert blocked_response.status_code == 403
 
 
 def test_organizations_are_isolated():

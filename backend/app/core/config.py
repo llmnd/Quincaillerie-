@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     app_name: str = "Quincaillerie ERP"
     app_env: str = "development"
     debug: bool = True
+    log_level: str = "INFO"
     secret_key: str = "change-me-in-production"
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 60

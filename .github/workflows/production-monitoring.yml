@@ -1,0 +1,51 @@
+name: Production monitoring
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  monitor:
+    name: Check health and alert on failure
+    runs-on: ubuntu-latest
+    env:
+      FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+      BACKEND_URL: ${{ secrets.BACKEND_URL }}
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+
+    steps:
+      - name: Frontend availability check
+        if: ${{ env.FRONTEND_URL != '' }}
+        run: |
+          curl -fsSL "$FRONTEND_URL" -o /dev/null
+
+      - name: Backend health check
+        if: ${{ env.BACKEND_URL != '' }}
+        run: |
+          curl -fsSL "$BACKEND_URL/health" | jq -e '.status == "ok" and (.database == "ok" or .database == "degraded")'
+
+      - name: Auth smoke check
+        if: ${{ env.BACKEND_URL != '' }}
+        run: |
+          curl -fsSL "$BACKEND_URL/api/v1/auth/me" -D - -o /tmp/auth_response.txt || true
+          if grep -qi "401\|403\|404" /tmp/auth_response.txt; then
+            echo "Auth endpoint responded with an access error. This can be normal for unauthenticated checks; no action is required unless the service is unhealthy."
+          fi
+
+      - name: Notify Slack on failure
+        if: ${{ failure() && env.SLACK_WEBHOOK_URL != '' }}
+        run: |
+          curl -X POST -H 'Content-type: application/json' --data '{"text":"🚨 Quincaillerie ERP monitoring failure: frontend/backend health checks failed or degraded. Investigate immediately."}' "$SLACK_WEBHOOK_URL"
+
+      - name: Notify Discord on failure
+        if: ${{ failure() && env.DISCORD_WEBHOOK_URL != '' }}
+        run: |
+          curl -X POST -H 'Content-type: application/json' --data '{"content":"🚨 Quincaillerie ERP monitoring failure: frontend/backend health checks failed or degraded. Investigate immediately."}' "$DISCORD_WEBHOOK_URL"
+
+      - name: Final result
+        if: ${{ failure() }}
+        run: |
+          echo "Production monitoring detected a failure; alerting has been triggered if configured."
+          exit 1

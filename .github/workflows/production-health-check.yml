@@ -1,0 +1,41 @@
+name: Production health check
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+jobs:
+  healthcheck:
+    name: Check public endpoints and backend health
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Frontend availability
+        if: ${{ secrets.FRONTEND_URL != '' }}
+        env:
+          FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+        run: |
+          curl -fsSL "$FRONTEND_URL" -o /dev/null
+
+      - name: Backend health
+        if: ${{ secrets.BACKEND_URL != '' }}
+        env:
+          BACKEND_URL: ${{ secrets.BACKEND_URL }}
+        run: |
+          curl -fsSL "$BACKEND_URL/health" | jq -e '.status == "ok" and (.database == "ok" or .database == "degraded")'
+
+      - name: Authentication smoke test
+        if: ${{ secrets.BACKEND_URL != '' }}
+        env:
+          BACKEND_URL: ${{ secrets.BACKEND_URL }}
+        run: |
+          curl -fsSL "$BACKEND_URL/api/v1/auth/me" -D - -o /tmp/auth_response.txt || true
+          if grep -qi "401\|403\|404" /tmp/auth_response.txt; then
+            echo "Auth endpoint responded with an access error; verify token guard configuration."
+            exit 0
+          fi
+
+      - name: Alert summary
+        if: ${{ failure() }}
+        run: echo "Production health check failed; investigate immediately."

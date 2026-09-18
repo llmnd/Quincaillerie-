@@ -72,7 +72,10 @@ def get_current_organization(current_user: User = Depends(get_current_user), db:
 
 
 def require_roles(*roles: str):
-    def dependency(current_user: User = Depends(get_current_user)) -> User:
+    def dependency(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> User:
+        organization = db.scalar(select(Organization).where(Organization.id == current_user.organization_id, Organization.is_active.is_(True)))
+        if organization is None:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Organization not available")
         if current_user.role not in roles:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
         return current_user
@@ -82,7 +85,7 @@ def require_roles(*roles: str):
 
 def require_module(module_key: str):
     def dependency(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> User:
-        organization = db.scalar(select(Organization).where(Organization.id == current_user.organization_id))
+        organization = db.scalar(select(Organization).where(Organization.id == current_user.organization_id, Organization.is_active.is_(True)))
         if organization is None:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Organization not available")
         if module_key not in enabled_module_keys(db, organization.id):

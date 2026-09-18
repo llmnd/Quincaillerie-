@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, require_roles
+from app.core.audit import record_audit
 from app.core.modules import MODULES_BY_KEY, ensure_organization_modules
 from app.models.organization import OrganizationModule
 from app.models.user import User
@@ -37,6 +38,16 @@ def update_organization_profile(
     organization.settings = {**(organization.settings or {}), "logo": payload.logo}
     db.commit()
     db.refresh(organization)
+    record_audit(
+        db,
+        organization_id=organization.id,
+        user_id=current_user.id,
+        action="organization.profile.updated",
+        entity_type="organization",
+        entity_id=organization.id,
+        after_data=f"name={organization.name}",
+    )
+    db.commit()
     return {"id": organization.id, "name": organization.name, "logo": organization.settings.get("logo")}
 
 
@@ -75,7 +86,19 @@ def set_module_enabled(
 
     modules = ensure_organization_modules(db, current_user.organization_id)
     module = next(module for module in modules if module.module_key == module_key)
+    before_value = module.enabled
     module.enabled = enabled
     db.commit()
     db.refresh(module)
+    record_audit(
+        db,
+        organization_id=current_user.organization_id,
+        user_id=current_user.id,
+        action="organization.module.updated",
+        entity_type="organization_module",
+        entity_id=module.id,
+        before_data=f"module_key={module_key};enabled={before_value}",
+        after_data=f"module_key={module_key};enabled={module.enabled}",
+    )
+    db.commit()
     return serialize_module(module)

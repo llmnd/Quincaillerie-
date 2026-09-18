@@ -7,7 +7,7 @@
   width: 100%;
   min-height: 100vh;
   margin: 0;
-  padding: 32px 0 48px;
+  padding: 32px 0 0;
   color: #edf0f5;
   background: #1a1f2a;
   border: none;
@@ -20,14 +20,16 @@
 .hero,
 .statement,
 .featureSection,
-.ctaSection,
-.footer {
+.ctaSection {
   width: min(1200px, calc(100% - 64px));
   margin-left: auto;
   margin-right: auto;
 }
 
-/* Header */
+/* ==========================================================================
+   HEADER & NAVIGATION
+   ========================================================================== */
+
 .header {
   display: flex;
   align-items: center;
@@ -50,8 +52,8 @@
   width: 36px;
   height: 36px;
   place-items: center;
-  border-radius: 100px;
-  background: #4e5283;
+  border-radius: 0; /* Alignement style Zara */
+  background: #4b4c72;
   color: #fff;
   font-weight: 600;
   font-size: 0.85rem;
@@ -81,47 +83,109 @@
   margin-left: auto;
 }
 
-.nav a,
-.textButton {
+.nav a {
   color: #9ba5b8;
-  font-size: 0.78rem;
-  letter-spacing: 0.05em;
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   text-decoration: none;
   transition: color 200ms ease;
+  font-weight: 400;
 }
 
-.nav a:hover,
-.textButton:hover {
+.nav a:hover {
   color: #6ce1d1;
 }
 
-.loginButton,
+/* ==========================================================================
+   BOUTONS & CTAs - STYLE ZARA MINIMALISTE & ÉDITORIAL
+   ========================================================================== */
+
+/* 1. Bouton "Se connecter" / Secondaire (Bordure fine, rectangulaire, majuscules) */
+.loginButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.6rem;
+  border: 1px solid rgba(237, 240, 245, 0.4);
+  border-radius: 0; /* Angles droits nets caractéristiques de Zara */
+  color: #edf0f5;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.2em; /* Kerning large minimaliste */
+  text-transform: uppercase;
+  text-decoration: none;
+  background: transparent;
+  transition: all 250ms cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+.loginButton:hover {
+  background: #edf0f5;
+  color: #1a1f2a;
+  border-color: #edf0f5;
+}
+
+/* 2. Bouton Principal / CTA (Aplat contrasté haut de gamme) */
 .primaryButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
+  padding: 0.95rem 2.2rem;
+  border: 1px solid #4b4c72;
+  border-radius: 0; /* Net et affûté */
+  background: #4b4c72;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
   text-decoration: none;
+  transition: all 250ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.primaryButton:hover {
+  background: #6ce1d1;
+  border-color: #6ce1d1;
+  color: #1a1f2a;
+  transform: none; /* Sobriété sans déplacement 3D */
+}
+
+/* 3. Bouton Lien Texte / Action secondaire avec soulignement minimaliste */
+.textButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #9ba5b8;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  text-decoration: none;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(155, 165, 184, 0.3);
   transition: all 200ms ease;
 }
 
-.loginButton {
-  padding: 0.6rem 1.1rem;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #edf0f5;
-  font-size: 0.78rem;
-  font-weight: 500;
-  background: transparent;
-}
-
-.loginButton:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(108, 225, 209, 0.3);
+.textButton span {
+  display: inline-block;
+  transition: transform 200ms ease;
   color: #6ce1d1;
 }
 
-/* Hero Section */
+.textButton:hover {
+  color: #6ce1d1;
+  border-bottom-color: #6ce1d1;
+}
+
+.textButton:hover span {
+  transform: translateY(3px);
+}
+
+/* ==========================================================================
+   HERO SECTION
+   ========================================================================== */
+
 .hero {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(300px, 0.65fr);
@@ -139,7 +203,7 @@
   margin: 0 0 16px;
   color: #6ce1d1;
   font-size: 0.62rem;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.22em;
   line-height: 1.5;
   text-transform: uppercase;
   font-weight: 600;
@@ -168,35 +232,12 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 20px;
+  gap: 24px;
   margin-top: 36px;
 }
 
-.primaryButton {
-  padding: 0.85rem 1.5rem;
-  background: #4b4c72;
-  color: #fff;
-  font-size: 0.8rem;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.primaryButton:hover {
-  background: #595580;
-  transform: translateY(-1px);
-}
-
-.textButton {
-  display: inline-flex;
-  gap: 8px;
-  align-items: center;
-  font-size: 0.78rem;
-  font-weight: 500;
-}
-
 /* ==========================================================================
-   IPHONE ULTRA-FIN & ÉPURÉ
+   ARTWORK MOBILES
    ========================================================================== */
 
 .heroArtwork {
@@ -441,7 +482,7 @@
   background: #252936;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-top: 2px solid #4b4c72;
-  border-radius: 6px;
+  border-radius: 0; /* Alignement Zara */
   transition: all 200ms ease;
 }
 
@@ -479,7 +520,7 @@
   justify-content: space-between;
   gap: 32px;
   padding: 56px 40px;
-  border-radius: 8px;
+  border-radius: 0; /* Rectangulaire */
   background: #252936;
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -492,14 +533,185 @@
   letter-spacing: -0.04em;
 }
 
+/* ==========================================================================
+   FOOTER - INSPIRATION ZARA / DESIGN ÉDITORIAL MINIMALISTE
+   ========================================================================== */
+
 .footer {
+  margin-top: 100px;
+  background: #151922;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  color: #edf0f5;
+  padding: 80px 0 40px;
+}
+
+.footerInner {
+  width: min(1200px, calc(100% - 64px));
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 60px;
+}
+
+/* En-tête du Footer */
+.footerHeader {
   display: flex;
   justify-content: space-between;
-  gap: 20px;
-  padding: 32px 0 0;
+  align-items: flex-end;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 32px;
+}
+
+.footerLogo {
+  font-size: clamp(2.5rem, 7vw, 6rem);
+  font-weight: 300;
+  letter-spacing: 0.18em;
+  line-height: 0.8;
+  color: #edf0f5;
+  text-transform: uppercase;
+}
+
+.countrySelector {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
   color: #7c8a9d;
-  font-size: 0.65rem;
+  text-transform: uppercase;
+}
+
+.chevron {
+  color: #6ce1d1;
+}
+
+/* Grille de Navigation */
+.footerNavGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr) 1.5fr;
+  gap: 48px;
+}
+
+.footerColumn h4,
+.footerNewsletter h4 {
+  margin: 0 0 24px;
+  color: #6ce1d1;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+}
+
+.footerColumn ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.footerColumn a {
+  color: #9ba5b8;
+  text-decoration: none;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: color 200ms ease;
+  font-weight: 300;
+}
+
+.footerColumn a:hover {
+  color: #edf0f5;
+}
+
+/* Newsletter Minimaliste */
+.footerNewsletter p {
+  margin: 0 0 20px;
+  color: #7c8a9d;
+  font-size: 0.78rem;
+  line-height: 1.6;
+  font-weight: 300;
+}
+
+.newsletterForm {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  padding-bottom: 8px;
+  transition: border-color 200ms ease;
+}
+
+.newsletterForm:focus-within {
+  border-color: #6ce1d1;
+}
+
+.newsletterForm input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #edf0f5;
+  font-size: 0.72rem;
   letter-spacing: 0.12em;
+  width: 100%;
+}
+
+.newsletterForm input::placeholder {
+  color: #53636a;
+}
+
+.newsletterForm button {
+  background: transparent;
+  border: none;
+  color: #6ce1d1;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 0 8px;
+  transition: transform 200ms ease;
+}
+
+.newsletterForm button:hover {
+  transform: translateX(4px);
+}
+
+/* Meta Footer & Liens */
+.footerMeta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 24px;
+  padding-top: 32px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.socialsZara,
+.legalZara {
+  display: flex;
+  gap: 28px;
+  flex-wrap: wrap;
+}
+
+.socialsZara a,
+.legalZara a {
+  color: #7c8a9d;
+  text-decoration: none;
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  transition: color 200ms ease;
+}
+
+.socialsZara a:hover,
+.legalZara a:hover {
+  color: #6ce1d1;
+}
+
+.footerBottomZara {
+  text-align: left;
+  color: #4a5568;
+  font-size: 0.62rem;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
 }
 
@@ -512,8 +724,7 @@
   .hero,
   .statement,
   .featureSection,
-  .ctaSection,
-  .footer {
+  .ctaSection {
     width: calc(100% - 40px);
   }
   .nav {
@@ -531,6 +742,10 @@
   .featureGrid {
     grid-template-columns: 1fr;
   }
+  .footerNavGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 36px;
+  }
 }
 
 @media (max-width: 640px) {
@@ -538,13 +753,29 @@
   .hero,
   .statement,
   .featureSection,
-  .ctaSection,
-  .footer {
+  .ctaSection {
     width: calc(100% - 32px);
   }
   .ctaSection {
     flex-direction: column;
     align-items: flex-start;
     padding: 32px 20px;
+  }
+  .footerInner {
+    width: calc(100% - 32px);
+  }
+  .footerHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .footerNavGrid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  .footerMeta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
   }
 }

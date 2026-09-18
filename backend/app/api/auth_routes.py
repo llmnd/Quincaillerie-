@@ -1,8 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+import time
+from collections.abc import MutableMapping
+
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db, require_roles
+from app.core.audit import record_audit
 from app.core.config import settings
 from app.core.security import create_access_token, hash_password, verify_password
 from app.models.organization import Organization
@@ -10,6 +14,46 @@ from app.models.user import User
 from app.schemas.auth import BootstrapAdminRequest, LoginRequest, UserCreate, UserRead
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+_LOGIN_FAILURES: MutableMapping[str, dict[str, float | int]] = {}
+_LOGIN_MAX_ATTEMPTS = 5
+_LOGIN_LOCKOUT_SECONDS = 300
+
+
+def _login_attempt_key(request: Request, email: str) -> str:
+    client_ip = request.client.host if request.client else "unknown"
+    return f"{client_ip}:{email.lower().strip()}"
+
+
+def _is_login_locked(request: Request, email: str) -> bool:
+    key = _login_attempt_key(request, email)
+    data = _LOGIN_FAILURES.get(key)
+    if not data:
+        return False
+
+    now = time.monotonic()
+    window_started = float(data["window_started"])
+    attempts = int(data["attempts"])
+    if now - window_started < _LOGIN_LOCKOUT_SECONDS:
+        return attempts >= _LOGIN_MAX_ATTEMPTS
+
+    _LOGIN_FAILURES.pop(key, None)
+    return False
+
+
+def _record_failed_login(request: Request, email: str) -> None:
+    key = _login_attempt_key(request, email)
+    now = time.monotonic()
+    data = _LOGIN_FAILURES.get(key)
+    if data is None or now - float(data["window_started"]) >= _LOGIN_LOCKOUT_SECONDS:
+        _LOGIN_FAILURES[key] = {"window_started": now, "attempts": 1}
+        return
+
+    data["attempts"] = int(data["attempts"]) + 1
+
+
+def _clear_failed_logins(request: Request, email: str) -> None:
+    _LOGIN_FAILURES.pop(_login_attempt_key(request, email), None)
 
 
 def set_auth_cookie(response: Response, token: str) -> None:
@@ -25,12 +69,28 @@ def set_auth_cookie(response: Response, token: str) -> None:
 
 
 @router.post("/login", response_model=UserRead)
-def login(payload: LoginRequest, response: Response, db: Session = Depends(get_db)) -> UserRead:
+def login(payload: LoginRequest, request: Request, response: Response, db: Session = Depends(get_db)) -> UserRead:
+    if _is_login_locked(request, payload.email):
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="Too many failed login attempts. Please try again later.")
+
     user = db.scalar(select(User).where(func.lower(User.email) == payload.email.lower()))
     if user is None or not user.is_active or not verify_password(payload.password, user.password_hash):
+        _record_failed_login(request, payload.email)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Email or password is incorrect")
+
+    _clear_failed_logins(request, payload.email)
     access_token = create_access_token(user.id, user.role)
     set_auth_cookie(response, access_token)
+    record_audit(
+        db,
+        organization_id=user.organization_id,
+        user_id=user.id,
+        action="auth.login",
+        entity_type="user",
+        entity_id=user.id,
+        after_data=f"role={user.role}",
+    )
+    db.commit()
     user_data = UserRead.model_validate(user).model_dump()
     user_data["access_token"] = access_token
     return user_data
@@ -41,6 +101,7 @@ def bootstrap_admin(payload: BootstrapAdminRequest, db: Session = Depends(get_db
     if db.scalar(select(User.id).limit(1)) is not None:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="An initial user already exists")
 
+    email = payload.email.lower().strip()
     organization = Organization(name=payload.organization_name.strip(), slug=(payload.organization_name.strip().lower().replace(" ", "-") or "organization"), settings={"logo": payload.organization_logo} if payload.organization_logo else {})
     if db.scalar(select(Organization.id).where(Organization.slug == organization.slug)) is not None:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Organization name already exists")
@@ -49,7 +110,7 @@ def bootstrap_admin(payload: BootstrapAdminRequest, db: Session = Depends(get_db
     db.flush()
 
     admin = User(
-        email=payload.email.lower(),
+        email=email,
         full_name=payload.full_name,
         password_hash=hash_password(payload.password),
         role="admin",
@@ -58,6 +119,16 @@ def bootstrap_admin(payload: BootstrapAdminRequest, db: Session = Depends(get_db
     db.add(admin)
     db.commit()
     db.refresh(admin)
+    record_audit(
+        db,
+        organization_id=organization.id,
+        user_id=admin.id,
+        action="auth.register",
+        entity_type="user",
+        entity_id=admin.id,
+        after_data=f"email={email};organization_id={organization.id}",
+    )
+    db.commit()
     return admin
 
 
@@ -88,6 +159,16 @@ def register_organization(payload: BootstrapAdminRequest, response: Response, db
     db.add(admin)
     db.commit()
     db.refresh(admin)
+    record_audit(
+        db,
+        organization_id=organization.id,
+        user_id=admin.id,
+        action="auth.register",
+        entity_type="user",
+        entity_id=admin.id,
+        after_data=f"email={email};organization_id={organization.id}",
+    )
+    db.commit()
     set_auth_cookie(response, create_access_token(admin.id, admin.role))
     return admin
 

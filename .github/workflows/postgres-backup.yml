@@ -1,0 +1,55 @@
+name: PostgreSQL backup
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  backup:
+    name: Create and archive a database backup
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      BACKUP_DIR: ${{ runner.temp }}/backups
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Create backup directory
+        run: mkdir -p "$BACKUP_DIR"
+
+      - name: Run backup script
+        run: |
+          python scripts/backup_postgres.py
+
+      - name: Upload backup artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: postgres-backup-${{ github.run_number }}
+          path: ${{ runner.temp }}/backups/*.sql
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Optional S3 sync
+        if: ${{ secrets.AWS_S3_BUCKET != '' && secrets.AWS_ACCESS_KEY_ID != '' && secrets.AWS_SECRET_ACCESS_KEY != '' }}
+        env:
+          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION || 'eu-west-3' }}
+        run: |
+          python -m pip install awscli
+          aws s3 cp "$BACKUP_DIR" "s3://$AWS_S3_BUCKET/erp-backups/" --recursive --exclude "*" --include "*.sql"

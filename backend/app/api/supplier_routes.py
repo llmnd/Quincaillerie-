@@ -6,18 +6,19 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, require_module, require_roles
 from app.models.supplier import Supplier
+from app.models.user import User
 from app.schemas.supplier import SupplierCreate, SupplierRead, SupplierUpdate
 
-router = APIRouter(prefix="/suppliers", tags=["suppliers"], dependencies=[Depends(require_module("stock"))])
+router = APIRouter(prefix="/suppliers", tags=["suppliers"], dependencies=[Depends(require_module("suppliers"))])
 
 
 @router.get("", response_model=list[SupplierRead])
-def list_suppliers(db: Session = Depends(get_db), current_user: object = Depends(require_roles("admin"))) -> list[Supplier]:
+def list_suppliers(db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin"))) -> list[Supplier]:
     return db.scalars(select(Supplier).where(Supplier.organization_id == current_user.organization_id).order_by(Supplier.id)).all()
 
 
 @router.post("", response_model=SupplierRead, status_code=status.HTTP_201_CREATED)
-def create_supplier(payload: SupplierCreate, db: Session = Depends(get_db), current_user: object = Depends(require_roles("admin"))) -> Supplier:
+def create_supplier(payload: SupplierCreate, db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin"))) -> Supplier:
     supplier = Supplier(**payload.model_dump(), organization_id=current_user.organization_id)
     db.add(supplier)
     db.commit()
@@ -26,7 +27,7 @@ def create_supplier(payload: SupplierCreate, db: Session = Depends(get_db), curr
 
 
 @router.get("/{supplier_id}", response_model=SupplierRead)
-def get_supplier(supplier_id: int, db: Session = Depends(get_db), current_user: object = Depends(require_roles("admin"))) -> Supplier:
+def get_supplier(supplier_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin"))) -> Supplier:
     supplier = db.scalar(select(Supplier).where(Supplier.id == supplier_id, Supplier.organization_id == current_user.organization_id))
     if supplier is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Supplier not found")
@@ -34,7 +35,7 @@ def get_supplier(supplier_id: int, db: Session = Depends(get_db), current_user: 
 
 
 @router.put("/{supplier_id}", response_model=SupplierRead)
-def update_supplier(supplier_id: int, payload: SupplierUpdate, db: Session = Depends(get_db), current_user: object = Depends(require_roles("admin"))) -> Supplier:
+def update_supplier(supplier_id: int, payload: SupplierUpdate, db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin"))) -> Supplier:
     supplier = db.scalar(select(Supplier).where(Supplier.id == supplier_id, Supplier.organization_id == current_user.organization_id))
     if supplier is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Supplier not found")
@@ -48,7 +49,7 @@ def update_supplier(supplier_id: int, payload: SupplierUpdate, db: Session = Dep
 
 
 @router.delete("/{supplier_id}")
-def delete_supplier(supplier_id: int, db: Session = Depends(get_db), current_user: object = Depends(require_roles("admin"))) -> dict[str, Any]:
+def delete_supplier(supplier_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin"))) -> dict[str, Any]:
     supplier = db.scalar(select(Supplier).where(Supplier.id == supplier_id, Supplier.organization_id == current_user.organization_id))
     if supplier is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Supplier not found")
