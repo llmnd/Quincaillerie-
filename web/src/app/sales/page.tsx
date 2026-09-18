@@ -69,7 +69,7 @@ export default function SalesPage() {
 
   useEffect(() => {
     if (!message) return;
-    const timeout = window.setTimeout(() => setMessage(""), 400);
+    const timeout = window.setTimeout(() => setMessage(""), 4000);
     return () => window.clearTimeout(timeout);
   }, [message]);
 
