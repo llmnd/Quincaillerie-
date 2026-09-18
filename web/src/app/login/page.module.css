@@ -25,7 +25,7 @@
 	height: 32px;
 	place-items: center;
 	border-radius: 0px;
-	background: #684b72;
+	background: #4b4c72;
 	color: #fff;
 	font-weight: 400;
 	font-size: 0.85rem;
@@ -141,9 +141,9 @@
 .submitButton {
 	margin-top: 12px;
 	padding: 14px 20px;
-	border: 1px solid #684b72;
+	border: 1px solid #504b72;
 	border-radius: 0;
-	background: #684b72;
+	background: #4b4f72;
 	color: #ffffff;
 	font: inherit;
 	font-weight: 400;

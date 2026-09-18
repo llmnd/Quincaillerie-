@@ -48,8 +48,7 @@ export default function LoginPage() {
       <Link href="/" className={styles.brand}>
         <span className={styles.brandMark}>Q</span>
         <span>
-          <small>Lamine</small>
-          <strong>Studio ERP</strong>
+          <strong>ERP Studio</strong>
         </span>
       </Link>
 
