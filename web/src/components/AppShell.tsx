@@ -93,8 +93,15 @@ export default function AppShell({ children, hideTopbar = false }: { children: R
         return response.json() as Promise<ModuleState[]>;
       })
       .then((modules) => {
-        if (!modules) return;
-        setEnabledModules(new Set(modules.filter((module) => module.enabled).map((module) => module.key)));
+        if (!modules || !Array.isArray(modules)) {
+          setEnabledModules(allModuleKeys);
+          return;
+        }
+
+        const enabledKeys = new Set(
+          modules.filter((module) => module && module.enabled).map((module) => module.key)
+        );
+        setEnabledModules(enabledKeys.size > 0 ? enabledKeys : allModuleKeys);
       })
       .catch(() => setEnabledModules(allModuleKeys));
   }, [user]);
@@ -112,11 +119,12 @@ export default function AppShell({ children, hideTopbar = false }: { children: R
 
   const effectiveUser = user ?? { full_name: "Utilisateur", email: "", role: "seller" as const };
   const role: "admin" | "seller" = effectiveUser.role ?? "seller";
+  const safeEnabledModules = enabledModules && enabledModules.size > 0 ? enabledModules : new Set(sidebarItems.flatMap((item) => item.moduleKey ? [item.moduleKey] : []));
   const visibleSidebar = sidebarItems.filter((item) => {
     const allowedByRole = !item.roles || item.roles.includes(role);
     if (!allowedByRole) return false;
     const moduleKey = item.moduleKey ?? "";
-    return enabledModules === null || moduleKey.length === 0 || enabledModules.has(moduleKey);
+    return moduleKey.length === 0 || safeEnabledModules.has(moduleKey);
   });
   const safeUser = effectiveUser;
 

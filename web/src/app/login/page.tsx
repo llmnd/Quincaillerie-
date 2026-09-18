@@ -60,7 +60,7 @@ export default function LoginPage() {
       <Link href="/" className={styles.brand}>
         <span className={styles.brandMark}>Q</span>
         <span>
-          <strong>ERP Mizan</strong>
+          <strong>ERP Studio</strong>
         </span>
       </Link>
 
