@@ -77,15 +77,26 @@ export default function AppShell({ children, hideTopbar = false }: { children: R
 
   useEffect(() => {
     if (!user) return;
-    const storedUser = window.localStorage.getItem("quincaillerie_user");
-    const accessToken = storedUser ? (JSON.parse(storedUser) as User & { access_token?: string }).access_token : undefined;
+    const allModuleKeys = new Set(sidebarItems.flatMap((item) => item.moduleKey ? [item.moduleKey] : []));
     fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/organization/modules`, {
       credentials: "include",
-      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+      headers: {
+        Accept: "application/json",
+        ...authHeaders(),
+      },
     })
-      .then((response) => response.ok ? response.json() : [])
-      .then((modules: ModuleState[]) => setEnabledModules(new Set(modules.filter((module) => module.enabled).map((module) => module.key))))
-      .catch(() => setEnabledModules(new Set(sidebarItems.flatMap((item) => item.moduleKey ? [item.moduleKey] : []))));
+      .then((response) => {
+        if (!response.ok) {
+          setEnabledModules(allModuleKeys);
+          return null;
+        }
+        return response.json() as Promise<ModuleState[]>;
+      })
+      .then((modules) => {
+        if (!modules) return;
+        setEnabledModules(new Set(modules.filter((module) => module.enabled).map((module) => module.key)));
+      })
+      .catch(() => setEnabledModules(allModuleKeys));
   }, [user]);
 
   useEffect(() => {
