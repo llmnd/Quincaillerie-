@@ -62,15 +62,19 @@ export async function restoreAuthSession(): Promise<AuthUser | null> {
   if (typeof window === "undefined") return null;
 
   const cachedUser = getStoredUser();
+  const fallbackToken = getStoredAuthToken();
 
   try {
     const response = await fetch(`${API_URL}/api/v1/auth/me`, {
       credentials: "include",
-      headers: { Accept: "application/json" },
+      headers: {
+        Accept: "application/json",
+        ...(fallbackToken ? { Authorization: `Bearer ${fallbackToken}` } : {}),
+      },
     });
 
     if (!response.ok) {
-      if (response.status === 401 || response.status === 403) {
+      if ((response.status === 401 || response.status === 403) && !fallbackToken) {
         clearStoredAuth();
         return null;
       }
