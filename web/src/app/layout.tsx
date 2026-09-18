@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Quincaillerie ERP",
-  description: "Tableau de bord ERP pour la gestion des fournisseurs, clients et ventes.",
+  title: "MIZAN ERP",
+  description: "ERP orienté confiance, performance et gestion multi-entreprises.",
 };
 
 export const viewport: Viewport = {

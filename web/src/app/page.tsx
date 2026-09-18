@@ -38,11 +38,11 @@ export default function Home() {
   return (
     <main className={styles.landingPage}>
       <header className={styles.header}>
-        <Link href="/" className={styles.brand} aria-label="Studio ERP, accueil">
-          <span className={styles.brandMark}>S</span>
+        <Link href="/" className={styles.brand} aria-label="MIZAN ERP, accueil">
+          <span className={styles.brandMark}>M</span>
           <span>
-            <small>Platform</small>
-            <strong>Studio ERP</strong>
+            <small>Amanah · Ihsan · Baraka</small>
+            <strong>MIZAN ERP</strong>
           </span>
         </Link>
 
@@ -134,11 +134,11 @@ export default function Home() {
       <footer className={styles.footer}>
         <div className={styles.footerInner}>
           <div className={styles.footerHeader}>
-            <span className={styles.footerLogo}>STUDIO ERP</span>
+            <span className={styles.footerLogo}>MIZAN ERP</span>
             <div className={styles.countrySelector}>
-              <span>FR</span>
-              <span className={styles.chevron}>/</span>
-              <span>FCFA (F)</span>
+              <span>AMANAH</span>
+              <span className={styles.chevron}>·</span>
+              <span>IHSAN · BARAKA</span>
             </div>
           </div>
 
@@ -182,7 +182,7 @@ export default function Home() {
           </div>
 
           <div className={styles.footerBottomZara}>
-            <span>© 2026 STUDIO ERP — CONÇU POUR LA PERFORMANCE</span>
+            <span>© 2026 MIZAN ERP — AMANAH · IHSAN · BARAKA</span>
           </div>
         </div>
       </footer>

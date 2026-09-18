@@ -170,7 +170,7 @@ export default function AppShell({ children, hideTopbar = false }: { children: R
         {!hideTopbar && (
           <header className={styles.topbar}>
             <div className={styles.breadcrumb}>
-              <span className={styles.breadcrumbBrand}>Studio ERP</span>
+              <span className={styles.breadcrumbBrand}>MIZAN ERP</span>
               <span className={styles.breadcrumbSep}>/</span>
               <strong>{pathname === "/dashboard" ? "Tableau de bord" : pathname.split("/").filter(Boolean).join(" / ")}</strong>
             </div>
