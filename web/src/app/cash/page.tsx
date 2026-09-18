@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { X, ChevronDown, History } from "lucide-react";
 import AppShell from "../../components/AppShell";
 import { authHeaders } from "../../lib/auth";
@@ -48,6 +49,7 @@ const dateTime = (value?: string | null) =>
   value ? new Date(value).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" }) : "En cours";
 
 export default function CashPage() {
+  const router = useRouter();
   const [registers, setRegisters] = useState<Register[]>([]);
   const [sessions, setSessions] = useState<CashSession[]>([]);
   const [recaps, setRecaps] = useState<SessionRecap[]>([]);
@@ -146,6 +148,7 @@ export default function CashPage() {
     setMessage("Caisse ouverte.");
     setAmount("");
     await load();
+    router.replace("/sales");
   }
 
   async function createRegister(event: FormEvent) {

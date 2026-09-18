@@ -364,21 +364,6 @@
 	.breadcrumb {
 		font-size: 0.72rem;
 	}
-
-	.company {
-		display: inline-flex;
-		max-width: 150px;
-		overflow: hidden;
-		font-size: 0.58rem;
-		letter-spacing: 0.08em;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-
-	.companyLogo {
-		width: 28px;
-		height: 28px;
-	}
 }
 
 /* Zone de contenu mobile agrandie */
