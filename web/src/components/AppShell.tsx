@@ -51,6 +51,7 @@ export default function AppShell({
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
     // Keep the first client render identical to the server before reading session-dependent data.
     useEffect(() => {
       // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -117,8 +118,8 @@ export default function AppShell({
   }, []);
 
   useEffect(() => {
-    if (sessionQuery.isFetched && !user) router.replace("/login");
-  }, [router, sessionQuery.isFetched, user]);
+    if (sessionQuery.isFetched && !user && !isLoggingOut) router.replace("/login");
+  }, [isLoggingOut, router, sessionQuery.isFetched, user]);
 
   useEffect(() => {
     // Reset the visual route indicator once the new route is committed.
@@ -151,6 +152,7 @@ export default function AppShell({
   }) : sidebarItems);
   const safeUser = isHydrated ? effectiveUser : { full_name: "Utilisateur", email: "", role: undefined };
   const userInitial = (safeUser.full_name ?? safeUser.email ?? "U").trim().charAt(0).toUpperCase();
+  const roleLabel = !isHydrated ? "Utilisateur" : role === "admin" ? "Administrateur" : "Vendeur";
 
   function prefetchRoute(route: string) {
     router.prefetch(route);
@@ -172,6 +174,7 @@ export default function AppShell({
   }
 
   function handleLogout() {
+    setIsLoggingOut(true);
     fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/auth/logout`, {
       method: "POST",
       credentials: "include",
@@ -236,13 +239,7 @@ export default function AppShell({
             </button>
             <div>
               <strong>{safeUser.full_name ?? "Utilisateur"}</strong>
-              <small>
-                {!isHydrated
-                  ? "Utilisateur"
-                  : role === "admin"
-                    ? "Administrateur"
-                    : "Vendeur"}
-              </small>
+              <small>{roleLabel}</small>
             </div>
           </div>
         </aside>
