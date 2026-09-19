@@ -21,15 +21,19 @@ html,
 body {
   max-width: 100vw;
   overflow-x: hidden;
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
 }
 
 body {
-  min-height: 100%;
   display: flex;
   flex-direction: column;
   color: #ffffff;
   background: var(--background);
-  font-family: var(--font-geist-sans), "Inter", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   touch-action: manipulation;
@@ -90,6 +94,12 @@ input,
 select,
 textarea,
 button {
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
   color: #17252d;
   font-size: 16px;
 }

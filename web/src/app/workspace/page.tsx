@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Bird,
   Boxes,
@@ -102,33 +103,20 @@ type OrganizationProfile = {
 export default function WorkspacePage() {
   const router = useRouter();
 
-  const [user, setUser] = useState<User | null>(null);
-  const [organization, setOrganization] =
-    useState<OrganizationProfile | null>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
-
-  useEffect(() => {
-    setUser((getStoredUser() as User | null) ?? null);
-  }, []);
-
-  useEffect(() => {
-    fetch(
-      `${
-        process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"
-      }/api/v1/organization/profile`,
-      {
+  const [user] = useState<User | null>(() => getStoredUser() as User | null);
+  const organizationQuery = useQuery<OrganizationProfile | null>({
+    queryKey: ["organization", "profile"],
+    queryFn: async () => {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/organization/profile`, {
         credentials: "include",
         headers: authHeaders(),
-      }
-    )
-      .then((response) =>
-        response.ok
-          ? (response.json() as Promise<OrganizationProfile>)
-          : null
-      )
-      .then((profile) => setOrganization(profile ?? null))
-      .catch(() => setOrganization(null));
-  }, []);
+      });
+      return response.ok ? (await response.json() as OrganizationProfile) : null;
+    },
+  });
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const organization = organizationQuery.data ?? null;
 
   useEffect(() => {
     if (!menuOpen) return;

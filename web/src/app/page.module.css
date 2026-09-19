@@ -14,7 +14,7 @@
   border: none;
   border-radius: 0;
   box-shadow: none;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-feature-settings: 'cv01' 1, 'cv02' 1, 'ss01' 1;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -495,6 +495,8 @@
   border: 0;
   background: transparent;
   color: inherit;
+  font: inherit;
+  cursor: pointer;
   text-decoration: none;
   transition: transform 160ms ease-out;
 }
@@ -598,7 +600,7 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-feature-settings: 'cv01' 1;
 }
 
@@ -1144,7 +1146,7 @@
   font-size: 0.8rem;
   letter-spacing: 0.12em;
   width: 100%;
-  font-family: 'Inter', inherit;
+  font-family: inherit;
   font-feature-settings: 'cv01' 1;
 }
 
@@ -1451,4 +1453,54 @@
   .legalZara {
     gap: 20px;
   }
+}
+
+.moduleModalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(8, 11, 18, 0.76);
+  backdrop-filter: blur(8px);
+}
+
+.moduleModal {
+  position: relative;
+  width: min(440px, 100%);
+  padding: 34px;
+  border: 1px solid rgba(108, 225, 209, 0.3);
+  background: #202532;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+}
+
+.moduleModal h2 {
+  margin: 0;
+  color: #f5f6f8;
+  font-size: 2rem;
+  font-weight: 400;
+}
+
+.moduleModal p {
+  margin: 14px 0 28px;
+  color: #a8b0c2;
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+
+.moduleModalClose {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  border: 0;
+  background: transparent;
+  color: #a8b0c2;
+  font-size: 1.7rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.moduleModalClose:hover {
+  color: #6ce1d1;
 }

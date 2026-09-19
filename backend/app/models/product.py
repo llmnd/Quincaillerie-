@@ -1,4 +1,4 @@
-from sqlalchemy import Float, ForeignKey, Integer, String
+from sqlalchemy import Float, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -6,6 +6,7 @@ from app.core.database import Base
 
 class Product(Base):
     __tablename__ = "products"
+    __table_args__ = (Index("ix_products_org_active_id", "organization_id", "is_active", "id"),)
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id"), nullable=False, index=True)

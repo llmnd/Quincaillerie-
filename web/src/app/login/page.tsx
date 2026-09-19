@@ -52,6 +52,7 @@ export default function LoginPage() {
       }
       window.localStorage.setItem("quincaillerie_from_login", "1");
       window.sessionStorage.setItem("quincaillerie_authenticated", "1");
+      window.sessionStorage.setItem("quincaillerie_session_user", JSON.stringify(normalizedUser));
       window.sessionStorage.setItem("quincaillerie_entry_source", "/login");
       setStoredUser(normalizedUser);
       window.location.replace("/");

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy import DateTime, Float, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -8,6 +8,7 @@ from app.core.database import Base
 
 class Sale(Base):
     __tablename__ = "sales"
+    __table_args__ = (Index("ix_sales_org_date_id", "organization_id", "sale_date", "id"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id"), nullable=False, index=True)
@@ -27,6 +28,7 @@ class Sale(Base):
 
 class SaleItem(Base):
     __tablename__ = "sale_items"
+    __table_args__ = (Index("ix_sale_items_org_product", "organization_id", "product_id"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id"), nullable=False, index=True)

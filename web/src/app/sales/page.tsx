@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Minus, Plus, X } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import AppShell from "../../components/AppShell";
 import { authHeaders } from "../../lib/auth";
 import styles from "./page.module.css";
@@ -14,7 +15,6 @@ type Handoff = { theoretical_balance: number; sales_total: number; cash_collecte
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export default function SalesPage() {
-  const [products, setProducts] = useState<Product[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [cart, setCart] = useState<CartLine[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState("");
@@ -40,6 +40,19 @@ export default function SalesPage() {
       return "seller";
     }
   });
+  const queryClient = useQueryClient();
+  const productsQuery = useQuery<Product[]>({
+    queryKey: ["products", "catalog"],
+    queryFn: async () => {
+      const response = await fetch(`${API_URL}/api/v1/products`, {
+        headers: authHeaders(),
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Impossible de charger les produits.");
+      return response.json() as Promise<Product[]>;
+    },
+  });
+  const products = productsQuery.data ?? [];
 
   useEffect(() => {
     const headers = authHeaders();
@@ -53,12 +66,10 @@ export default function SalesPage() {
     };
 
     Promise.all([
-      loadResource<Product[]>("/api/v1/products", []),
       loadResource<Customer[]>("/api/v1/customers", []),
       loadResource<{ status: string }[]>("/api/v1/cash/sessions", []),
       loadResource<Handoff | null>("/api/v1/cash/sessions/current/handoff", null),
-    ]).then(([productData, customerData, sessionData, handoffData]) => {
-      setProducts(productData);
+    ]).then(([customerData, sessionData, handoffData]) => {
       setCustomers(customerData);
       setHasOpenSession(sessionData.some((session) => session.status === "open"));
       setHandoff(handoffData);
@@ -137,6 +148,7 @@ export default function SalesPage() {
       }
 
       setCart([]);
+      void queryClient.invalidateQueries({ queryKey: ["products", "catalog"] });
       setSelectedCustomer("");
       setIsPaymentStep(false);
       setNoticeType("success");
@@ -179,7 +191,7 @@ export default function SalesPage() {
 
   return (
     <AppShell>
-      {!hasOpenSession && (
+      {!isLoading && !hasOpenSession && (
         <div className={styles.sessionNotice}>
           <strong>Caisse à ouvrir.</strong> Une session ouverte est obligatoire pour valider une vente.{" "}
           <Link href="/cash">Ouvrir une caisse</Link>
@@ -201,8 +213,8 @@ export default function SalesPage() {
             />
           </div>
 
-          {isLoading && <div className={styles.state}>Chargement…</div>}
-          {!isLoading && products.length === 0 && <div className={styles.state}>Aucun produit disponible.</div>}
+          {(isLoading || productsQuery.isPending) && <div className={styles.state}>Chargement…</div>}
+          {!isLoading && !productsQuery.isPending && products.length === 0 && <div className={styles.state}>Aucun produit disponible.</div>}
 
           <div className={styles.productList}>
             {filteredProducts.map((product) => (

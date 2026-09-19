@@ -4,6 +4,7 @@
 }
 
 .shell {
+	position: relative;
 	display: flex;
 	min-height: var(--app-height, 100vh);
 	height: var(--app-height, 100vh);
@@ -579,6 +580,7 @@
 	min-width: 0;
 	padding: 36px 40px;
 	background: #1d202b;
+	animation: routeContentEnter 180ms ease-out both;
 }
 
 .contentFullBleed {
@@ -586,6 +588,23 @@
 	min-width: 0;
 	padding: 0;
 	background: transparent;
+	animation: routeContentEnter 180ms ease-out both;
+}
+
+@keyframes routeContentEnter {
+	from {
+		opacity: 0.9;
+		transform: translateY(2px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.content,
+	.contentFullBleed { animation: none; }
 }
 
 @media (max-width: 760px) {
@@ -619,4 +638,125 @@
 	.content :global(form) {
 		padding: 28px 18px !important;
 	}
+}
+
+.loadingShell {
+	min-height: 100vh;
+	padding: 24px;
+	background: #101319;
+}
+
+.loadingTopbar,
+.loadingBody {
+	width: min(1240px, 100%);
+	margin: 0 auto;
+}
+
+.loadingTopbar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	min-height: 56px;
+	padding: 0 18px;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.loadingBody {
+	padding: 40px 24px;
+}
+
+.loadingBlockSmall,
+.loadingBlockMedium,
+.loadingLineWide,
+.loadingLine,
+.loadingPanel,
+.loadingCards span {
+	display: block;
+	border-radius: 5px;
+	background: linear-gradient(90deg, #1b202a 25%, #272e3a 50%, #1b202a 75%);
+	background-size: 200% 100%;
+	animation: shellSkeleton 1.4s ease-in-out infinite;
+}
+
+.loadingBlockSmall {
+	width: 34px;
+	height: 14px;
+}
+
+.loadingBlockMedium {
+	width: 180px;
+	height: 14px;
+}
+
+.loadingLineWide {
+	width: min(360px, 70%);
+	height: 24px;
+}
+
+.loadingLine {
+	width: min(220px, 48%);
+	height: 13px;
+	margin-top: 14px;
+}
+
+.loadingCards {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 12px;
+	margin-top: 32px;
+}
+
+.loadingCards span {
+	height: 116px;
+}
+
+.loadingPanel {
+	height: 280px;
+	margin-top: 18px;
+}
+
+@keyframes shellSkeleton {
+	to {
+		background-position: -200% 0;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.loadingBlockSmall,
+	.loadingBlockMedium,
+	.loadingLineWide,
+	.loadingLine,
+	.loadingPanel,
+	.loadingCards span {
+		animation: none;
+	}
+}
+
+.navigationLoading {
+	position: fixed;
+	top: 0;
+	left: 0;
+	z-index: 100;
+	width: 100%;
+	height: 3px;
+	overflow: hidden;
+	background: rgba(108, 225, 209, 0.18);
+}
+
+.navigationLoading span {
+	display: block;
+	width: 35%;
+	height: 100%;
+	background: #6ce1d1;
+	box-shadow: 0 0 12px rgba(108, 225, 209, 0.8);
+	animation: navigationLoading 900ms ease-in-out infinite;
+}
+
+@keyframes navigationLoading {
+	from { transform: translateX(-110%); }
+	to { transform: translateX(320%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.navigationLoading span { animation: none; width: 100%; }
 }

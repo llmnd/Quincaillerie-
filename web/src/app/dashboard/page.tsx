@@ -209,10 +209,10 @@ export default function DashboardPage() {
         </header>
 
         <section className={styles.metricGrid} aria-label="Indicateurs de l'organisation">
-          <article className={`${styles.metricCard} ${styles.metricAccent}`}><span>Ventes du jour</span><strong>{isLoading ? "—" : formatMoney(todayRevenue)}</strong><small><ShoppingCart size={13} /> {todaySales.length} vente{todaySales.length > 1 ? "s" : ""}</small></article>
+          <article className={`${styles.metricCard} ${styles.metricAccent}`}><span>Ventes du jour</span><strong className={!isLoading && todayRevenue === 0 ? styles.zeroValue : undefined}>{isLoading ? "—" : formatMoney(todayRevenue)}</strong><small><ShoppingCart size={13} /> {todaySales.length} vente{todaySales.length > 1 ? "s" : ""}</small></article>
           <article className={styles.metricCard}><span>État de la caisse</span><strong>{openSession ? "ACTIVE" : "FERMÉE"}</strong><small className={openSession ? styles.good : styles.muted}><WalletCards size={13} /> {openSession ? `Caisse #${openSession.register_id}` : "Aucune session ouverte"}</small></article>
-          <article className={styles.metricCard}><span>Stock à surveiller</span><strong>{lowStockProducts.length}</strong><small className={lowStockProducts.length ? styles.warning : styles.good}><Boxes size={13} /> référence{lowStockProducts.length > 1 ? "s" : ""} concernée{lowStockProducts.length > 1 ? "s" : ""}</small></article>
-          <article className={styles.metricCard}><span>Équipe & relations</span><strong>{customerCount}</strong><small><Users size={13} /> clients enregistrés · {activeBatches.length} bande{activeBatches.length > 1 ? "s" : ""} active{activeBatches.length > 1 ? "s" : ""}</small></article>
+          <article className={styles.metricCard}><span>Stock à surveiller</span><strong className={lowStockProducts.length === 0 ? styles.zeroValue : undefined}>{lowStockProducts.length}</strong><small className={lowStockProducts.length ? styles.warning : styles.good}><Boxes size={13} /> référence{lowStockProducts.length > 1 ? "s" : ""} concernée{lowStockProducts.length > 1 ? "s" : ""}</small></article>
+          <article className={styles.metricCard}><span>Équipe & relations</span><strong className={customerCount === 0 ? styles.zeroValue : undefined}>{customerCount}</strong><small><Users size={13} /> clients enregistrés · {activeBatches.length} bande{activeBatches.length > 1 ? "s" : ""} active{activeBatches.length > 1 ? "s" : ""}</small></article>
         </section>
 
         <div className={styles.dashboardGrid}>

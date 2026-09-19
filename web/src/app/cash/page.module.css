@@ -8,6 +8,35 @@
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
+.loadingState {
+  min-height: 360px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #dfe7f6;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.loadingSpinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(223, 231, 246, 0.25);
+  border-top-color: #dfe7f6;
+  border-radius: 50%;
+  animation: cashLoadingSpin 700ms linear infinite;
+}
+
+@keyframes cashLoadingSpin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loadingSpinner { animation: none; }
+}
+
 /* HEADER */
 .header {
   display: flex;

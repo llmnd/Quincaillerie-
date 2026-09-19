@@ -1,6 +1,6 @@
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -55,9 +55,20 @@ def product_read(product: Product, sold_quantity: int = 0) -> ProductRead:
 
 
 @api_router.get("/products", response_model=list[ProductRead], dependencies=[Depends(require_module("products"))])
-def list_products(db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin", "seller"))) -> list[ProductRead]:
+def list_products(
+    limit: int = Query(default=100, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "seller")),
+) -> list[ProductRead]:
     sold_subquery = select(func.coalesce(func.sum(SaleItem.quantity), 0)).where(SaleItem.product_id == Product.id, SaleItem.organization_id == current_user.organization_id).scalar_subquery()
-    rows = db.execute(select(Product, sold_subquery.label("sold_quantity")).where(Product.is_active.is_(True), Product.organization_id == current_user.organization_id).order_by(Product.id)).all()
+    rows = db.execute(
+        select(Product, sold_subquery.label("sold_quantity"))
+        .where(Product.is_active.is_(True), Product.organization_id == current_user.organization_id)
+        .order_by(Product.id)
+        .offset(offset)
+        .limit(limit)
+    ).all()
     return [product_read(product, int(sold_quantity)) for product, sold_quantity in rows]
 
 

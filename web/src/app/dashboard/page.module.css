@@ -41,7 +41,7 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  margin-bottom: 7px;
+    color: #a46aa3 !important;
   color: #9b73a0;
   font-size: 0.6rem;
   letter-spacing: 0.16em;
@@ -174,7 +174,8 @@
   gap: 6px;
   min-height: 28px;
   color: #7d8795;
-  font-size: 0.66rem;
+  font-size: 0.88rem;
+  font-weight: 500;
   line-height: 1.35;
 }
 
@@ -207,15 +208,19 @@
 }
 
 .good {
-  color: #7dcba7 !important;
+  color: #64eeae !important;
 }
 
 .warning {
-  color: #d8ad5b !important;
+  color: #ffc04c !important;
 }
 
 .muted {
   color: #727d8c !important;
+}
+
+.zeroValue {
+  color: #f8eeee !important;
 }
 
 /* =========================================================
@@ -738,7 +743,7 @@
   }
 
   .metricCard > span {
-    font-size: 0.6rem;
+    font-size: 0.78rem;
   }
 
   .metricCard > strong {

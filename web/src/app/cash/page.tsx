@@ -69,6 +69,7 @@ export default function CashPage() {
   const [expandedRecapId, setExpandedRecapId] = useState<number | null>(null);
 
   const [message, setMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
   const [isClosing, setIsClosing] = useState(false);
   const [isAdmin] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -132,6 +133,8 @@ export default function CashPage() {
         if (isMounted) {
           setMessage("Impossible de charger les caisses.");
         }
+      } finally {
+        if (isMounted) setIsLoading(false);
       }
     };
 
@@ -250,6 +253,12 @@ export default function CashPage() {
 
   return (
     <AppShell>
+      {isLoading ? (
+        <div className={styles.loadingState} aria-busy="true" aria-live="polite">
+          <span className={styles.loadingSpinner} />
+          <span>Vérification de la caisse et de la session…</span>
+        </div>
+      ) : (
       <div className={styles.container}>
         {/* HEADER ZARA STYLE */}
         <header className={styles.header}>
@@ -567,6 +576,7 @@ export default function CashPage() {
           </div>
         )}
       </div>
+      )}
     </AppShell>
   );
 }

@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Bell, Bird, Boxes, Calculator, LogOut, Package, PanelLeftClose, PanelLeftOpen, Search, Settings, ShoppingCart, UserRound, Users, WalletCards } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, Bell, Bird, Boxes, Calculator, LogOut, Package, PanelLeftClose, PanelLeftOpen, Settings, ShoppingCart, UserRound, Users, WalletCards } from "lucide-react";
 import { authHeaders, clearStoredAuth, getStoredUser, restoreAuthSession } from "../lib/auth";
 import styles from "./AppShell.module.css";
 
@@ -43,18 +44,59 @@ export default function AppShell({
 }: Readonly<{ children: React.ReactNode; hideTopbar?: boolean; hideSidebar?: boolean; hideContentPadding?: boolean }>) {
   const router = useRouter();
   const pathname = usePathname();
+  const queryClient = useQueryClient();
 
-  const [user, setUser] = useState<User | null>(null);
-  const [enabledModules, setEnabledModules] = useState<Set<string> | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [organization, setOrganization] = useState<OrganizationProfile | null>(null);
+  const [isNavigating, setIsNavigating] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
+    // Keep the first client render identical to the server before reading session-dependent data.
+    useEffect(() => {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setIsHydrated(true);
+    }, []);
+
+  const sessionQuery = useQuery<User | null>({
+    queryKey: ["auth", "me"],
+    queryFn: restoreAuthSession,
+    placeholderData: () => getStoredUser() as User | null,
+    staleTime: 5 * 60_000,
+    gcTime: 30 * 60_000,
+  });
+  const user = sessionQuery.data ?? null;
 
   const effectiveUser = user ?? { full_name: "Utilisateur", email: "", role: undefined as "admin" | "seller" | undefined };
   const role: "admin" | "seller" | undefined = effectiveUser.role;
   const adminOnlyRoutes = ["/admin", "/accounting", "/reports", "/settings/users"];
   const isAdminOnlyRoute = adminOnlyRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
+  const allModuleKeys = new Set(sidebarItems.flatMap((item) => item.moduleKey ? [item.moduleKey] : []));
+
+  const modulesQuery = useQuery<ModuleState[]>({
+    queryKey: ["organization", "modules"],
+    enabled: Boolean(user),
+    queryFn: async () => {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/organization/modules`, {
+        credentials: "include",
+        headers: { Accept: "application/json", ...authHeaders() },
+      });
+      if (!response.ok) throw new Error("Impossible de charger les modules.");
+      return response.json() as Promise<ModuleState[]>;
+    },
+  });
+
+  const organizationQuery = useQuery<OrganizationProfile | null>({
+    queryKey: ["organization", "profile"],
+    enabled: Boolean(user),
+    queryFn: async () => {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/organization/profile`, {
+        credentials: "include",
+        headers: authHeaders(),
+      });
+      if (!response.ok) return null;
+      return response.json() as Promise<OrganizationProfile>;
+    },
+  });
 
   useEffect(() => {
     const updateViewportHeight = () => {
@@ -75,73 +117,14 @@ export default function AppShell({
   }, []);
 
   useEffect(() => {
-    let isMounted = true;
-
-    const bootstrapSession = async () => {
-      const storedUser = getStoredUser() as User | null;
-      if (storedUser && isMounted) {
-        setUser(storedUser);
-      }
-
-      const restoredUser = await restoreAuthSession();
-      if (!isMounted) return;
-
-      const nextUser = (restoredUser ?? storedUser) as User | null;
-      setUser(nextUser);
-
-      if (!nextUser) {
-        router.replace("/login");
-      }
-    };
-
-    void bootstrapSession();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [router]);
+    if (sessionQuery.isFetched && !user) router.replace("/login");
+  }, [router, sessionQuery.isFetched, user]);
 
   useEffect(() => {
-    if (!user) return;
-    const allModuleKeys = new Set(sidebarItems.flatMap((item) => item.moduleKey ? [item.moduleKey] : []));
-    fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/organization/modules`, {
-      credentials: "include",
-      headers: {
-        Accept: "application/json",
-        ...authHeaders(),
-      },
-    })
-      .then((response) => {
-        if (!response.ok) {
-          setEnabledModules(allModuleKeys);
-          return null;
-        }
-        return response.json() as Promise<ModuleState[]>;
-      })
-      .then((modules) => {
-        if (!modules || !Array.isArray(modules)) {
-          setEnabledModules(allModuleKeys);
-          return;
-        }
-
-        const enabledKeys = new Set(
-          modules.filter((module) => module?.enabled).map((module) => module.key)
-        );
-        setEnabledModules(enabledKeys.size > 0 ? enabledKeys : allModuleKeys);
-      })
-      .catch(() => setEnabledModules(allModuleKeys));
-  }, [user]);
-
-  useEffect(() => {
-    if (!user) return;
-    fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/organization/profile`, {
-      credentials: "include",
-      headers: authHeaders(),
-    })
-      .then((response) => response.ok ? response.json() as Promise<OrganizationProfile> : null)
-      .then(setOrganization)
-      .catch(() => setOrganization(null));
-  }, [user]);
+    // Reset the visual route indicator once the new route is committed.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsNavigating(false);
+  }, [pathname]);
 
   useEffect(() => {
     if (!user) return;
@@ -151,28 +134,40 @@ export default function AppShell({
   }, [isAdminOnlyRoute, role, router, user]);
 
   const shouldHideSidebar = hideSidebar || isSidebarCollapsed;
-  const safeEnabledModules = enabledModules && enabledModules.size > 0 ? enabledModules : new Set(sidebarItems.flatMap((item) => item.moduleKey ? [item.moduleKey] : []));
+  const enabledModuleKeys = new Set((modulesQuery.data ?? []).filter((module) => module.enabled).map((module) => module.key));
+  const safeEnabledModules = enabledModuleKeys.size > 0 ? enabledModuleKeys : allModuleKeys;
+  const organization = isHydrated ? organizationQuery.data ?? null : null;
   let breadcrumbLabel = pathname.split("/").filter(Boolean).join(" / ");
   if (pathname === "/dashboard") {
     breadcrumbLabel = "Tableau de bord";
   } else if (pathname === "/workspace") {
     breadcrumbLabel = "Espace de travail";
   }
-  const visibleSidebar = sidebarItems.filter((item) => {
+  const visibleSidebar = (isHydrated ? sidebarItems.filter((item) => {
     const allowedByRole = !item.roles || (role ? item.roles.includes(role) : false);
     if (!allowedByRole) return false;
     const moduleKey = item.moduleKey ?? "";
     return moduleKey.length === 0 || safeEnabledModules.has(moduleKey);
-  });
-  const safeUser = effectiveUser;
+  }) : sidebarItems);
+  const safeUser = isHydrated ? effectiveUser : { full_name: "Utilisateur", email: "", role: undefined };
   const userInitial = (safeUser.full_name ?? safeUser.email ?? "U").trim().charAt(0).toUpperCase();
+
+  function prefetchRoute(route: string) {
+    router.prefetch(route);
+  }
+
+  function startNavigation(route: string) {
+    if (route !== pathname) setIsNavigating(true);
+  }
 
   function handleBack() {
     if (typeof window !== "undefined" && window.history.length > 1) {
+      setIsNavigating(true);
       router.back();
       return;
     }
 
+    setIsNavigating(true);
     router.push("/workspace");
   }
 
@@ -183,9 +178,12 @@ export default function AppShell({
     }).catch(() => undefined);
 
     clearStoredAuth();
+    queryClient.setQueryData(["auth", "me"], null);
+    queryClient.removeQueries({ queryKey: ["organization"] });
     setIsUserMenuOpen(false);
     if (typeof window !== "undefined") {
       window.sessionStorage.removeItem("quincaillerie_authenticated");
+      window.sessionStorage.removeItem("quincaillerie_session_user");
     }
     if (typeof window !== "undefined") {
       window.history.replaceState(null, "", "/");
@@ -194,7 +192,8 @@ export default function AppShell({
   }
 
   return (
-    <div className={styles.shell}>
+    <div className={styles.shell} aria-busy={sessionQuery.isPending || isNavigating ? "true" : undefined}>
+      {isNavigating && <output className={styles.navigationLoading} aria-label="Chargement de la page"><span /></output>}
       {!shouldHideSidebar && (
         <aside className={styles.sidebar}>
           {/* Bouton Hamburger style Zara */}
@@ -215,7 +214,9 @@ export default function AppShell({
               <Link
                 key={`${item.href}-${item.label}`}
                 href={item.href}
-                onClick={() => setMenuOpen(false)}
+                onClick={() => { setMenuOpen(false); startNavigation(item.href); }}
+                onMouseEnter={() => prefetchRoute(item.href)}
+                onFocus={() => prefetchRoute(item.href)}
                 className={pathname === item.href ? styles.navActive : styles.navItem}
               >
                 {item.label}
@@ -235,7 +236,13 @@ export default function AppShell({
             </button>
             <div>
               <strong>{safeUser.full_name ?? "Utilisateur"}</strong>
-              <small>{role === "admin" ? "Administrateur" : "Vendeur"}</small>
+              <small>
+                {!isHydrated
+                  ? "Utilisateur"
+                  : role === "admin"
+                    ? "Administrateur"
+                    : "Vendeur"}
+              </small>
             </div>
           </div>
         </aside>

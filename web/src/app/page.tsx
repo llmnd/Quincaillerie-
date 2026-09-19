@@ -12,17 +12,24 @@ import {
 import styles from "./page.module.css";
 
 const modules = [
-  ["01", "Ventes", "ventes", "https://i.pinimg.com/1200x/cf/f9/34/cff9349aa326663fdbff5b863c4c3a72.jpg"],
-  ["02", "Produits", "produits", "https://i.pinimg.com/1200x/06/a0/80/06a080194e88100b55e25cdfdf51d7f4.jpg"],
-  ["03", "Caisse", "caisse", "https://i.pinimg.com/736x/8c/33/e3/8c33e3983e190056f12c75841a8ecdd0.jpg"],
-  ["04", "Clients", "clients", "https://i.pinimg.com/736x/5e/97/c1/5e97c160d37c1e422df3dea82e47c5ff.jpg"],
-  ["05", "Stock", "stock", "https://i.pinimg.com/1200x/d8/43/df/d843df2ec1fa940efc4834eb655777d8.jpg"],
-  ["06", "Élevage", "elevage", "https://i.pinimg.com/736x/ed/f6/91/edf69125695ac5b4e1e50cbaabfe0d9f.jpg"],
+  ["01", "Ventes", "Créez et suivez vos ventes au quotidien.", "https://i.pinimg.com/1200x/cf/f9/34/cff9349aa326663fdbff5b863c4c3a72.jpg"],
+  ["02", "Produits", "Retrouvez vos références et gardez votre catalogue à jour.", "https://i.pinimg.com/1200x/06/a0/80/06a080194e88100b55e25cdfdf51d7f4.jpg"],
+  ["03", "Caisse", "Suivez les sessions, mouvements et clôtures.", "https://i.pinimg.com/736x/8c/33/e3/8c33e3983e190056f12c75841a8ecdd0.jpg"],
+  ["04", "Clients", "Centralisez les contacts et les relations commerciales.", "https://i.pinimg.com/736x/5e/97/c1/5e97c160d37c1e422df3dea82e47c5ff.jpg"],
+  ["05", "Stock", "Visualisez les entrées, sorties et niveaux critiques.", "https://i.pinimg.com/1200x/d8/43/df/d843df2ec1fa940efc4834eb655777d8.jpg"],
+  ["06", "Élevage", "Organisez le suivi des lots et de votre exploitation.", "https://i.pinimg.com/736x/ed/f6/91/edf69125695ac5b4e1e50cbaabfe0d9f.jpg"],
 ] as const;
+
+const footerNav = [
+  { category: "PLATEFORME", links: ["Fonctionnalités", "Documentation", "Open Source"] },
+  { category: "SERVICES", links: ["Hébergement", "Assistance", "Partenaires"] },
+  { category: "ÉCOSYSTÈME", links: ["Communauté", "Événements", "Blog"] },
+];
 
 export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [selectedModule, setSelectedModule] = useState<(typeof modules)[number] | null>(null);
 
   useEffect(() => {
     if (window.sessionStorage.getItem("quincaillerie_authenticated") !== "1") {
@@ -92,11 +99,11 @@ export default function Home() {
           </div>
           {!user && <section className={styles.moduleShowcase} aria-label="Modules Mizan">
             <div className={styles.moduleShowcaseGrid}>
-              {modules.map(([number, name, slug, image]) => <Link key={name} href={`/presentation/${slug}`} className={styles.moduleShowcaseTile}>
-                <div className={styles.moduleShowcaseIcon}><img src={image} alt="" className={styles.moduleShowcaseImage} /></div>
-                <span className={styles.moduleShowcaseNumber}>{number}</span>
-                <span className={styles.moduleShowcaseName}>{name}</span>
-              </Link>)}
+              {modules.map((module) => <button key={module[1]} type="button" className={styles.moduleShowcaseTile} onClick={() => setSelectedModule(module)}>
+                <div className={styles.moduleShowcaseIcon}><img src={module[3]} alt="" className={styles.moduleShowcaseImage} /></div>
+                <span className={styles.moduleShowcaseNumber}>{module[0]}</span>
+                <span className={styles.moduleShowcaseName}>{module[1]}</span>
+              </button>)}
             </div>
           </section>}
         </div>
@@ -135,6 +142,52 @@ export default function Home() {
       </section>
 
       <section id="contact" className={styles.ctaSection}><div><p className={styles.eyebrow}>Quand vous êtes prêt</p><h2>Commencez. Remplissez avec votre métier.</h2></div><Link href={user ? "/workspace" : "/login"} className={styles.primaryButton}>{user ? "Ouvrir le workspace" : "Se connecter"}</Link></section>
+
+      <footer className={styles.footer}>
+        <div className={styles.footerInner}>
+          <div className={styles.footerHeader}>
+            <span className={styles.footerLogo}>MIZAN ERP</span>
+            <span className={styles.countrySelector}>AMANAH · IHSAN · BARAKA</span>
+          </div>
+
+          <div className={styles.footerNavGrid}>
+            {footerNav.map((column) => (
+              <div key={column.category} className={styles.footerColumn}>
+                <h4>{column.category}</h4>
+                <ul>
+                  {column.links.map((link) => <li key={link}><a href="#">{link}</a></li>)}
+                </ul>
+              </div>
+            ))}
+            <div className={styles.footerNewsletter}>
+              <h4>NEWSLETTER</h4>
+              <p>Recevez les dernières nouvelles de Mizan.</p>
+              <div className={styles.newsletterForm}>
+                <input type="email" placeholder="VOTRE EMAIL" aria-label="Votre email" />
+                <button type="button" aria-label="S'inscrire">→</button>
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.footerMeta}>
+            <div className={styles.socialsZara}><a href="#">INSTAGRAM</a><a href="#">LINKEDIN</a><a href="#">GITHUB</a></div>
+            <div className={styles.legalZara}><Link href="/legal/privacy">CONFIDENTIALITÉ</Link><Link href="/legal/support">SUPPORT</Link><Link href="/legal/security">SÉCURITÉ</Link></div>
+          </div>
+          <div className={styles.footerBottomZara}>© 2026 MIZAN ERP — AMANAH · IHSAN · BARAKA</div>
+        </div>
+      </footer>
+
+      {selectedModule && (
+        <div className={styles.moduleModalBackdrop} role="presentation" onClick={() => setSelectedModule(null)}>
+          <section className={styles.moduleModal} role="dialog" aria-modal="true" aria-labelledby="module-modal-title" onClick={(event) => event.stopPropagation()}>
+            <button type="button" className={styles.moduleModalClose} onClick={() => setSelectedModule(null)} aria-label="Fermer">×</button>
+            <span className={styles.eyebrow}>Module MIZAN</span>
+            <h2 id="module-modal-title">{selectedModule[1]}</h2>
+            <p>{selectedModule[2]}</p>
+            <Link href="/login" className={styles.primaryButton} onClick={() => setSelectedModule(null)}>Découvrir MIZAN</Link>
+          </section>
+        </div>
+      )}
     </main>
   );
 }

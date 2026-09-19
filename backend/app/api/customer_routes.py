@@ -1,6 +1,6 @@
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -12,8 +12,20 @@ router = APIRouter(prefix="/customers", tags=["customers"], dependencies=[Depend
 
 
 @router.get("", response_model=list[CustomerRead])
-def list_customers(db: Session = Depends(get_db), current_user: object = Depends(require_roles("admin", "seller"))) -> list[Customer]:
-    return db.scalars(select(Customer).where(Customer.organization_id == current_user.organization_id).order_by(Customer.id)).all()
+def list_customers(
+    limit: int = Query(default=100, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+    current_user: object = Depends(require_roles("admin", "seller")),
+) -> list[Customer]:
+    query = (
+        select(Customer)
+        .where(Customer.organization_id == current_user.organization_id)
+        .order_by(Customer.id)
+        .offset(offset)
+        .limit(limit)
+    )
+    return db.scalars(query).all()
 
 
 @router.post("", response_model=CustomerRead, status_code=status.HTTP_201_CREATED)

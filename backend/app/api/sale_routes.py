@@ -21,6 +21,8 @@ router = APIRouter(prefix="/sales", tags=["sales"], dependencies=[Depends(requir
 
 @router.get("", response_model=list[SaleRead])
 def list_sales(
+    limit: int = Query(default=100, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
     user_id: int | None = Query(default=None),
     session_id: int | None = Query(default=None),
     register_id: int | None = Query(default=None),
@@ -42,7 +44,7 @@ def list_sales(
         query = query.where(Sale.sale_date >= date_from)
     if date_to is not None:
         query = query.where(Sale.sale_date <= date_to)
-    return db.scalars(query).all()
+    return db.scalars(query.offset(offset).limit(limit)).all()
 
 
 @router.post("", response_model=SaleRead, status_code=status.HTTP_201_CREATED)
