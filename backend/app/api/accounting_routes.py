@@ -14,6 +14,12 @@ from app.schemas.accounting import AccountCreate, AccountRead, InvoiceRead, Jour
 router = APIRouter(prefix="/accounting", tags=["accounting"], dependencies=[Depends(require_module("accounting"))])
 
 
+def _validate_date_range(date_from: datetime | None, date_to: datetime | None) -> tuple[datetime | None, datetime | None]:
+    if date_from is not None and date_to is not None and date_from > date_to:
+        raise HTTPException(status_code=400, detail="date_from must be before or equal to date_to")
+    return date_from, date_to
+
+
 @router.get("")
 def accounting_overview(db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin", "seller"))) -> dict[str, int | str]:
     return {
@@ -47,22 +53,53 @@ def list_journal(db: Session = Depends(get_db), current_user: User = Depends(req
 
 
 @router.get("/trial-balance")
-def trial_balance(db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin", "seller"))) -> list[dict[str, object]]:
-    rows = db.execute(select(Account.id, Account.code, Account.name, func.coalesce(func.sum(JournalLine.debit), 0), func.coalesce(func.sum(JournalLine.credit), 0)).where(Account.organization_id == current_user.organization_id).join(JournalLine, JournalLine.account_id == Account.id, isouter=True).group_by(Account.id).order_by(Account.code)).all()
+def trial_balance(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "seller")),
+    date_from: datetime | None = Query(default=None),
+    date_to: datetime | None = Query(default=None),
+) -> list[dict[str, object]]:
+    _validate_date_range(date_from, date_to)
+    query = select(
+        Account.id,
+        Account.code,
+        Account.name,
+        func.coalesce(func.sum(JournalLine.debit), 0),
+        func.coalesce(func.sum(JournalLine.credit), 0),
+    ).where(Account.organization_id == current_user.organization_id).join(JournalLine, JournalLine.account_id == Account.id, isouter=True)
+
+    if date_from is not None or date_to is not None:
+        query = query.join(JournalEntry, JournalEntry.id == JournalLine.entry_id, isouter=True)
+        if date_from is not None:
+            query = query.where(JournalEntry.entry_date >= date_from)
+        if date_to is not None:
+            query = query.where(JournalEntry.entry_date <= date_to)
+
+    rows = db.execute(query.group_by(Account.id).order_by(Account.code)).all()
     return [{"account_id": account_id, "code": code, "name": name, "debit": float(debit), "credit": float(credit), "balance": float(debit - credit)} for account_id, code, name, debit, credit in rows]
 
 
 @router.get("/reports/balance-sheet")
-def balance_sheet(db: Session = Depends(get_db), _: User = Depends(require_roles("admin", "seller"))) -> dict[str, object]:
-    rows = trial_balance(db, _)
+def balance_sheet(
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles("admin", "seller")),
+    date_from: datetime | None = Query(default=None),
+    date_to: datetime | None = Query(default=None),
+) -> dict[str, object]:
+    rows = trial_balance(db, _, date_from=date_from, date_to=date_to)
     assets = [row for row in rows if str(row["code"])[0] in {"2", "3", "4", "5"}]
     liabilities = [row for row in rows if str(row["code"])[0] == "1"]
     return {"assets": assets, "liabilities": liabilities, "total_assets": sum(max(float(row["balance"]), 0) for row in assets), "total_liabilities": sum(max(-float(row["balance"]), 0) for row in liabilities)}
 
 
 @router.get("/reports/income-statement")
-def income_statement(db: Session = Depends(get_db), _: User = Depends(require_roles("admin", "seller"))) -> dict[str, object]:
-    rows = trial_balance(db, _)
+def income_statement(
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles("admin", "seller")),
+    date_from: datetime | None = Query(default=None),
+    date_to: datetime | None = Query(default=None),
+) -> dict[str, object]:
+    rows = trial_balance(db, _, date_from=date_from, date_to=date_to)
     revenue = [row for row in rows if str(row["code"])[0] == "7"]
     expenses = [row for row in rows if str(row["code"])[0] == "6"]
     revenue_total = sum(-float(row["balance"]) for row in revenue)
@@ -71,8 +108,19 @@ def income_statement(db: Session = Depends(get_db), _: User = Depends(require_ro
 
 
 @router.get("/reports/vat")
-def vat_report(db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin", "seller"))) -> dict[str, object]:
-    invoices = db.scalars(select(Invoice).where(Invoice.organization_id == current_user.organization_id).order_by(Invoice.issue_date)).all()
+def vat_report(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "seller")),
+    date_from: datetime | None = Query(default=None),
+    date_to: datetime | None = Query(default=None),
+) -> dict[str, object]:
+    _validate_date_range(date_from, date_to)
+    query = select(Invoice).where(Invoice.organization_id == current_user.organization_id)
+    if date_from is not None:
+        query = query.where(Invoice.issue_date >= date_from)
+    if date_to is not None:
+        query = query.where(Invoice.issue_date <= date_to)
+    invoices = db.scalars(query.order_by(Invoice.issue_date)).all()
     periods: dict[str, dict[str, float | str]] = {}
     for invoice in invoices:
         period = invoice.issue_date.strftime("%Y-%m")

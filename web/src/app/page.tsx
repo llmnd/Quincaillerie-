@@ -15,9 +15,9 @@ const modules = [
   ["01", "Ventes", "Créez et suivez vos ventes au quotidien.", "https://i.pinimg.com/1200x/cf/f9/34/cff9349aa326663fdbff5b863c4c3a72.jpg"],
   ["02", "Produits", "Retrouvez vos références et gardez votre catalogue à jour.", "https://i.pinimg.com/1200x/06/a0/80/06a080194e88100b55e25cdfdf51d7f4.jpg"],
   ["03", "Caisse", "Suivez les sessions, mouvements et clôtures.", "https://i.pinimg.com/736x/8c/33/e3/8c33e3983e190056f12c75841a8ecdd0.jpg"],
-  ["04", "Clients", "Centralisez les contacts et les relations commerciales.", "https://i.pinimg.com/736x/5e/97/c1/5e97c160d37c1e422df3dea82e47c5ff.jpg"],
-  ["05", "Stock", "Visualisez les entrées, sorties et niveaux critiques.", "https://i.pinimg.com/1200x/d8/43/df/d843df2ec1fa940efc4834eb655777d8.jpg"],
-  ["06", "Élevage", "Organisez le suivi des lots et de votre exploitation.", "https://i.pinimg.com/736x/ed/f6/91/edf69125695ac5b4e1e50cbaabfe0d9f.jpg"],
+  ["04", "Clients", "Centralisez les contacts et les relations commerciales.", "https://i.pinimg.com/736x/33/b8/52/33b8529a6748fada99324bc30712f373.jpg"],
+  ["05", "Stock", "Visualisez les entrées, sorties et niveaux critiques.", "https://i.pinimg.com/736x/71/16/ba/7116bafcb4ae414d6fd8c74a8cd2a46b.jpg"],
+  ["06", "Élevage", "Organisez le suivi des lots et de votre exploitation.", "https://i.pinimg.com/originals/6e/cd/13/6ecd136e249649f0ba8452d13613bcfd.gif"],
 ] as const;
 
 const footerNav = [
@@ -29,15 +29,31 @@ const footerNav = [
 export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [isSessionResolved, setIsSessionResolved] = useState(false);
   const [selectedModule, setSelectedModule] = useState<(typeof modules)[number] | null>(null);
 
   useEffect(() => {
-    if (window.sessionStorage.getItem("quincaillerie_authenticated") !== "1") {
-      clearStoredAuth();
-      return;
+    let isMounted = true;
+
+    async function resolveSession() {
+      try {
+        if (window.sessionStorage.getItem("quincaillerie_authenticated") !== "1") {
+          clearStoredAuth();
+          return;
+        }
+
+        const restoredUser = await restoreAuthSession();
+        if (isMounted) setUser(restoredUser);
+      } finally {
+        if (isMounted) setIsSessionResolved(true);
+      }
     }
 
-    restoreAuthSession().then(setUser);
+    void resolveSession();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   async function handleLogout() {
@@ -53,6 +69,27 @@ export default function Home() {
       setUser(null);
       setMenuOpen(false);
     }
+  }
+
+  if (!isSessionResolved) {
+    return (
+      <main className={styles.homeLoading} aria-busy="true" aria-label="Chargement de l'accueil">
+        <header className={styles.homeLoadingHeader}>
+          <span className={`${styles.homeSkeleton} ${styles.homeBrandSkeleton}`} />
+          <span className={`${styles.homeSkeleton} ${styles.homeMenuSkeleton}`} />
+        </header>
+        <section className={styles.homeLoadingHero}>
+          <span className={`${styles.homeSkeleton} ${styles.homeEyebrowSkeleton}`} />
+          <span className={`${styles.homeSkeleton} ${styles.homeTitleSkeleton}`} />
+          <span className={`${styles.homeSkeleton} ${styles.homeTextSkeleton}`} />
+          <div className={styles.homeModuleSkeletons}>
+            {modules.map((module) => (
+              <span key={module[1]} className={`${styles.homeSkeleton} ${styles.homeModuleSkeleton}`} />
+            ))}
+          </div>
+        </section>
+      </main>
+    );
   }
 
   return (
@@ -91,7 +128,7 @@ export default function Home() {
       <section className={styles.hero}>
         <div className={styles.heroContent}>
           <p className={styles.eyebrow}>ERP modulaire et multi-entreprises</p>
-          <p className={styles.heroText}>Gérez votre activité. Gardez l’équilibre. Mizan.</p>
+          <p className={styles.heroText}>Gérez votre activité.</p>
           <div className={styles.heroActions}>
             {user ? <Link href="/workspace" className={styles.primaryButton}>Ouvrir le bureau</Link> : null}
             <Link href={user ? "/workspace" : "/login"} className={styles.primaryButton}>{user ? "Ouvrir le workspace" : "Commencer"}</Link>

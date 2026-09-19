@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import AppShell from "../../components/AppShell";
+import { authHeaders } from "../../lib/auth";
 import AccountingCharts from "./AccountingCharts";
 import AccountingDashboardCards from "./AccountingDashboardCards";
 import styles from "./page.module.css";
@@ -12,9 +13,37 @@ type Invoice = { id: number; number: string; sale_id: number; issue_date: string
 type TrialRow = { code: string; name: string; debit: number; credit: number; balance: number };
 type JournalEntry = { id: number; reference: string; entry_date: string; journal: string; description: string; lines: { account_id: number; label: string; debit: number; credit: number }[] };
 type FinancialReports = { balance: { total_assets: number; total_liabilities: number }; income: { revenue_total: number; expense_total: number; net_result: number }; vat: { taxable_base: number; tax_amount: number; total_amount: number } };
+type ReportPeriod = "month" | "quarter" | "year" | "all";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const money = (value: number) => `${value.toLocaleString("fr-FR")} FCFA`;
+
+function buildPeriodQuery(period: ReportPeriod) {
+  const params = new URLSearchParams();
+  if (period === "all") {
+    return "";
+  }
+
+  const end = new Date();
+  const start = new Date(end);
+
+  if (period === "month") {
+    start.setDate(1);
+    start.setHours(0, 0, 0, 0);
+  } else if (period === "quarter") {
+    const month = Math.floor(start.getMonth() / 3) * 3;
+    start.setMonth(month, 1);
+    start.setHours(0, 0, 0, 0);
+  } else if (period === "year") {
+    start.setMonth(0, 1);
+    start.setHours(0, 0, 0, 0);
+  }
+
+  end.setHours(23, 59, 59, 999);
+  params.set("date_from", start.toISOString());
+  params.set("date_to", end.toISOString());
+  return `?${params.toString()}`;
+}
 
 export function AccountingPageContent() {
   const [taxes, setTaxes] = useState<Tax[]>([]);
@@ -25,26 +54,29 @@ export function AccountingPageContent() {
   const [reports, setReports] = useState<FinancialReports | null>(null);
   const [form, setForm] = useState({ code: "", name: "", rate: "" });
   const [message, setMessage] = useState("Chargement de la comptabilité…");
+  const [reportPeriod, setReportPeriod] = useState<ReportPeriod>("month");
   const [activeModal, setActiveModal] = useState<"manual" | "upload" | "transactions" | "reconcile" | null>(null);
   const [manualEntry, setManualEntry] = useState({ reference: "", journal: "ACHAT", description: "", accountId: "", debit: "", credit: "" });
   const [bankTransaction, setBankTransaction] = useState({ label: "", amount: "", type: "credit", date: new Date().toISOString().slice(0, 10) });
   const [reconciledIds, setReconciledIds] = useState<number[]>([]);
   const [uploadedDocuments, setUploadedDocuments] = useState<string[]>([]);
 
-  const headers = (): Record<string, string> => {
-    return {};
-  };
+  const headers = (): Record<string, string> => ({
+    Accept: "application/json",
+    ...(authHeaders() as Record<string, string>),
+  });
 
   const load = useCallback(async () => {
+    const periodQuery = buildPeriodQuery(reportPeriod);
     const [taxResponse, saleResponse, invoiceResponse, trialResponse, journalResponse, balanceResponse, incomeResponse, vatResponse] = await Promise.all([
       fetch(`${API_URL}/api/v1/accounting/taxes`, { headers: headers(), credentials: "include" }),
-      fetch(`${API_URL}/api/v1/sales`, { headers: headers(), credentials: "include" }),
-      fetch(`${API_URL}/api/v1/accounting/invoices`, { headers: headers(), credentials: "include" }),
-      fetch(`${API_URL}/api/v1/accounting/trial-balance`, { headers: headers(), credentials: "include" }),
+      fetch(`${API_URL}/api/v1/sales${periodQuery}`, { headers: headers(), credentials: "include" }),
+      fetch(`${API_URL}/api/v1/accounting/invoices${periodQuery}`, { headers: headers(), credentials: "include" }),
+      fetch(`${API_URL}/api/v1/accounting/trial-balance${periodQuery}`, { headers: headers(), credentials: "include" }),
       fetch(`${API_URL}/api/v1/accounting/journal`, { headers: headers(), credentials: "include" }),
-      fetch(`${API_URL}/api/v1/accounting/reports/balance-sheet`, { headers: headers(), credentials: "include" }),
-      fetch(`${API_URL}/api/v1/accounting/reports/income-statement`, { headers: headers(), credentials: "include" }),
-      fetch(`${API_URL}/api/v1/accounting/reports/vat`, { headers: headers(), credentials: "include" }),
+      fetch(`${API_URL}/api/v1/accounting/reports/balance-sheet${periodQuery}`, { headers: headers(), credentials: "include" }),
+      fetch(`${API_URL}/api/v1/accounting/reports/income-statement${periodQuery}`, { headers: headers(), credentials: "include" }),
+      fetch(`${API_URL}/api/v1/accounting/reports/vat${periodQuery}`, { headers: headers(), credentials: "include" }),
     ]);
 
     if (!taxResponse.ok || !saleResponse.ok || !invoiceResponse.ok || !trialResponse.ok || !journalResponse.ok || !balanceResponse.ok || !incomeResponse.ok || !vatResponse.ok) {
@@ -74,7 +106,7 @@ export function AccountingPageContent() {
         vat: nextVat,
       },
     };
-  }, []);
+  }, [reportPeriod]);
 
   useEffect(() => {
     let isMounted = true;
@@ -322,6 +354,18 @@ export function AccountingPageContent() {
           <p>Taxes, factures, écritures et états financiers OHADA.</p>
         </div>
         <div className={styles.headerActions}>
+          <div className={styles.periodSelector} aria-label="Période comptable">
+            {(["month", "quarter", "year", "all"] as const).map((period) => (
+              <button
+                key={period}
+                type="button"
+                className={reportPeriod === period ? styles.periodButtonActive : styles.periodButton}
+                onClick={() => setReportPeriod(period)}
+              >
+                {period === "month" ? "Mois" : period === "quarter" ? "Trimestre" : period === "year" ? "Année" : "Tout"}
+              </button>
+            ))}
+          </div>
           <span className={styles.badge}>SYSCOHADA · États légaux</span>
           <button type="button" className={styles.secondaryButton} onClick={exportJournal}>
             Exporter le journal

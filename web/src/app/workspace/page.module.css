@@ -303,10 +303,10 @@
 }
 
 .moduleIcon {
-  width: 72px;
-  height: 72px;
+  width: 82px;
+  height: 82px;
 
-  border-radius: 16px;
+  border-radius: 8px;
 
   display: grid;
   place-items: center;

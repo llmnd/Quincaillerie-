@@ -56,21 +56,21 @@ const modules = [
     href: "/clients",
     icon: Users,
     image:
-      "https://i.pinimg.com/736x/5e/97/c1/5e97c160d37c1e422df3dea82e47c5ff.jpg",
+      "https://i.pinimg.com/736x/24/93/ec/2493ec2ab1a2f4dab8989b1ad23762db.jpg",
   },
   {
     name: "Stock",
     href: "/stock",
     icon: Boxes,
     image:
-      "https://i.pinimg.com/1200x/d8/43/df/d843df2ec1fa940efc4834eb655777d8.jpg",
+      "https://i.pinimg.com/736x/71/16/ba/7116bafcb4ae414d6fd8c74a8cd2a46b.jpg",
   },
   {
     name: "Élevage",
     href: "/farming",
     icon: Bird,
     image:
-      "https://i.pinimg.com/736x/ed/f6/91/edf69125695ac5b4e1e50cbaabfe0d9f.jpg",
+      "https://i.pinimg.com/originals/6e/cd/13/6ecd136e249649f0ba8452d13613bcfd.gif",
   },
   {
     name: "Calendrier",
@@ -80,11 +80,11 @@ const modules = [
       "https://i.pinimg.com/736x/40/fb/de/40fbdea1fa846b0a4b9b18a66bdce9d8.jpg",
   },
   {
-    name: "Administration",
+    name: "Admin",
     href: "/admin",
     icon: Settings,
     image:
-      "https://i.pinimg.com/736x/e6/fa/db/e6fadb6a12a89f4d4e7ad0c2694c742c.jpg",
+      "https://i.pinimg.com/736x/ca/2a/0b/ca2a0bd781025c7a6e7ab6073847ea41.jpg",
     adminOnly: true,
   },
 ];
@@ -103,7 +103,7 @@ type OrganizationProfile = {
 export default function WorkspacePage() {
   const router = useRouter();
 
-  const [user] = useState<User | null>(() => getStoredUser() as User | null);
+  const [user, setUser] = useState<User | null>(null);
   const organizationQuery = useQuery<OrganizationProfile | null>({
     queryKey: ["organization", "profile"],
     queryFn: async () => {
@@ -117,6 +117,10 @@ export default function WorkspacePage() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const organization = organizationQuery.data ?? null;
+
+  useEffect(() => {
+    setUser((getStoredUser() as User | null) ?? null);
+  }, []);
 
   useEffect(() => {
     if (!menuOpen) return;

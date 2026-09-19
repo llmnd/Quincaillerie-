@@ -123,14 +123,6 @@ export default function ClientsPage() {
     };
   }, [showForm, isSaving]);
 
-  useEffect(() => {
-    document.body.style.overflow = showForm ? "hidden" : "";
-
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [showForm]);
-
   const resetForm = () => {
     setForm(emptyForm);
     setSelectedCustomerId(null);
