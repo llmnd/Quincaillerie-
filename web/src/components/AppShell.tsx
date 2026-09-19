@@ -185,6 +185,9 @@ export default function AppShell({
     clearStoredAuth();
     setIsUserMenuOpen(false);
     if (typeof window !== "undefined") {
+      window.sessionStorage.removeItem("quincaillerie_authenticated");
+    }
+    if (typeof window !== "undefined") {
       window.history.replaceState(null, "", "/");
     }
     router.replace("/");

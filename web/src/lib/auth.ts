@@ -88,7 +88,6 @@ export function getStoredAuthToken(): string | null {
 export async function restoreAuthSession(): Promise<AuthUser | null> {
   if (typeof window === "undefined") return null;
 
-  const cachedUser = getStoredUser();
   const fallbackToken = getStoredAuthToken();
 
   try {
@@ -105,18 +104,21 @@ export async function restoreAuthSession(): Promise<AuthUser | null> {
         clearStoredAuth();
         return null;
       }
-      return cachedUser ?? null;
+      clearStoredAuth();
+      return null;
     }
 
     const user = (await response.json()) as AuthUser;
     if (!user || typeof user !== "object") {
-      return cachedUser ?? null;
+      clearStoredAuth();
+      return null;
     }
 
     setStoredUser(user);
     return user;
   } catch {
-    return cachedUser ?? null;
+    clearStoredAuth();
+    return null;
   }
 }
 

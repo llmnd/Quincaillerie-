@@ -180,6 +180,7 @@ export default function WorkspacePage() {
 
     clearStoredAuth();
     setMenuOpen(false);
+    window.sessionStorage.removeItem("quincaillerie_authenticated");
     router.replace("/");
   }
 
