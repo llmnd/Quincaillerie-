@@ -1,13 +1,15 @@
 ﻿"use client";
 
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import AppShell from "../../../components/AppShell";
+import OdooFormLayout from "../../../components/OdooFormLayout";
 import { authHeaders } from "../../../lib/auth";
 import styles from "./page.module.css";
 
 type User = { id: number; full_name: string; email: string; role: "admin" | "seller"; is_active: boolean };
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-const emptyForm = { full_name: "", email: "", password: "", role: "seller" };
+type UserForm = { full_name: string; email: string; password: string; role: "admin" | "seller" };
+const emptyForm: UserForm = { full_name: "", email: "", password: "", role: "seller" };
 
 export function UsersPageContent() {
   const [users, setUsers] = useState<User[]>([]);
@@ -50,49 +52,42 @@ export function UsersPageContent() {
     };
   }, []);
 
-  async function createUser(event: { preventDefault: () => void }) {
+  async function saveUser(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const response = await fetch(`${API_URL}/api/v1/auth/users`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...authHeaders() },
-      credentials: "include",
-      body: JSON.stringify(form),
-    });
-    if (!response.ok) {
-      setError("Impossible de créer ce compte. Vérifiez l’email et le mot de passe.");
-      return;
-    }
-    setForm(emptyForm);
-    setShowForm(false);
-    setEditingUserId(null);
-    setError("");
-    await loadUsers().then((nextUsers) => setUsers(nextUsers)).catch(() => setError("Impossible de recharger les utilisateurs."));
-  }
 
-  async function updateUser(event: { preventDefault: () => void }) {
-    event.preventDefault();
-    if (editingUserId === null) return;
+    if (editingUserId === null) {
+      const response = await fetch(`${API_URL}/api/v1/auth/users`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        credentials: "include",
+        body: JSON.stringify(form),
+      });
+      if (!response.ok) {
+        setError("Impossible de créer ce compte. Vérifiez l’email et le mot de passe.");
+        return;
+      }
+    } else {
+      const payload: Record<string, string> = {
+        full_name: form.full_name,
+        email: form.email,
+        role: form.role,
+      };
 
-    const payload: Record<string, string> = {
-      full_name: form.full_name,
-      email: form.email,
-      role: form.role,
-    };
+      if (form.password.trim()) {
+        payload.password = form.password;
+      }
 
-    if (form.password.trim()) {
-      payload.password = form.password;
-    }
+      const response = await fetch(`${API_URL}/api/v1/auth/users/${editingUserId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
 
-    const response = await fetch(`${API_URL}/api/v1/auth/users/${editingUserId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json", ...authHeaders() },
-      credentials: "include",
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      setError("Impossible de modifier cet utilisateur. Vérifiez les informations saisies.");
-      return;
+      if (!response.ok) {
+        setError("Impossible de modifier cet utilisateur. Vérifiez les informations saisies.");
+        return;
+      }
     }
 
     setForm(emptyForm);
@@ -120,69 +115,87 @@ export function UsersPageContent() {
     setError("");
   }
 
+  const submitCurrentUserForm = () => {
+    const formElement = document.getElementById("user-form") as HTMLFormElement | null;
+    if (formElement) {
+      formElement.requestSubmit();
+    }
+  };
+
   return (
-    <>
-      <header className={styles.header}>
-        <div>
-          <p className={styles.eyebrow}>Administration</p>
-          <h2>Utilisateurs</h2>
-          <p>Gérez les comptes et les niveaux d’accès de votre équipe.</p>
-        </div>
-        <button
-          type="button"
-          className={styles.primaryButton}
-          onClick={() => {
-            if (showForm && editingUserId !== null) {
-              cancelForm();
-              return;
-            }
-            setShowForm(!showForm);
-            setEditingUserId(null);
-            setForm(emptyForm);
-          }}
-        >
-          {editingUserId !== null ? "Annuler" : "Nouveau compte"}
-        </button>
-      </header>
-
-      
-
+    <OdooFormLayout
+      category="Utilisateurs"
+      title={showForm ? (editingUserId !== null ? "Modifier utilisateur" : "Nouvel utilisateur") : "Utilisateurs"}
+      actions={[
+        { label: "Enregistrer", variant: "primary", onClick: submitCurrentUserForm },
+        { label: "Imprimer", onClick: () => undefined },
+        { label: "Confirmer", onClick: () => undefined },
+        { label: "Aperçu", onClick: () => undefined },
+      ]}
+      onNewClick={() => {
+        if (showForm && editingUserId !== null) {
+          cancelForm();
+          return;
+        }
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        setShowForm(true);
+        setEditingUserId(null);
+        setForm(emptyForm);
+      }}
+      onSettingsClick={() => undefined}
+      onCloudClick={submitCurrentUserForm}
+      onCloseClick={cancelForm}
+    >
       {showForm ? (
-        <form className={styles.createForm} onSubmit={editingUserId !== null ? updateUser : createUser}>
-          <input required placeholder="Nom complet" value={form.full_name} onChange={(event) => setForm({ ...form, full_name: event.target.value })} />
-          <input required type="email" placeholder="Email professionnel" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} />
-          <input minLength={8} type="password" placeholder={editingUserId !== null ? "Nouveau mot de passe (facultatif)" : "Mot de passe (8 caractères min.)"} value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} required={editingUserId === null} />
-          <select value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value })}>
-            <option value="seller">Vendeur</option>
-            <option value="admin">Administrateur</option>
-          </select>
-          <button type="submit" className={styles.primaryButton}>
-            {editingUserId !== null ? "Enregistrer" : "Créer le compte"}
-          </button>
+        <form id="user-form" className={styles.createForm} onSubmit={saveUser}>
+          <div className={styles.formField}>
+            <label>Nom complet</label>
+            <input required value={form.full_name} onChange={(event) => setForm({ ...form, full_name: event.target.value })} />
+          </div>
+
+          <div className={styles.formField}>
+            <label>Email professionnel</label>
+            <input required type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} />
+          </div>
+
+          <div className={styles.formField}>
+            <label>{editingUserId !== null ? "Nouveau mot de passe (facultatif)" : "Mot de passe"}</label>
+            <input minLength={8} type="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} required={editingUserId === null} />
+          </div>
+
+          <div className={styles.formField}>
+            <label>Rôle</label>
+            <select value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value as "admin" | "seller" })}>
+              <option value="seller">Vendeur</option>
+              <option value="admin">Administrateur</option>
+            </select>
+          </div>
         </form>
-      ) : null}
+      ) : (
+        <>
+          {isLoading ? <div className={styles.state}>Chargement des utilisateurs…</div> : null}
+          {error ? <div className={styles.state}>{error}</div> : null}
 
-      {isLoading ? <div className={styles.state}>Chargement des utilisateurs…</div> : null}
-      {error ? <div className={styles.state}>{error}</div> : null}
-
-      {!isLoading && !error ? (
-        <div className={styles.table}>
-          {users.map((user) => (
-            <div className={styles.row} key={user.id}>
-              <div>
-                <strong>{user.full_name}</strong>
-                <small>{user.email}</small>
-              </div>
-              <span className={styles.role}>{user.role === "admin" ? "Administrateur" : "Vendeur"}</span>
-              <span className={user.is_active ? styles.active : styles.inactive}>{user.is_active ? "Actif" : "Inactif"}</span>
-              <button type="button" className={styles.secondaryAction} onClick={() => startEdit(user)}>
-                Modifier
-              </button>
+          {!isLoading && !error ? (
+            <div className={styles.table}>
+              {users.map((user) => (
+                <div className={styles.row} key={user.id}>
+                  <div>
+                    <strong>{user.full_name}</strong>
+                    <small>{user.email}</small>
+                  </div>
+                  <span className={styles.role}>{user.role === "admin" ? "Administrateur" : "Vendeur"}</span>
+                  <span className={user.is_active ? styles.active : styles.inactive}>{user.is_active ? "Actif" : "Inactif"}</span>
+                  <button type="button" className={styles.secondaryAction} onClick={() => startEdit(user)}>
+                    Modifier
+                  </button>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      ) : null}
-    </>
+          ) : null}
+        </>
+      )}
+    </OdooFormLayout>
   );
 }
 

@@ -1,0 +1,783 @@
+/* =========================================================
+   GLOBAL SHELL
+========================================================= */
+
+.shell {
+  --bg: #0b0d11;
+  --surface: #11141a;
+  --surface-2: #151922;
+  --surface-3: #191d25;
+
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.13);
+
+  --text: #f5f6f8;
+  --muted: #9298a3;
+  --muted-2: #6e747f;
+
+  --primary: #714b67;
+  --primary-hover: #835875;
+
+  --save: #22c7a8;
+  --save-hover: #32d6b7;
+
+  --danger: #ef6670;
+  --danger-hover: #ff7780;
+
+  min-height: 100vh;
+  width: 100%;
+  background: var(--bg);
+  color: var(--text);
+  overflow-x: hidden;
+}
+
+
+/* =========================================================
+   TOP BAR
+========================================================= */
+
+.topBar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+
+  height: 52px;
+  padding: 0 18px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  background: rgba(11, 13, 17, 0.96);
+  border-bottom: 1px solid var(--border);
+
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.topLeft {
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.newButton {
+  height: 31px;
+  padding: 0 11px;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+
+  border: 0;
+  border-radius: 5px;
+
+  background: var(--primary);
+  color: #fff;
+
+  font-size: 12px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    transform 0.15s ease;
+}
+
+.newButton:hover {
+  background: var(--primary-hover);
+}
+
+.newButton:active {
+  transform: translateY(1px);
+}
+
+.newIcon {
+  font-size: 17px;
+  line-height: 1;
+  font-weight: 400;
+}
+
+.breadcrumbs {
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+  gap: 7px;
+
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.breadcrumbCategory {
+  color: var(--muted);
+}
+
+.breadcrumbCurrent {
+  max-width: 280px;
+
+  color: var(--text);
+  font-weight: 500;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chevron {
+  width: 13px;
+  height: 13px;
+  color: var(--muted-2);
+  flex-shrink: 0;
+}
+
+.topActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.iconBtn {
+  width: 28px;
+  height: 28px;
+
+  padding: 0;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  background: transparent;
+  border: 0;
+
+  cursor: pointer;
+
+  transition:
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.iconBtn:hover {
+  transform: translateY(-1px);
+}
+
+.iconSvg {
+  width: 19px;
+  height: 19px;
+}
+
+.iconSettings {
+  color: #a879ff;
+}
+
+.iconSettings:hover {
+  color: #c097ff;
+}
+
+.iconSave {
+  color: var(--save);
+}
+
+.iconSave:hover {
+  color: var(--save-hover);
+}
+
+.iconClose {
+  color: var(--danger);
+}
+
+.iconClose:hover {
+  color: var(--danger-hover);
+}
+
+
+/* =========================================================
+   ACTION BAR
+========================================================= */
+
+.actionBar {
+  min-height: 48px;
+  padding: 0 18px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+
+  overflow: hidden;
+}
+
+.actionButtons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  flex-shrink: 0;
+}
+
+.actionButton {
+  height: 30px;
+  padding: 0 11px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  border: 1px solid var(--border);
+  border-radius: 4px;
+
+  background: transparent;
+  color: #d9dce1;
+
+  font-size: 11px;
+  font-weight: 500;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.actionButton:hover {
+  background: rgba(255, 255, 255, 0.045);
+  border-color: var(--border-strong);
+  color: #fff;
+}
+
+.actionPrimary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+.actionPrimary:hover {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+
+.actionDanger {
+  color: var(--danger);
+  border-color: rgba(239, 102, 112, 0.25);
+}
+
+.actionDanger:hover {
+  background: rgba(239, 102, 112, 0.07);
+  border-color: rgba(239, 102, 112, 0.4);
+}
+
+.actionIcon {
+  display: inline-flex;
+  align-items: center;
+}
+
+.actionIcon svg {
+  width: 14px;
+  height: 14px;
+}
+
+
+/* =========================================================
+   STATUS PIPELINE
+========================================================= */
+
+.statusPipeline {
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+  gap: 7px;
+
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.statusPipeline::-webkit-scrollbar {
+  display: none;
+}
+
+.statusStep {
+  position: relative;
+
+  padding: 5px 8px;
+
+  color: var(--muted-2);
+
+  font-size: 11px;
+  font-weight: 500;
+
+  white-space: nowrap;
+}
+
+.statusActive {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.statusCompleted {
+  color: #b8c0c9;
+}
+
+.statusSeparator {
+  color: #4d535d;
+  font-size: 12px;
+}
+
+
+/* =========================================================
+   MAIN
+========================================================= */
+
+.main {
+  width: 100%;
+  max-width: 1180px;
+
+  margin: 0 auto;
+  padding: 22px 24px 40px;
+}
+
+.formSheet {
+  width: 100%;
+
+  background: var(--surface);
+
+  border: 1px solid var(--border);
+  border-radius: 6px;
+
+  overflow: hidden;
+}
+
+.formHeader {
+  min-height: 66px;
+
+  padding: 15px 20px;
+
+  display: flex;
+  align-items: center;
+
+  border-bottom: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.012);
+}
+
+.formHeader h1 {
+  margin: 0;
+
+  font-size: 18px;
+  line-height: 1.25;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.formHeader p {
+  margin: 4px 0 0;
+
+  color: var(--muted);
+
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.formContent {
+  padding: 20px;
+}
+
+
+/* =========================================================
+   FORM SECTIONS
+========================================================= */
+
+.formSection {
+  width: 100%;
+}
+
+.formSection + .formSection {
+  margin-top: 24px;
+  padding-top: 20px;
+
+  border-top: 1px solid var(--border);
+}
+
+.sectionHeader {
+  margin-bottom: 14px;
+}
+
+.sectionHeader h2 {
+  margin: 0;
+
+  color: #f0f1f3;
+
+  font-size: 13px;
+  line-height: 1.3;
+  font-weight: 600;
+}
+
+.sectionHeader p {
+  margin: 4px 0 0;
+
+  color: var(--muted);
+
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+
+/* =========================================================
+   FORM ROWS
+========================================================= */
+
+.formRow {
+  width: 100%;
+
+  display: grid;
+
+  column-gap: 24px;
+  row-gap: 13px;
+}
+
+.twoColumns {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.threeColumns {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.oneColumn {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+
+/* =========================================================
+   FORM GROUP
+========================================================= */
+
+.formGroup {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.formLabel {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+
+  color: #b7bbc3;
+
+  font-size: 11px;
+  line-height: 1.2;
+  font-weight: 500;
+}
+
+.required {
+  color: var(--danger);
+}
+
+
+/* =========================================================
+   INPUTS
+========================================================= */
+
+.formGroup input,
+.formGroup select,
+.formGroup textarea {
+  width: 100%;
+  min-width: 0;
+
+  box-sizing: border-box;
+
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+
+  background: var(--surface-2);
+  color: var(--text);
+
+  font-family: inherit;
+  font-size: 12px;
+
+  outline: none;
+
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.formGroup input,
+.formGroup select {
+  height: 33px;
+  padding: 0 9px;
+}
+
+.formGroup textarea {
+  min-height: 82px;
+  padding: 8px 9px;
+
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.formGroup input::placeholder,
+.formGroup textarea::placeholder {
+  color: #626872;
+}
+
+.formGroup input:hover,
+.formGroup select:hover,
+.formGroup textarea:hover {
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.formGroup input:focus,
+.formGroup select:focus,
+.formGroup textarea:focus {
+  border-color: rgba(0, 199, 195, 0.65);
+
+  background: #141920;
+
+  box-shadow:
+    0 0 0 2px rgba(0, 199, 195, 0.08);
+}
+
+.formGroup select {
+  appearance: none;
+  cursor: pointer;
+
+  background-image:
+    linear-gradient(45deg, transparent 50%, #777d87 50%),
+    linear-gradient(135deg, #777d87 50%, transparent 50%);
+  background-position:
+    calc(100% - 13px) 14px,
+    calc(100% - 9px) 14px;
+  background-size:
+    4px 4px,
+    4px 4px;
+  background-repeat: no-repeat;
+
+  padding-right: 28px;
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 760px) {
+  .topBar {
+    height: 50px;
+    padding: 0 12px;
+  }
+
+  .topLeft {
+    gap: 11px;
+  }
+
+  .newButton {
+    height: 30px;
+    padding: 0 9px;
+  }
+
+  .breadcrumbs {
+    max-width: 42vw;
+  }
+
+  .breadcrumbCategory {
+    display: none;
+  }
+
+  .breadcrumbs .chevron {
+    display: none;
+  }
+
+  .breadcrumbCurrent {
+    max-width: 100%;
+  }
+
+  .topActions {
+    gap: 9px;
+  }
+
+  .iconBtn {
+    width: 27px;
+    height: 27px;
+  }
+
+  .iconSvg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .actionBar {
+    min-height: 46px;
+
+    padding: 0 12px;
+
+    justify-content: flex-start;
+
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .actionBar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .actionButtons {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .actionButtons::-webkit-scrollbar {
+    display: none;
+  }
+
+  .actionButton {
+    flex-shrink: 0;
+  }
+
+  .statusPipeline {
+    display: none;
+  }
+
+  .main {
+    padding: 12px 10px 28px;
+  }
+
+  .formSheet {
+    border-radius: 5px;
+  }
+
+  .formHeader {
+    min-height: 58px;
+    padding: 13px 14px;
+  }
+
+  .formHeader h1 {
+    font-size: 16px;
+  }
+
+  .formContent {
+    padding: 15px 14px;
+  }
+
+  .formSection + .formSection {
+    margin-top: 20px;
+    padding-top: 17px;
+  }
+
+  .sectionHeader {
+    margin-bottom: 11px;
+  }
+
+  .twoColumns,
+  .threeColumns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .formRow {
+    row-gap: 11px;
+  }
+
+  .formGroup input,
+  .formGroup select {
+    height: 35px;
+  }
+}
+
+
+/* =========================================================
+   SMALL PHONES
+========================================================= */
+
+@media (max-width: 390px) {
+  .topBar {
+    padding: 0 9px;
+  }
+
+  .newButton span:last-child {
+    display: none;
+  }
+
+  .newButton {
+    width: 30px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .newIcon {
+    font-size: 18px;
+  }
+
+  .breadcrumbs {
+    max-width: 48vw;
+  }
+
+  .topActions {
+    gap: 6px;
+  }
+
+  .iconBtn {
+    width: 25px;
+    height: 25px;
+  }
+
+  .iconSvg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .actionBar {
+    padding: 0 9px;
+  }
+
+  .main {
+    padding: 8px 7px 24px;
+  }
+
+  .formHeader {
+    padding: 12px;
+  }
+
+  .formContent {
+    padding: 13px 11px;
+  }
+}
+
+
+/* =========================================================
+   ACCESSIBILITY
+========================================================= */
+
+.iconBtn:focus-visible,
+.newButton:focus-visible,
+.actionButton:focus-visible,
+.formGroup input:focus-visible,
+.formGroup select:focus-visible,
+.formGroup textarea:focus-visible {
+  outline: 2px solid rgba(0, 199, 195, 0.65);
+  outline-offset: 2px;
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .shell *,
+  .shell *::before,
+  .shell *::after {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+}
