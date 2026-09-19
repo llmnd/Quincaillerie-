@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { LogOut, Mail, ShieldCheck, UserRound } from "lucide-react";
 import { useRouter } from "next/navigation";
 import AppShell from "../../components/AppShell";
@@ -33,7 +33,10 @@ export default function ProfilePage() {
     fetch(`${API_URL}/api/v1/auth/logout`, { method: "POST", credentials: "include" }).catch(() => undefined);
     window.localStorage.removeItem("quincaillerie_access_token");
     window.localStorage.removeItem("quincaillerie_user");
-    router.replace("/");
+    if (typeof window !== "undefined") {
+      window.history.replaceState(null, "", "/login");
+    }
+    router.replace("/login");
   }
 
   const name = profile.full_name || "Utilisateur";

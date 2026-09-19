@@ -4,7 +4,7 @@
   max-width: 900px;
   margin: 0 auto;
   padding: 32px 16px;
-  color: #e2e4e9;
+  color: #f8fafc;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
@@ -45,7 +45,7 @@
   display: block;
   font-size: 0.65rem;
   letter-spacing: 0.25em;
-  color: #949ba6;
+  color: #dfe7f6;
   text-transform: uppercase;
   margin-bottom: 4px;
 }
@@ -55,7 +55,7 @@
   font-weight: 300;
   letter-spacing: -0.03em;
   margin: 0;
-  color: #f7f8fa;
+  color: #ffffff;
 }
 
 .statusIndicator {
@@ -76,16 +76,16 @@
 .statusText {
   font-size: 0.65rem;
   letter-spacing: 0.15em;
-  color: #a3a8b3;
+  color: #e5edf9;
 }
 
 /* BANNIÈRE D'INFORMATION */
 .messageBanner {
   background: #1e222a;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   padding: 12px 16px;
   font-size: 0.8rem;
-  color: #e2e4e9;
+  color: #f8fafc;
   margin-bottom: 28px;
 }
 
@@ -117,8 +117,8 @@
   text-transform: uppercase;
   letter-spacing: 0.12em;
   padding: 4px 8px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #a3a8b3;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #edf3ff;
 }
 
 /* MÉTRIQUES EN LIGNE */
@@ -137,7 +137,7 @@
   font-size: 0.65rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #838a97;
+  color: #dfe7f6;
   margin-bottom: 6px;
 }
 
@@ -145,11 +145,11 @@
   font-size: 1.1rem;
   font-weight: 300;
   margin: 0;
-  color: #d1d5db;
+  color: #f8fafc;
 }
 
 .highlight {
-  color: #f7f8fa;
+  color: #ffffff;
   font-weight: 500 !important;
 }
 
@@ -170,13 +170,13 @@
   font-size: 0.68rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #949ba6;
+  color: #e5edf9;
 }
 
 .inputGroup input, .inputGroup select {
   background: #111317;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #f7f8fa;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #ffffff;
   padding: 12px;
   font-size: 0.85rem;
   outline: none;
@@ -192,8 +192,8 @@
   display: flex;
   justify-content: space-between;
   font-size: 0.75rem;
-  color: #949ba6;
-  border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
+  color: #e8eefb;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.12);
   padding-bottom: 8px;
 }
 
@@ -273,12 +273,12 @@
   font-size: 0.72rem;
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  color: #b0b6c2;
+  color: #edf4ff;
 }
 
 .chevron {
   transition: transform 0.25s ease;
-  color: #717885;
+  color: #dfe7f6;
 }
 
 .chevronRotated {
@@ -307,12 +307,12 @@
   display: block;
   font-size: 0.82rem;
   font-weight: 400;
-  color: #e2e4e9;
+  color: #f8fafc;
 }
 
 .historyMain small {
   font-size: 0.7rem;
-  color: #717885;
+  color: #dfe7f6;
 }
 
 .historyStatus {
@@ -331,7 +331,7 @@
 
 .tagClosed {
   font-size: 0.65rem;
-  color: #838a97;
+  color: #e5edf9;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
@@ -340,7 +340,7 @@
 .sectionHeaderZara h3 {
   font-size: 0.72rem;
   letter-spacing: 0.15em;
-  color: #838a97;
+  color: #edf4ff;
   margin: 32px 0 16px 0;
 }
 
@@ -370,13 +370,13 @@
 .recapMeta strong {
   display: block;
   font-size: 0.85rem;
-  color: #e2e4e9;
+  color: #ffffff;
   font-weight: 400;
 }
 
 .recapMeta small {
   font-size: 0.7rem;
-  color: #717885;
+  color: #dfe7f6;
 }
 
 .recapRightNav {
@@ -404,14 +404,14 @@
   display: block;
   font-size: 0.6rem;
   text-transform: uppercase;
-  color: #717885;
+  color: #dfe7f6;
   letter-spacing: 0.08em;
 }
 
 .gridMetrics div p {
   margin: 4px 0 0 0;
   font-size: 0.82rem;
-  color: #e2e4e9;
+  color: #ffffff;
 }
 
 .handoffBox, .operationsBox {
@@ -425,13 +425,13 @@
   font-size: 0.65rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: #949ba6;
+  color: #e7edf9;
   margin-bottom: 8px;
 }
 
 .handoffBox p {
   font-size: 0.72rem;
-  color: #b0b6c2;
+  color: #edf4ff;
   margin: 4px 0;
 }
 
@@ -449,8 +449,8 @@
   padding: 6px 0;
 }
 
-.opItem span { color: #d1d5db; }
-.opItem small { display: block; color: #717885; font-size: 0.65rem; }
+.opItem span { color: #f8fafc; }
+.opItem small { display: block; color: #dfe7f6; font-size: 0.65rem; }
 
 .emptyText {
   font-size: 0.72rem;
@@ -500,7 +500,7 @@
 .modalEyebrow {
   display: block;
   margin-bottom: 7px;
-  color: #949ba6;
+  color: #e7edf9;
   font-size: 0.62rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;

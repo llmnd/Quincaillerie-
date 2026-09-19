@@ -15,7 +15,7 @@ type Module = {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
-export default function ModulesPage() {
+export function ModulesPageContent() {
   const [modules, setModules] = useState<Module[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -68,7 +68,7 @@ export default function ModulesPage() {
   }
 
   return (
-    <AppShell>
+    <>
       <header className={styles.header}>
         <div>
           <p className={styles.eyebrow}>Configuration de l’organisation</p>
@@ -104,6 +104,14 @@ export default function ModulesPage() {
           ))}
         </section>
       ) : null}
+    </>
+  );
+}
+
+export default function ModulesPage() {
+  return (
+    <AppShell>
+      <ModulesPageContent />
     </AppShell>
   );
 }

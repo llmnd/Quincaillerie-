@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import Image from "next/image";
 import { useEffect, useState } from "react";
-import { BarChart3, Bell, Bird, Boxes, Calculator, Package, Search, Settings, ShoppingCart, Users, WalletCards } from "lucide-react";
-import { authHeaders, getStoredUser, restoreAuthSession } from "../lib/auth";
+import { ArrowLeft, Bell, Bird, Boxes, Calculator, LogOut, Package, Search, Settings, ShoppingCart, UserRound, Users, WalletCards } from "lucide-react";
+import { authHeaders, clearStoredAuth, getStoredUser, restoreAuthSession } from "../lib/auth";
 import styles from "./AppShell.module.css";
 
 type User = { full_name?: string; email?: string; role?: "admin" | "seller" };
@@ -15,38 +16,45 @@ type Application = { label: string; description: string; href: string; icon: typ
 const applications: Application[] = [
   { label: "Ventes", description: "Devis et commandes", href: "/sales", icon: ShoppingCart, roles: ["admin", "seller"], moduleKey: "sales" },
   { label: "Caisse", description: "Sessions et clôtures", href: "/cash", icon: WalletCards, roles: ["admin", "seller"], moduleKey: "cash" },
-  { label: "Comptabilité", description: "Taxes, factures et journaux", href: "/accounting", icon: Calculator, roles: ["admin", "seller"], moduleKey: "accounting" },
+  { label: "Comptabilité", description: "Taxes, factures et journaux", href: "/accounting", icon: Calculator, roles: ["admin"], moduleKey: "accounting" },
   { label: "Produits", description: "Catalogue et tarifs", href: "/products", icon: Package, roles: ["admin", "seller"], moduleKey: "products" },
   { label: "Clients", description: "Contacts et comptes", href: "/clients", icon: Users, roles: ["admin", "seller"], moduleKey: "customers" },
   { label: "Stock", description: "Inventaire et mouvements", href: "/stock", icon: Boxes, roles: ["admin"], moduleKey: "stock" },
-  { label: "Rapports", description: "Analyse de l’activité", href: "/reports", icon: BarChart3, roles: ["admin"], moduleKey: "reports" },
   { label: "Élevage", description: "Lots et suivi sanitaire", href: "/farming", icon: Bird, roles: ["admin", "seller"], moduleKey: "farming" },
-  { label: "Administration", description: "Utilisateurs et droits", href: "/settings/users", icon: Settings, roles: ["admin"], moduleKey: "users" },
-  { label: "Applications", description: "Modules de l’organisation", href: "/settings/modules", icon: Settings, roles: ["admin"], moduleKey: "users" },
+  { label: "Administration", description: "Utilisateurs, rapports et comptabilité", href: "/admin", icon: Settings, roles: ["admin"], moduleKey: "users" },
 ];
 
 const sidebarItems = [
+  { label: "Espace de travail", href: "/workspace" },
   { label: "Dashboard", href: "/dashboard" },
   { label: "Ventes", href: "/sales", moduleKey: "sales" },
   { label: "Caisse", href: "/cash", moduleKey: "cash" },
-  { label: "Comptabilité", href: "/accounting", moduleKey: "accounting" },
   { label: "Produits", href: "/products", moduleKey: "products" },
   { label: "Clients", href: "/clients", moduleKey: "customers" },
   { label: "Stock", href: "/stock", roles: ["admin"], moduleKey: "stock" },
-  { label: "Rapports", href: "/reports", roles: ["admin"], moduleKey: "reports" },
   { label: "Élevage", href: "/farming", moduleKey: "farming" },
-  { label: "Utilisateurs", href: "/settings/users", roles: ["admin"], moduleKey: "users" },
-  { label: "Applications", href: "/settings/modules", roles: ["admin"], moduleKey: "users" },
+  { label: "Administration", href: "/admin", roles: ["admin"], moduleKey: "users" },
 ];
 
-export default function AppShell({ children, hideTopbar = false }: { children: React.ReactNode; hideTopbar?: boolean }) {
+export default function AppShell({
+  children,
+  hideTopbar = false,
+  hideSidebar = false,
+  hideContentPadding = false,
+}: Readonly<{ children: React.ReactNode; hideTopbar?: boolean; hideSidebar?: boolean; hideContentPadding?: boolean }>) {
   const router = useRouter();
   const pathname = usePathname();
 
   const [user, setUser] = useState<User | null>(null);
   const [enabledModules, setEnabledModules] = useState<Set<string> | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [organization, setOrganization] = useState<OrganizationProfile | null>(null);
+
+  const effectiveUser = user ?? { full_name: "Utilisateur", email: "", role: undefined as "admin" | "seller" | undefined };
+  const role: "admin" | "seller" | undefined = effectiveUser.role;
+  const adminOnlyRoutes = ["/admin", "/accounting", "/reports", "/settings/users"];
+  const isAdminOnlyRoute = adminOnlyRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
 
   useEffect(() => {
     let isMounted = true;
@@ -99,7 +107,7 @@ export default function AppShell({ children, hideTopbar = false }: { children: R
         }
 
         const enabledKeys = new Set(
-          modules.filter((module) => module && module.enabled).map((module) => module.key)
+          modules.filter((module) => module?.enabled).map((module) => module.key)
         );
         setEnabledModules(enabledKeys.size > 0 ? enabledKeys : allModuleKeys);
       })
@@ -117,70 +125,123 @@ export default function AppShell({ children, hideTopbar = false }: { children: R
       .catch(() => setOrganization(null));
   }, [user]);
 
-  const effectiveUser = user ?? { full_name: "Utilisateur", email: "", role: "seller" as const };
-  const role: "admin" | "seller" = effectiveUser.role ?? "seller";
+  useEffect(() => {
+    if (!user) return;
+    if (isAdminOnlyRoute && role !== "admin") {
+      router.replace("/workspace");
+    }
+  }, [isAdminOnlyRoute, role, router, user]);
+
   const safeEnabledModules = enabledModules && enabledModules.size > 0 ? enabledModules : new Set(sidebarItems.flatMap((item) => item.moduleKey ? [item.moduleKey] : []));
+  let breadcrumbLabel = pathname.split("/").filter(Boolean).join(" / ");
+  if (pathname === "/dashboard") {
+    breadcrumbLabel = "Tableau de bord";
+  } else if (pathname === "/workspace") {
+    breadcrumbLabel = "Espace de travail";
+  }
   const visibleSidebar = sidebarItems.filter((item) => {
-    const allowedByRole = !item.roles || item.roles.includes(role);
+    const allowedByRole = !item.roles || (role ? item.roles.includes(role) : false);
     if (!allowedByRole) return false;
     const moduleKey = item.moduleKey ?? "";
     return moduleKey.length === 0 || safeEnabledModules.has(moduleKey);
   });
   const safeUser = effectiveUser;
+  const userInitial = (safeUser.full_name ?? safeUser.email ?? "U").trim().charAt(0).toUpperCase();
+
+  function shouldShowBackButton() {
+    if (typeof window === "undefined") return true;
+
+    const referrer = document.referrer || "";
+    return !referrer.includes("/login") && !referrer.includes("/login?");
+  }
+
+  function handleBack() {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+      return;
+    }
+
+    router.push("/workspace");
+  }
+
+  function handleLogout() {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+    }).catch(() => undefined);
+
+    clearStoredAuth();
+    setIsUserMenuOpen(false);
+    if (typeof window !== "undefined") {
+      window.history.replaceState(null, "", "/login");
+    }
+    router.replace("/login");
+  }
 
   return (
     <div className={styles.shell}>
-      <aside className={styles.sidebar}>
-        {/* Bouton Hamburger style Zara */}
-        <button
-          type="button"
-          className={`${styles.menuButton} ${menuOpen ? styles.menuOpen : ""}`}
-          onClick={() => setMenuOpen((open) => !open)}
-          aria-expanded={menuOpen}
-          aria-label={menuOpen ? "Fermer le menu" : "Ouvrir le menu"}
-        >
-          <span className={styles.burgerLine}></span>
-          <span className={styles.burgerLine}></span>
-        </button>
-
-        <nav className={menuOpen ? styles.sidebarNavOpen : styles.sidebarNav} aria-label="Navigation">
-          <span className={styles.navLabel}>Espace de travail</span>
-          {visibleSidebar.map((item) => (
-            <Link
-              key={`${item.href}-${item.label}`}
-              href={item.href}
-              onClick={() => setMenuOpen(false)}
-              className={pathname === item.href ? styles.navActive : styles.navItem}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-
-        <div className={styles.userCard}>
+      {!hideSidebar && (
+        <aside className={styles.sidebar}>
+          {/* Bouton Hamburger style Zara */}
           <button
             type="button"
-            className={styles.avatarButton}
-            onClick={() => router.push("/profile")}
-            aria-label="Ouvrir mon profil"
-            title="Mon profil"
+            className={`${styles.menuButton} ${menuOpen ? styles.menuOpen : ""}`}
+            onClick={() => setMenuOpen((open) => !open)}
+            aria-expanded={menuOpen}
+            aria-label={menuOpen ? "Fermer le menu" : "Ouvrir le menu"}
           >
-            {(safeUser.full_name ?? safeUser.email ?? "U").slice(0, 1).toUpperCase()}
+            <span className={styles.burgerLine}></span>
+            <span className={styles.burgerLine}></span>
           </button>
-          <div>
-            <strong>{safeUser.full_name ?? "Utilisateur"}</strong>
-            <small>{role === "admin" ? "Administrateur" : "Vendeur"}</small>
-          </div>
-        </div>
-      </aside>
 
-      <main className={styles.mainArea}>
+          <nav className={menuOpen ? styles.sidebarNavOpen : styles.sidebarNav} aria-label="Navigation">
+            <span className={styles.navLabel}>Espace de travail</span>
+            {visibleSidebar.map((item) => (
+              <Link
+                key={`${item.href}-${item.label}`}
+                href={item.href}
+                onClick={() => setMenuOpen(false)}
+                className={pathname === item.href ? styles.navActive : styles.navItem}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+
+          <div className={styles.userCard}>
+            <button
+              type="button"
+              className={styles.avatarButton}
+              onClick={() => router.push("/profile")}
+              aria-label="Ouvrir mon profil"
+              title="Mon profil"
+            >
+              {(safeUser.full_name ?? safeUser.email ?? "U").slice(0, 1).toUpperCase()}
+            </button>
+            <div>
+              <strong>{safeUser.full_name ?? "Utilisateur"}</strong>
+              <small>{role === "admin" ? "Administrateur" : "Vendeur"}</small>
+            </div>
+          </div>
+        </aside>
+      )}
+
+      <main className={hideSidebar ? styles.mainAreaFull : styles.mainArea}>
         {!hideTopbar && (
           <header className={styles.topbar}>
-            <div className={styles.breadcrumb}>
-              <span className={styles.breadcrumbBrand}>MIZAN ERP</span>
-              <span className={styles.breadcrumbSep}>/</span>
-              <strong>{pathname === "/dashboard" ? "Tableau de bord" : pathname.split("/").filter(Boolean).join(" / ")}</strong>
+            <div className={styles.topbarLeft}>
+              {shouldShowBackButton() && (
+                <button type="button" className={styles.backButton} onClick={handleBack} aria-label="Retour">
+                  <ArrowLeft size={14} />
+                  <span>Retour</span>
+                </button>
+              )}
+
+              <div className={styles.breadcrumb}>
+                <span className={styles.breadcrumbBrand}>MIZAN ERP</span>
+                <span className={styles.breadcrumbSep}>/</span>
+                <strong>{breadcrumbLabel}</strong>
+              </div>
             </div>
 
             <div className={styles.topbarActions}>
@@ -192,14 +253,54 @@ export default function AppShell({ children, hideTopbar = false }: { children: R
                 <Bell size={14} />
                 <span className={styles.notificationDot} />
               </button>
-              <span className={styles.company}>
-                {organization?.logo ? <img src={organization.logo} alt="" className={styles.companyLogo} /> : null}
-                {organization?.name ?? "Ma société"}
-              </span>
+
+              <div className={styles.userMenuWrap}>
+                <span className={styles.company}>
+                  {organization?.logo ? (
+                    <Image src={organization.logo} alt="Logo de l'entreprise" width={20} height={20} className={styles.companyLogo} />
+                  ) : null}
+                  {organization?.name ?? "Ma société"}
+                </span>
+
+                <button
+                  type="button"
+                  className={styles.userMenuButton}
+                  onClick={() => setIsUserMenuOpen((open) => !open)}
+                  aria-expanded={isUserMenuOpen}
+                  aria-label="Ouvrir le menu utilisateur"
+                >
+                  <span className={styles.userAvatar}>{userInitial}</span>
+                </button>
+
+                {isUserMenuOpen && (
+                  <div className={styles.userDropdown} role="menu" aria-label="Menu utilisateur">
+                    <div className={styles.userDropdownHeader}>
+                      <span className={styles.userDropdownAvatar}>{userInitial}</span>
+                      <div>
+                        <strong>{safeUser.full_name ?? "Utilisateur"}</strong>
+                        <small>{safeUser.email ?? "Aucun email"}</small>
+                      </div>
+                    </div>
+
+                    <button type="button" className={styles.userDropdownAction} onClick={() => {
+                      setIsUserMenuOpen(false);
+                      router.push("/profile");
+                    }}>
+                      <UserRound size={15} />
+                      <span>Mon profil</span>
+                    </button>
+
+                    <button type="button" className={styles.userDropdownAction} onClick={handleLogout}>
+                      <LogOut size={15} />
+                      <span>Se déconnecter</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </header>
         )}
-        <div className={styles.content}>{children}</div>
+        <div className={hideContentPadding ? styles.contentFullBleed : styles.content}>{children}</div>
       </main>
     </div>
   );

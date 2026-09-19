@@ -27,12 +27,40 @@ body {
   min-height: 100%;
   display: flex;
   flex-direction: column;
-  color: var(--foreground);
+  color: #ffffff;
   background: var(--background);
-  font-family: var(--font-geist-sans), "Segoe UI", sans-serif;
+  font-family: var(--font-geist-sans), "Inter", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   touch-action: manipulation;
+}
+
+p,
+span,
+small,
+label,
+li,
+td,
+th,
+strong,
+em,
+a,
+.subtitle,
+.description,
+.appDescription,
+.emptyPanel p,
+.sessionNotice,
+.panelHeader > span,
+.handoffIntro,
+.handoffDetails span,
+.card p,
+.moduleLabel,
+.metricBlock p,
+.historyMain small,
+.recapMeta small,
+.gridMetrics div p,
+.opItem small {
+  color: #ffffff !important;
 }
 
 h1,

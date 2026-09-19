@@ -109,8 +109,10 @@ export default function SignupPage() {
       if (accessToken) {
         window.localStorage.setItem("quincaillerie_access_token", accessToken);
       }
+      window.localStorage.setItem("quincaillerie_from_login", "1");
+      window.sessionStorage.setItem("quincaillerie_entry_source", "/signup");
       window.localStorage.setItem("quincaillerie_user", JSON.stringify(normalizedUser));
-      router.push("/dashboard");
+      router.replace("/workspace");
     } catch {
       setError("Le service est momentanément indisponible.");
     } finally {

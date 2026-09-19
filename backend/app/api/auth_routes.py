@@ -11,7 +11,7 @@ from app.core.config import settings
 from app.core.security import create_access_token, hash_password, verify_password
 from app.models.organization import Organization
 from app.models.user import User
-from app.schemas.auth import BootstrapAdminRequest, LoginRequest, UserCreate, UserRead
+from app.schemas.auth import BootstrapAdminRequest, LoginRequest, UserCreate, UserRead, UserUpdate
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -209,6 +209,40 @@ def create_user(
         organization_id=current_user.organization_id,
     )
     db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+@router.patch("/users/{user_id}", response_model=UserRead)
+def update_user(
+    user_id: int,
+    payload: UserUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin")),
+) -> User:
+    user = db.scalar(select(User).where(User.id == user_id, User.organization_id == current_user.organization_id))
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    if payload.full_name is not None:
+        user.full_name = payload.full_name
+
+    if payload.email is not None:
+        email = payload.email.lower().strip()
+        existing = db.scalar(select(User).where(func.lower(User.email) == email, User.organization_id == current_user.organization_id, User.id != user_id))
+        if existing is not None:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already exists")
+        user.email = email
+
+    if payload.role is not None:
+        if user.id == current_user.id and payload.role != current_user.role:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You cannot change your own role")
+        user.role = payload.role
+
+    if payload.password is not None:
+        user.password_hash = hash_password(payload.password)
+
     db.commit()
     db.refresh(user)
     return user

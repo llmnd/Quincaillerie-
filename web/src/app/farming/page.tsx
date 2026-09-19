@@ -25,6 +25,19 @@ type EggProduction = { id: number; batch_id: number; production_date: string; qu
 const DECOR_FARM_IMAGE = "https://i.pinimg.com/736x/35/c9/c6/35c9c61b569fd8f5a560c960c2325c56.jpg";
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
+async function readJsonSafely<T>(response: Response): Promise<T | null> {
+  if (response.status === 204) return null;
+
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json")) return null;
+
+  try {
+    return await response.json() as T;
+  } catch {
+    return null;
+  }
+}
+
 const emptyBatch = { reference: "", species: "chicken", production_type: "broiler", breed: "", start_date: new Date().toISOString().slice(0, 10), initial_count: "", image_url: "" };
 const emptyHealth = { batch_id: "", event_date: new Date().toISOString().slice(0, 10), event_type: "vaccination", title: "", diagnosis: "", mortality_count: "0" };
 const emptyEgg = { batch_id: "", production_date: new Date().toISOString().slice(0, 10), quantity: "", damaged_quantity: "0" };
@@ -54,16 +67,18 @@ export default function FarmingPage() {
         fetch(`${API_URL}/api/v1/farming/egg-productions`, { headers: authHeaders(), credentials: "include" }),
       ]);
 
-      const nextBatches = bRes.ok ? await bRes.json() : null;
-      const nextHealthEvents = hRes.ok ? await hRes.json() : null;
-      const nextEggProductions = eRes.ok ? await eRes.json() : null;
+      const nextBatches = await readJsonSafely<Batch[]>(bRes);
+      const nextHealthEvents = await readJsonSafely<HealthEvent[]>(hRes);
+      const nextEggProductions = await readJsonSafely<EggProduction[]>(eRes);
 
-      if (bRes.ok) setBatches(nextBatches as Batch[]);
-      else console.error("Impossible de charger les bandes d'élevage", bRes.status);
-      if (hRes.ok) setHealthEvents(nextHealthEvents as HealthEvent[]);
-      else console.error("Impossible de charger les événements sanitaires", hRes.status);
-      if (eRes.ok) setEggProductions(nextEggProductions as EggProduction[]);
-      else console.error("Impossible de charger les productions d'œufs", eRes.status);
+      if (bRes.ok) setBatches(nextBatches ?? []);
+      else if (bRes.status !== 404) console.error("Impossible de charger les bandes d'élevage", bRes.status);
+
+      if (hRes.ok) setHealthEvents(nextHealthEvents ?? []);
+      else if (hRes.status !== 404) console.error("Impossible de charger les événements sanitaires", hRes.status);
+
+      if (eRes.ok) setEggProductions(nextEggProductions ?? []);
+      else if (eRes.status !== 404) console.error("Impossible de charger les productions d'œufs", eRes.status);
     } catch (err) {
       console.error("Erreur de chargement:", err);
     }

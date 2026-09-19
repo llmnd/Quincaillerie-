@@ -43,6 +43,26 @@ class UserCreate(BaseModel):
         return cleaned
 
 
+class UserUpdate(BaseModel):
+    full_name: str | None = Field(default=None, min_length=2, max_length=255)
+    email: str | None = None
+    role: Literal["admin", "seller"] | None = None
+    password: str | None = Field(default=None, min_length=8)
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        cleaned = value.strip().lower()
+        if cleaned.count("@") != 1:
+            raise ValueError("Invalid email address")
+        local_part, domain = cleaned.split("@", 1)
+        if not local_part or not domain or "." not in domain:
+            raise ValueError("Invalid email address")
+        return cleaned
+
+
 class UserRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

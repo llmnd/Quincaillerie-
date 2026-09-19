@@ -17,7 +17,7 @@
 	padding: 24px 16px;
 	background: #171a24;
 	border-right: 1px solid rgba(255, 255, 255, 0.05);
-	color: #e8ebf1;
+	color: #ffffff;
 }
 
 .mainArea {
@@ -27,6 +27,16 @@
 	flex-direction: column;
 	height: 100vh;
 	overflow-y: auto;
+}
+
+.mainAreaFull {
+	display: flex;
+	min-width: 0;
+	flex: 1;
+	flex-direction: column;
+	height: 100vh;
+	overflow-y: auto;
+	width: 100%;
 }
 
 /* ==========================================================================
@@ -41,6 +51,35 @@
 	padding: 0 36px;
 	background: #242835;
 	border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.topbarLeft {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+}
+
+.backButton {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 7px 12px;
+	border: 1px solid rgba(255, 255, 255, 0.12);
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.02);
+	color: #edf2ff;
+	font-size: 0.72rem;
+	font-weight: 500;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	cursor: pointer;
+	transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
+}
+
+.backButton:hover {
+	border-color: rgba(130, 200, 188, 0.35);
+	background: rgba(130, 200, 188, 0.08);
+	transform: translateY(-1px);
 }
 
 .breadcrumb {
@@ -143,6 +182,106 @@
 	object-fit: cover;
 }
 
+.userMenuWrap {
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.userMenuButton {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 34px;
+	height: 34px;
+	padding: 0;
+	border: 2px solid rgba(255, 255, 255, 0.14);
+	border-radius: 999px;
+	background: linear-gradient(135deg, #1a2638, #101827);
+	color: #f5f7ff;
+	cursor: pointer;
+	transition: border-color 180ms ease, transform 180ms ease;
+}
+
+.userMenuButton:hover {
+	border-color: #8cc9c1;
+	transform: translateY(-1px);
+}
+
+.userAvatar,
+.userDropdownAvatar {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 26px;
+	height: 26px;
+	border-radius: 50%;
+	background: linear-gradient(135deg, #2dd4bf, #0ea5e9);
+	font-size: 0.75rem;
+	font-weight: 700;
+	color: #03131d;
+}
+
+.userDropdown {
+	position: absolute;
+	top: calc(100% + 14px);
+	right: 0;
+	z-index: 40;
+	width: min(220px, 78vw);
+	padding: 10px 0 0;
+	border: 1px solid rgba(148, 163, 184, 0.2);
+	border-radius: 12px;
+	background: rgba(11, 17, 28, 0.96);
+	box-shadow: 0 24px 50px rgba(0, 0, 0, 0.42);
+}
+
+.userDropdownHeader {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 10px 14px 12px;
+	border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.userDropdownHeader strong {
+	display: block;
+	color: #ecf2ff;
+	font-size: 0.82rem;
+	font-weight: 600;
+	line-height: 1.3;
+}
+
+.userDropdownHeader small {
+	display: block;
+	margin-top: 2px;
+	color: #9aa7b9;
+	font-size: 0.65rem;
+	line-height: 1.3;
+}
+
+.userDropdownAction {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+	padding: 12px 14px 14px;
+	border: none;
+	background: transparent;
+	color: #f2f6ff;
+	font-size: 0.82rem;
+	text-align: left;
+	cursor: pointer;
+}
+
+.userDropdownAction:hover {
+	background: rgba(255, 255, 255, 0.03);
+}
+
+.userDropdownAction svg {
+	color: #dfe7f3;
+}
+
 /* ==========================================================================
    NAVIGATION SIDEBAR
    ========================================================================== */
@@ -155,7 +294,7 @@
 
 .navLabel {
 	margin: 0 8px 16px;
-	color: #525e70;
+	color: #f9fafc;
 	font-size: 0.58rem;
 	letter-spacing: 0.25em;
 	text-transform: uppercase;
@@ -177,7 +316,7 @@
 }
 
 .navItem {
-	color: #9ba5b8;
+	color: #ffffff;
 }
 
 .navItem:hover {
@@ -394,6 +533,13 @@
 	min-width: 0;
 	padding: 36px 40px;
 	background: #1d202b;
+}
+
+.contentFullBleed {
+	width: 100%;
+	min-width: 0;
+	padding: 0;
+	background: transparent;
 }
 
 @media (max-width: 760px) {

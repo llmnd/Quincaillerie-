@@ -14,7 +14,7 @@ const money = (value: number) => `${value.toLocaleString("fr-FR")} FCFA`;
 const statusLabel = (status: string) =>
   ({ pending: "En attente", paid: "Payée", completed: "Terminée", cancelled: "Annulée" }[status] ?? status);
 
-export default function ReportsPage() {
+export function ReportsPageContent() {
   const [sales, setSales] = useState<Sale[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -68,7 +68,7 @@ export default function ReportsPage() {
   const statuses = [...new Set(sales.map((sale) => sale.status))];
 
   return (
-    <AppShell>
+    <>
       <header className={styles.header}>
         <div>
           <p className={styles.eyebrow}>Analyse commerciale</p>
@@ -164,6 +164,10 @@ export default function ReportsPage() {
           </section>
         </>
       )}
-    </AppShell>
+    </>
   );
+}
+
+export default function ReportsPage() {
+  return <AppShell><ReportsPageContent /></AppShell>;
 }

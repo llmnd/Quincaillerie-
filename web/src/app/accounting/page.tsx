@@ -14,7 +14,7 @@ type FinancialReports = { balance: { total_assets: number; total_liabilities: nu
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const money = (value: number) => `${value.toLocaleString("fr-FR")} FCFA`;
 
-export default function AccountingPage() {
+export function AccountingPageContent() {
   const [taxes, setTaxes] = useState<Tax[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -149,7 +149,7 @@ export default function AccountingPage() {
   }
 
   return (
-    <AppShell>
+    <>
       <header className={styles.header}>
         <div>
           <span className={styles.eyebrow}>Fiscalité Sénégal · XOF</span>
@@ -330,6 +330,10 @@ export default function AccountingPage() {
           ))}
         </div>
       </section>
-    </AppShell>
+    </>
   );
+}
+
+export default function AccountingPage() {
+  return <AppShell><AccountingPageContent /></AppShell>;
 }
