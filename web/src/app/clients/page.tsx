@@ -3,8 +3,11 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import AppShell from "../../components/AppShell";
-import OdooFormLayout, { OdooNewButton } from "../../components/OdooFormLayout";
+import OdooFormLayout, {
+  OdooNewButton,
+} from "../../components/OdooFormLayout";
 import { authHeaders } from "../../lib/auth";
+
 import styles from "./page.module.css";
 
 type Customer = {
@@ -49,6 +52,7 @@ export default function ClientsPage() {
 
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -63,6 +67,7 @@ export default function ClientsPage() {
     }
 
     const nextCustomers = (await response.json()) as Customer[];
+
     setCustomers(nextCustomers);
 
     return nextCustomers;
@@ -105,7 +110,7 @@ export default function ClientsPage() {
     if (!showForm) return;
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
+      if (event.key === "Escape" && !isSaving) {
         setShowForm(false);
         resetForm();
       }
@@ -115,6 +120,14 @@ export default function ClientsPage() {
 
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [showForm, isSaving]);
+
+  useEffect(() => {
+    document.body.style.overflow = showForm ? "hidden" : "";
+
+    return () => {
+      document.body.style.overflow = "";
     };
   }, [showForm]);
 
@@ -127,12 +140,6 @@ export default function ClientsPage() {
     resetForm();
     setMessage("");
     setError("");
-
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
-
     setShowForm(true);
   };
 
@@ -148,16 +155,12 @@ export default function ClientsPage() {
 
     setMessage("");
     setError("");
-
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
-
     setShowForm(true);
   };
 
   const closeForm = () => {
+    if (isSaving) return;
+
     setShowForm(false);
     resetForm();
     setMessage("");
@@ -171,6 +174,8 @@ export default function ClientsPage() {
       setError("Le nom du client est obligatoire.");
       return;
     }
+
+    if (isSaving) return;
 
     setIsSaving(true);
     setMessage("");
@@ -210,13 +215,14 @@ export default function ClientsPage() {
         return;
       }
 
-      closeForm();
-
-      setMessage(
+      const successMessage =
         customerId === null
           ? "Client créé avec succès."
-          : "Client mis à jour avec succès.",
-      );
+          : "Client mis à jour avec succès.";
+
+      setShowForm(false);
+      resetForm();
+      setMessage(successMessage);
 
       try {
         await refreshCustomers();
@@ -276,7 +282,8 @@ export default function ClientsPage() {
     [customers],
   );
 
-  const hasFilters = search.trim() !== "" || statusFilter !== "all";
+  const hasFilters =
+    search.trim() !== "" || statusFilter !== "all";
 
   const resetFilters = () => {
     setSearch("");
@@ -289,18 +296,51 @@ export default function ClientsPage() {
         {!showForm && (
           <header className={styles.header}>
             <div className={styles.headerMain}>
-              <div className={styles.titleIcon}>C</div>
+              <div className={styles.titleIcon} aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <circle
+                    cx="9"
+                    cy="8"
+                    r="3"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                  />
+                  <path
+                    d="M3.5 19c.7-3.2 2.5-5 5.5-5s4.8 1.8 5.5 5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                  />
+                  <path
+                    d="M16 11a3 3 0 1 0 0-6"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                  />
+                  <path
+                    d="M17 14c2 .5 3.2 2 3.7 4.5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </div>
 
               <div>
-                <p className={styles.eyebrow}>Clients</p>
+                <p className={styles.eyebrow}>Ventes</p>
                 <h1>Clients</h1>
                 <p className={styles.subtitle}>
-                  Gestion des contacts et clients du catalogue.
+                  Contacts, coordonnées et suivi de votre clientèle.
                 </p>
               </div>
             </div>
 
-            <OdooNewButton onClick={openCreateForm}>Nouveau client</OdooNewButton>
+            <OdooNewButton onClick={openCreateForm}>
+              Nouveau client
+            </OdooNewButton>
           </header>
         )}
 
@@ -315,12 +355,14 @@ export default function ClientsPage() {
               }
               subtitle={
                 selectedCustomerId === null
-                  ? "Créer un nouveau client pour votre catalogue."
+                  ? "Créer un nouveau client pour votre activité."
                   : "Mettre à jour les informations de ce client."
               }
               actions={[
                 {
-                  label: isSaving ? "Enregistrement..." : "Enregistrer",
+                  label: isSaving
+                    ? "Enregistrement..."
+                    : "Enregistrer",
                   variant: "primary",
                   onClick: submitCurrentCustomerForm,
                 },
@@ -329,10 +371,10 @@ export default function ClientsPage() {
               onSettingsClick={() => undefined}
               onCloudClick={submitCurrentCustomerForm}
               onCloseClick={closeForm}
-              showNewButton={true}
-              showSettings={true}
-              showCloud={true}
-              showClose={true}
+              showNewButton={selectedCustomerId !== null}
+              showSettings
+              showCloud
+              showClose
             >
               <form
                 id="customer-form"
@@ -354,15 +396,18 @@ export default function ClientsPage() {
                     </h2>
 
                     <p>
-                      Renseignez les informations principales du client.
+                      Renseignez les informations principales du
+                      client.
                     </p>
                   </div>
-
                 </div>
 
-                <div className={styles.formSection}>
-                  <div className={styles.sectionTitle}>
-                    <span>Informations générales</span>
+                <section className={styles.formSection}>
+                  <div className={styles.sectionHeading}>
+                    <div>
+                      <h3>Informations générales</h3>
+                      <p>Identité et coordonnées du client.</p>
+                    </div>
                   </div>
 
                   <div className={styles.odooFormGrid}>
@@ -374,9 +419,7 @@ export default function ClientsPage() {
                       <input
                         id="customer-name"
                         required
-                        autoFocus
                         value={form.name}
-                        placeholder="Ex. Société ABC"
                         onChange={(event) =>
                           setForm({
                             ...form,
@@ -387,7 +430,9 @@ export default function ClientsPage() {
                     </div>
 
                     <div className={styles.formField}>
-                      <label htmlFor="customer-email">Email</label>
+                      <label htmlFor="customer-email">
+                        Email
+                      </label>
 
                       <input
                         id="customer-email"
@@ -404,7 +449,9 @@ export default function ClientsPage() {
                     </div>
 
                     <div className={styles.formField}>
-                      <label htmlFor="customer-phone">Téléphone</label>
+                      <label htmlFor="customer-phone">
+                        Téléphone
+                      </label>
 
                       <input
                         id="customer-phone"
@@ -420,7 +467,9 @@ export default function ClientsPage() {
                     </div>
 
                     <div className={styles.formField}>
-                      <label htmlFor="customer-address">Adresse</label>
+                      <label htmlFor="customer-address">
+                        Adresse
+                      </label>
 
                       <input
                         id="customer-address"
@@ -435,43 +484,90 @@ export default function ClientsPage() {
                       />
                     </div>
                   </div>
-                </div>
+                </section>
 
                 {(message || error) && (
                   <div
                     className={`${styles.formMessage} ${
-                      error ? styles.errorMessage : styles.successMessage
+                      error
+                        ? styles.errorMessage
+                        : styles.successMessage
                     }`}
                   >
                     {error || message}
                   </div>
                 )}
 
+                <div className={styles.formFooter}>
+                  <button
+                    type="button"
+                    className={styles.secondaryButton}
+                    onClick={closeForm}
+                    disabled={isSaving}
+                  >
+                    Annuler
+                  </button>
+
+                  <button
+                    type="submit"
+                    className={styles.primaryButton}
+                    disabled={isSaving}
+                  >
+                    {isSaving
+                      ? "Enregistrement..."
+                      : selectedCustomerId === null
+                        ? "Créer le client"
+                        : "Enregistrer les modifications"}
+                  </button>
+                </div>
               </form>
             </OdooFormLayout>
           </div>
         ) : (
           <>
-            <div className={styles.summaryBar}>
-              <div className={styles.summaryItem}>
-                <strong>{customers.length}</strong>
-                <span>clients</span>
+            <section className={styles.stats}>
+              <div className={styles.statCard}>
+                <div className={styles.statLabel}>
+                  Total clients
+                </div>
+                <div className={styles.statValue}>
+                  {customers.length}
+                </div>
               </div>
 
-              <div className={styles.summaryDivider} />
-
-              <div className={styles.summaryItem}>
-                <strong>{activeCustomers}</strong>
-                <span>actifs</span>
+              <div className={styles.statCard}>
+                <div className={styles.statLabel}>
+                  Clients actifs
+                </div>
+                <div className={styles.statValue}>
+                  {activeCustomers}
+                </div>
               </div>
 
-              <div className={styles.summaryDivider} />
-
-              <div className={styles.summaryItem}>
-                <strong>{inactiveCustomers}</strong>
-                <span>inactifs</span>
+              <div className={styles.statCard}>
+                <div className={styles.statLabel}>
+                  Clients inactifs
+                </div>
+                <div
+                  className={`${styles.statValue} ${
+                    inactiveCustomers > 0
+                      ? styles.statWarning
+                      : ""
+                  }`}
+                >
+                  {inactiveCustomers}
+                </div>
               </div>
-            </div>
+
+              <div className={styles.statCard}>
+                <div className={styles.statLabel}>
+                  Résultats
+                </div>
+                <div className={styles.statValue}>
+                  {filteredCustomers.length}
+                </div>
+              </div>
+            </section>
 
             <div className={styles.toolbar}>
               <div className={styles.searchBox}>
@@ -502,7 +598,9 @@ export default function ClientsPage() {
                   value={search}
                   placeholder="Rechercher un client..."
                   aria-label="Rechercher un client"
-                  onChange={(event) => setSearch(event.target.value)}
+                  onChange={(event) =>
+                    setSearch(event.target.value)
+                  }
                 />
 
                 {search && (
@@ -530,7 +628,9 @@ export default function ClientsPage() {
                     )
                   }
                 >
-                  <option value="all">Tous les statuts</option>
+                  <option value="all">
+                    Tous les statuts
+                  </option>
                   <option value="active">Actifs</option>
                   <option value="inactive">Inactifs</option>
                 </select>
@@ -555,11 +655,15 @@ export default function ClientsPage() {
             </div>
 
             {message && !error && (
-              <div className={styles.message}>{message}</div>
+              <div className={styles.message}>
+                {message}
+              </div>
             )}
 
             {error && (
-              <div className={styles.errorBanner}>{error}</div>
+              <div className={styles.errorBanner}>
+                {error}
+              </div>
             )}
 
             {isLoading ? (
@@ -607,7 +711,9 @@ export default function ClientsPage() {
 
                 <strong>Aucun client enregistré</strong>
 
-                <span>Commencez par créer votre premier client.</span>
+                <span>
+                  Commencez par créer votre premier client.
+                </span>
 
                 <OdooNewButton onClick={openCreateForm}>
                   Nouveau client
@@ -618,7 +724,8 @@ export default function ClientsPage() {
                 <strong>Aucun résultat</strong>
 
                 <span>
-                  Aucun client ne correspond à vos critères de recherche.
+                  Aucun client ne correspond à vos critères
+                  de recherche.
                 </span>
 
                 <button
@@ -630,74 +737,91 @@ export default function ClientsPage() {
                 </button>
               </div>
             ) : (
-              <section className={styles.table}>
+              <section className={styles.tableSection}>
                 <div className={styles.tableHead}>
                   <span>Client</span>
                   <span>Contact</span>
                   <span>Statut</span>
                 </div>
 
-                {filteredCustomers.map((customer) => (
-                  <article
-                    className={styles.row}
-                    key={customer.id}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => openEditForm(customer)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        openEditForm(customer);
+                <div className={styles.tableBody}>
+                  {filteredCustomers.map((customer) => (
+                    <article
+                      className={styles.row}
+                      key={customer.id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() =>
+                        openEditForm(customer)
                       }
-                    }}
-                  >
-                    <div className={styles.customerInfo}>
-                      <div className={styles.customerAvatar}>
-                        {customer.name
-                          .trim()
-                          .charAt(0)
-                          .toUpperCase()}
-                      </div>
-
-                      <div className={styles.customerMain}>
-                        <strong>{customer.name}</strong>
-
-                        <small>
-                          {customer.address || "Adresse non renseignée"}
-                        </small>
-                      </div>
-                    </div>
-
-                    <div className={styles.contactInfo}>
-                      <div className={styles.contactItem}>
-                        <span>Email</span>
-                        <strong>
-                          {customer.email || "Non renseigné"}
-                        </strong>
-                      </div>
-
-                      <div className={styles.contactItem}>
-                        <span>Téléphone</span>
-                        <strong>
-                          {customer.phone || "Non renseigné"}
-                        </strong>
-                      </div>
-                    </div>
-
-                    <div className={styles.statusCell}>
-                      <span
-                        className={
-                          customer.is_active
-                            ? styles.activeBadge
-                            : styles.inactiveBadge
+                      onKeyDown={(event) => {
+                        if (
+                          event.key === "Enter" ||
+                          event.key === " "
+                        ) {
+                          event.preventDefault();
+                          openEditForm(customer);
                         }
-                      >
-                        <i />
-                        {customer.is_active ? "Actif" : "Inactif"}
-                      </span>
-                    </div>
-                  </article>
-                ))}
+                      }}
+                    >
+                      <div className={styles.customerInfo}>
+                        <div
+                          className={styles.customerAvatar}
+                          aria-hidden="true"
+                        >
+                          {customer.name
+                            .trim()
+                            .charAt(0)
+                            .toUpperCase()}
+                        </div>
+
+                        <div className={styles.customerMain}>
+                          <strong>{customer.name}</strong>
+
+                          <small>
+                            {customer.address ||
+                              "Adresse non renseignée"}
+                          </small>
+                        </div>
+                      </div>
+
+                      <div className={styles.contactInfo}>
+                        <div className={styles.contactItem}>
+                          <span>Email</span>
+
+                          <strong>
+                            {customer.email ||
+                              "Non renseigné"}
+                          </strong>
+                        </div>
+
+                        <div className={styles.contactItem}>
+                          <span>Téléphone</span>
+
+                          <strong>
+                            {customer.phone ||
+                              "Non renseigné"}
+                          </strong>
+                        </div>
+                      </div>
+
+                      <div className={styles.statusCell}>
+                        <span
+                          className={
+                            customer.is_active
+                              ? styles.activeBadge
+                              : styles.inactiveBadge
+                          }
+                        >
+                          <i />
+                          {customer.is_active
+                            ? "Actif"
+                            : "Inactif"}
+                        </span>
+                      </div>
+                    </article>
+                  ))}
+                </div>
               </section>
             )}
           </>
