@@ -101,7 +101,7 @@ export async function restoreAuthSession(): Promise<AuthUser | null> {
     });
 
     if (!response.ok) {
-      if ((response.status === 401 || response.status === 403) && !fallbackToken) {
+      if (response.status === 401 || response.status === 403) {
         clearStoredAuth();
         return null;
       }

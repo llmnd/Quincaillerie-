@@ -180,7 +180,7 @@ export default function WorkspacePage() {
 
     clearStoredAuth();
     setMenuOpen(false);
-    router.replace("/login");
+    router.replace("/");
   }
 
   function handleBack() {

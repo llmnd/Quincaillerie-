@@ -16,6 +16,12 @@ export default function LoginPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
+
+    if (password.length < 8) {
+      setError("Email ou mot de passe incorrect.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -92,7 +98,6 @@ export default function LoginPage() {
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               required
-              minLength={8}
               autoComplete="current-password"
             />
           </div>

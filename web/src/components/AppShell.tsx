@@ -185,9 +185,9 @@ export default function AppShell({
     clearStoredAuth();
     setIsUserMenuOpen(false);
     if (typeof window !== "undefined") {
-      window.history.replaceState(null, "", "/login");
+      window.history.replaceState(null, "", "/");
     }
-    router.replace("/login");
+    router.replace("/");
   }
 
   return (
