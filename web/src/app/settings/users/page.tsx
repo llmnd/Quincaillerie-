@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import AppShell from "../../../components/AppShell";
 import { authHeaders } from "../../../lib/auth";
-import OrganizationSettings from "./OrganizationSettings";
 import styles from "./page.module.css";
 
 type User = { id: number; full_name: string; email: string; role: "admin" | "seller"; is_active: boolean };
@@ -146,7 +145,7 @@ export function UsersPageContent() {
         </button>
       </header>
 
-      <OrganizationSettings />
+      
 
       {showForm ? (
         <form className={styles.createForm} onSubmit={editingUserId !== null ? updateUser : createUser}>
