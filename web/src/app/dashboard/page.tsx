@@ -166,12 +166,9 @@ export default function DashboardPage() {
               <Grid size={12} className={styles.eyebrowIcon} />
               ESPACE D&apos;EXPLOITATION
             </span>
-            <h1 className={styles.title}>
+            <h3 className={styles.title}>
               {firstName ? `BONJOUR, ${firstName.toUpperCase()}` : "TABLEAU DE BORD"}
-            </h1>
-            <p className={styles.subtitle}>
-              La situation de votre organisation, en un seul regard.
-            </p>
+            </h3>
           </div>
 
           <div className={styles.headerMeta}>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import AppShell from "../../../components/AppShell";
 import { authHeaders } from "../../../lib/auth";
+import OrganizationSettings from "./OrganizationSettings";
 import styles from "./page.module.css";
 
 type User = { id: number; full_name: string; email: string; role: "admin" | "seller"; is_active: boolean };
@@ -125,7 +126,7 @@ export function UsersPageContent() {
       <header className={styles.header}>
         <div>
           <p className={styles.eyebrow}>Administration</p>
-          <h1>Utilisateurs</h1>
+          <h2>Utilisateurs</h2>
           <p>Gérez les comptes et les niveaux d’accès de votre équipe.</p>
         </div>
         <button
@@ -141,20 +142,24 @@ export function UsersPageContent() {
             setForm(emptyForm);
           }}
         >
-          {editingUserId !== null ? "Annuler" : "Créer un utilisateur"}
+          {editingUserId !== null ? "Annuler" : "Nouveau compte"}
         </button>
       </header>
+
+      <OrganizationSettings />
 
       {showForm ? (
         <form className={styles.createForm} onSubmit={editingUserId !== null ? updateUser : createUser}>
           <input required placeholder="Nom complet" value={form.full_name} onChange={(event) => setForm({ ...form, full_name: event.target.value })} />
           <input required type="email" placeholder="Email professionnel" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} />
-          <input minLength={8} type="password" placeholder={editingUserId !== null ? "Nouveau mot de passe (facultatif)" : "Mot de passe (8 caractères minimum)"} value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} required={editingUserId === null} />
+          <input minLength={8} type="password" placeholder={editingUserId !== null ? "Nouveau mot de passe (facultatif)" : "Mot de passe (8 caractères min.)"} value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} required={editingUserId === null} />
           <select value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value })}>
             <option value="seller">Vendeur</option>
             <option value="admin">Administrateur</option>
           </select>
-          <button className={styles.primaryButton}>{editingUserId !== null ? "Enregistrer" : "Créer le compte"}</button>
+          <button type="submit" className={styles.primaryButton}>
+            {editingUserId !== null ? "Enregistrer" : "Créer le compte"}
+          </button>
         </form>
       ) : null}
 

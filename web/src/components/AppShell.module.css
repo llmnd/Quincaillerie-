@@ -418,6 +418,15 @@
 		overflow-y: visible;
 	}
 
+	.topbarLeft {
+		flex: 1;
+		justify-content: flex-start;
+	}
+
+	.breadcrumb {
+		display: none;
+	}
+
 	.menuButton {
 		position: absolute;
 		top: 14px;

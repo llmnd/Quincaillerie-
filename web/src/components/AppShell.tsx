@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Bell, Bird, Boxes, Calculator, LogOut, Package, Search, Settings, ShoppingCart, UserRound, Users, WalletCards } from "lucide-react";
+import { ArrowLeft, Bell, Bird, Boxes, Calculator, LogOut, Package, PanelLeftClose, PanelLeftOpen, Search, Settings, ShoppingCart, UserRound, Users, WalletCards } from "lucide-react";
 import { authHeaders, clearStoredAuth, getStoredUser, restoreAuthSession } from "../lib/auth";
 import styles from "./AppShell.module.css";
 
@@ -49,6 +49,7 @@ export default function AppShell({
   const [enabledModules, setEnabledModules] = useState<Set<string> | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [organization, setOrganization] = useState<OrganizationProfile | null>(null);
 
   const effectiveUser = user ?? { full_name: "Utilisateur", email: "", role: undefined as "admin" | "seller" | undefined };
@@ -132,6 +133,7 @@ export default function AppShell({
     }
   }, [isAdminOnlyRoute, role, router, user]);
 
+  const shouldHideSidebar = hideSidebar || isSidebarCollapsed;
   const safeEnabledModules = enabledModules && enabledModules.size > 0 ? enabledModules : new Set(sidebarItems.flatMap((item) => item.moduleKey ? [item.moduleKey] : []));
   let breadcrumbLabel = pathname.split("/").filter(Boolean).join(" / ");
   if (pathname === "/dashboard") {
@@ -180,7 +182,7 @@ export default function AppShell({
 
   return (
     <div className={styles.shell}>
-      {!hideSidebar && (
+      {!shouldHideSidebar && (
         <aside className={styles.sidebar}>
           {/* Bouton Hamburger style Zara */}
           <button
@@ -226,10 +228,22 @@ export default function AppShell({
         </aside>
       )}
 
-      <main className={hideSidebar ? styles.mainAreaFull : styles.mainArea}>
+      <main className={shouldHideSidebar ? styles.mainAreaFull : styles.mainArea}>
         {!hideTopbar && (
           <header className={styles.topbar}>
             <div className={styles.topbarLeft}>
+              {!hideSidebar && (
+                <button
+                  type="button"
+                  className={styles.backButton}
+                  onClick={() => setIsSidebarCollapsed((value) => !value)}
+                  aria-label={isSidebarCollapsed ? "Afficher le menu" : "Masquer le menu"}
+                >
+                  {isSidebarCollapsed ? <PanelLeftOpen size={14} /> : <PanelLeftClose size={14} />}
+                  <span>{isSidebarCollapsed ? "Menu" : "Masquer"}</span>
+                </button>
+              )}
+
               {shouldShowBackButton() && (
                 <button type="button" className={styles.backButton} onClick={handleBack} aria-label="Retour">
                   <ArrowLeft size={14} />
@@ -238,17 +252,12 @@ export default function AppShell({
               )}
 
               <div className={styles.breadcrumb}>
-                <span className={styles.breadcrumbBrand}>MIZAN ERP</span>
                 <span className={styles.breadcrumbSep}>/</span>
                 <strong>{breadcrumbLabel}</strong>
               </div>
             </div>
 
             <div className={styles.topbarActions}>
-              <div className={styles.globalSearch}>
-                <Search size={14} aria-hidden="true" />
-                <span>Rechercher…</span>
-              </div>
               <button type="button" className={styles.notificationBtn} aria-label="Notifications">
                 <Bell size={14} />
                 <span className={styles.notificationDot} />

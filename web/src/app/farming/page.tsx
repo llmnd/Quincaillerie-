@@ -3,7 +3,7 @@
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import { Activity, CalendarDays, CheckCircle2, ChevronRight, ClipboardList, Droplets, MapPinned, MoreHorizontal, Plus, Thermometer, Wheat, X } from "lucide-react";
 import AppShell from "../../components/AppShell";
-import { authHeaders } from "../../lib/auth";
+import { authHeaders, clearStoredAuth } from "../../lib/auth";
 import styles from "./page.module.css";
 
 type Batch = { 
@@ -71,11 +71,35 @@ export default function FarmingPage() {
       const nextHealthEvents = await readJsonSafely<HealthEvent[]>(hRes);
       const nextEggProductions = await readJsonSafely<EggProduction[]>(eRes);
 
+      if (bRes.status === 401 || bRes.status === 403) {
+        clearStoredAuth();
+        if (typeof window !== "undefined") {
+          window.location.replace("/login");
+        }
+        return;
+      }
+
       if (bRes.ok) setBatches(nextBatches ?? []);
       else if (bRes.status !== 404) console.error("Impossible de charger les bandes d'élevage", bRes.status);
 
+      if (hRes.status === 401 || hRes.status === 403) {
+        clearStoredAuth();
+        if (typeof window !== "undefined") {
+          window.location.replace("/login");
+        }
+        return;
+      }
+
       if (hRes.ok) setHealthEvents(nextHealthEvents ?? []);
       else if (hRes.status !== 404) console.error("Impossible de charger les événements sanitaires", hRes.status);
+
+      if (eRes.status === 401 || eRes.status === 403) {
+        clearStoredAuth();
+        if (typeof window !== "undefined") {
+          window.location.replace("/login");
+        }
+        return;
+      }
 
       if (eRes.ok) setEggProductions(nextEggProductions ?? []);
       else if (eRes.status !== 404) console.error("Impossible de charger les productions d'œufs", eRes.status);

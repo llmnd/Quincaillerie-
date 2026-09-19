@@ -1,66 +1,115 @@
+/* --- ESTHÉTIQUE ZARA / MINIMALISTE AVEC COULEURS APPSHELL --- */
+
 .page {
-  width: min(1200px, calc(100% - 32px));
+  width: 100%;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 32px 0 56px;
+  padding: 40px 24px 80px;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+  color: #e6e9ef;
+  background-color: transparent;
 }
 
+/* Header Zara Minimaliste */
 .header {
-  margin-bottom: 20px;
+  margin-bottom: 40px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .eyebrow {
-  margin: 0 0 12px;
-  color: #a9b4c7;
-  font-size: 0.68rem;
-  letter-spacing: 0.14em;
+  margin: 0 0 8px;
+  color: #7c8a9d;
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.25em;
   text-transform: uppercase;
 }
 
 .header h1 {
   margin: 0;
-  color: #f1f3f7;
-  font-size: clamp(2.2rem, 4vw, 4rem);
-  letter-spacing: -0.08em;
-  line-height: 0.92;
+  color: #ffffff;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 300;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  text-transform: uppercase;
 }
 
 .header p:last-child {
-  margin: 14px 0 0;
-  color: #a1abbb;
+  margin: 16px 0 0;
+  color: #9aa7b9;
+  font-size: 0.85rem;
+  font-weight: 300;
+  letter-spacing: 0.02em;
 }
 
+/* CONTAINER DES TABS */
 .tabs {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 24px;
-}
-
-.tab,
-.tabActive {
-  padding: 0.8rem 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.02);
-  color: #e6edf9;
-  font: inherit;
-  font-size: 0.82rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.tabActive {
-  border-color: rgba(110, 231, 183, 0.38);
-  background: rgba(110, 231, 183, 0.08);
-  color: #d8fff2;
-}
-
-.panel {
-  padding: 24px;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 36px;
+  padding: 6px;
+  background: #171a24;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 18px;
-  background: rgba(18, 23, 33, 0.92);
-  box-shadow: 0 20px 40px rgba(2, 6, 23, 0.2);
+  overflow-x: auto;
+  scrollbar-width: none; /* Firefox */
+  -webkit-overflow-scrolling: touch;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none; /* Chrome / Safari */
+}
+
+/* TAB NON SÉLECTIONNÉ - Couleur Blanc Pur (#ffffff) et haute visibilité */
+.tab {
+  flex: 1 0 auto;
+  padding: 14px 22px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.04);
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-align: center;
+  cursor: pointer;
+  transition: all 180ms ease;
+}
+
+.tab:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+/* TAB SÉLECTIONNÉ - Vert Céladon (#82c8bc) & Style AppShell NavActive */
+.tabActive {
+  flex: 1 0 auto;
+  padding: 14px 22px;
+  border: 1px solid #82c8bc;
+  border-bottom: 3px solid #82c8bc;
+  background: rgba(130, 200, 188, 0.12);
+  color: #82c8bc;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(130, 200, 188, 0.15);
+  transition: all 180ms ease;
+}
+
+/* Conteneur principal */
+.panel {
+  padding: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #171a24;
 }
 
 .panelHeader {
@@ -68,135 +117,187 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 18px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .panelHeader h2 {
   margin: 0;
-  color: #f1f3f7;
-  font-size: 1.25rem;
-  font-weight: 600;
+  color: #ffffff;
+  font-size: 1.15rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .badge {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  padding: 0.48rem 0.7rem;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.05);
-  color: #dfeafc;
-  font-size: 0.72rem;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid rgba(130, 200, 188, 0.3);
+  background: rgba(130, 200, 188, 0.08);
+  color: #82c8bc;
+  font-size: 0.68rem;
   font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
+/* Tableaux & rangées */
 .table {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .row {
   display: grid;
-  grid-template-columns: minmax(0, 1.5fr) auto auto;
+  grid-template-columns: 2fr 1fr auto;
   align-items: center;
   gap: 16px;
-  padding: 16px 18px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
+  padding: 18px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
   background: rgba(255, 255, 255, 0.02);
+  transition: all 180ms ease;
+}
+
+.row:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(130, 200, 188, 0.25);
 }
 
 .row strong {
   display: block;
-  color: #f4f6fa;
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 500;
 }
 
 .row small {
   display: block;
   margin-top: 4px;
-  color: #9aa7b9;
-  font-size: 0.75rem;
+  color: #7c8a9d;
+  font-size: 0.72rem;
 }
 
+/* Statuts / Rôles */
 .role,
 .active,
 .inactive {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.42rem 0.7rem;
-  border-radius: 999px;
-  font-size: 0.72rem;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.65rem;
   font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .role {
-  background: rgba(72, 187, 120, 0.12);
-  color: #89f0b7;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: transparent;
+  color: #ffffff;
 }
 
 .active {
-  background: rgba(45, 212, 191, 0.12);
-  color: #79f3dd;
+  background: rgba(130, 200, 188, 0.15);
+  border: 1px solid #82c8bc;
+  color: #82c8bc;
 }
 
 .inactive {
-  background: rgba(251, 113, 133, 0.12);
-  color: #fca5a5;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: transparent;
+  color: #7c8a9d;
 }
 
+/* KPI Cards Grid */
 .kpiGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
 }
 
 .kpiGrid article {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 20px 18px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 14px;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px;
   background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .kpiGrid span {
-  color: #a8b3c5;
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
+  color: #7c8a9d;
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
 }
 
 .kpiGrid strong {
-  color: #edf4ff;
-  font-size: clamp(1.2rem, 2vw, 2rem);
-  letter-spacing: -0.05em;
+  color: #ffffff;
+  font-size: clamp(1.8rem, 3vw, 2.6rem);
+  font-weight: 300;
+  letter-spacing: -0.03em;
 }
 
+/* Zone neutre */
 .state {
-  padding: 32px;
-  border: 1px dashed rgba(255, 255, 255, 0.15);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.02);
+  padding: 60px 20px;
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.01);
   text-align: center;
-  color: #b4bfd0;
+  color: #7c8a9d;
+  font-size: 0.75rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
 }
 
-@media (max-width: 600px) {
+/* --- ADAPTATION MOBILE ENHANCED --- */
+@media (max-width: 760px) {
   .page {
-    width: min(100%, calc(100% - 20px));
-    padding-top: 16px;
+    padding: 20px 12px 40px;
+  }
+
+  .header {
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+  }
+
+  .tabs {
+    gap: 8px;
+    padding: 4px;
+    margin-bottom: 20px;
+  }
+
+  .tab,
+  .tabActive {
+    flex: 0 0 auto;
+    padding: 12px 18px;
+    font-size: 0.72rem;
+  }
+
+  .panel {
+    padding: 16px;
   }
 
   .row {
     grid-template-columns: 1fr;
-    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
   }
 
-  .panelHeader {
-    flex-direction: column;
-    align-items: flex-start;
+  .row > div:last-child {
+    display: flex;
+    gap: 8px;
+    align-self: flex-start;
+  }
+
+  .kpiGrid {
+    grid-template-columns: 1fr;
   }
 }

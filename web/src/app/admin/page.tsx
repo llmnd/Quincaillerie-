@@ -20,18 +20,18 @@ export default function AdminPage() {
     { key: "applications", label: "Applications" },
   ];
 
+  const shouldHideSidebar = activeTab === "accounting" || activeTab === "reports";
+
   return (
-    <AppShell>
+    <AppShell hideSidebar={shouldHideSidebar}>
       <main className={styles.page}>
         <header className={styles.header}>
-          <div>
-            <p className={styles.eyebrow}>Administration</p>
-            <h1>Centre d’administration</h1>
-            <p>Gérez les comptes, les rapports et la comptabilité depuis un seul espace.</p>
-          </div>
+          <p className={styles.eyebrow}>Administration</p>
+          <h2>Centre d’administration</h2>
+          <p>Gérez les comptes, les rapports et la comptabilité depuis un seul espace.</p>
         </header>
 
-        <div className={styles.tabs} role="tablist" aria-label="Administration tabs">
+        <nav className={styles.tabs} role="tablist" aria-label="Administration tabs">
           {tabs.map((tab) => (
             <button
               key={tab.key}
@@ -44,12 +44,14 @@ export default function AdminPage() {
               {tab.label}
             </button>
           ))}
-        </div>
+        </nav>
 
-        {activeTab === "users" && <UsersPageContent />}
-        {activeTab === "reports" && <ReportsPageContent />}
-        {activeTab === "accounting" && <AccountingPageContent />}
-        {activeTab === "applications" && <ModulesPageContent />}
+        <section className={styles.panel}>
+          {activeTab === "users" && <UsersPageContent />}
+          {activeTab === "reports" && <ReportsPageContent />}
+          {activeTab === "accounting" && <AccountingPageContent />}
+          {activeTab === "applications" && <ModulesPageContent />}
+        </section>
       </main>
     </AppShell>
   );

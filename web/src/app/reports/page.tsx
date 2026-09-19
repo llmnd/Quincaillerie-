@@ -72,7 +72,7 @@ export function ReportsPageContent() {
       <header className={styles.header}>
         <div>
           <p className={styles.eyebrow}>Analyse commerciale</p>
-          <h1>Rapports de ventes</h1>
+          <h2>Rapports de ventes</h2>
           <p>Chiffre d&apos;affaires, articles vendus et historique des opérations.</p>
         </div>
         <span className={styles.period}>Données enregistrées</span>
