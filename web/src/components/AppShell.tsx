@@ -24,7 +24,7 @@ const applications: Application[] = [
 ];
 
 const sidebarItems = [
-  { label: "Espace de travail", href: "/workspace" },
+  { label: "Apps", href: "/workspace" },
   { label: "Dashboard", href: "/dashboard" },
   { label: "Ventes", href: "/sales", moduleKey: "sales" },
   { label: "Caisse", href: "/cash", moduleKey: "cash" },
@@ -196,7 +196,7 @@ export default function AppShell({
           </button>
 
           <nav className={menuOpen ? styles.sidebarNavOpen : styles.sidebarNav} aria-label="Navigation">
-            <span className={styles.navLabel}>Espace de travail</span>
+            
             {visibleSidebar.map((item) => (
               <Link
                 key={`${item.href}-${item.label}`}

@@ -1,8 +1,11 @@
 .workspacePage {
   position: relative;
   width: 100%;
+  max-width: 100%;
   min-height: 100vh;
-  overflow: hidden;
+  overflow-x: clip;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
   background:
     radial-gradient(circle at 20% 0%, rgba(27, 75, 93, 0.9), transparent 32%),
     radial-gradient(circle at 70% 15%, rgba(16, 24, 43, 0.8), transparent 26%),
@@ -12,6 +15,7 @@
   align-items: flex-start;
   justify-content: center;
   padding: 70px 12px 110px;
+  box-sizing: border-box;
 }
 
 
@@ -132,9 +136,11 @@
 
 .gridWrap {
   width: min(100%, 1000px);
+  max-width: 100%;
   display: flex;
   justify-content: center;
   margin-top: 10px;
+  box-sizing: border-box;
 }
 
 .grid {
@@ -144,6 +150,7 @@
   justify-content: center;
   width: 100%;
   max-width: 900px;
+  box-sizing: border-box;
 }
 
 .moduleTile {
@@ -208,28 +215,41 @@
 @media (max-width: 520px) {
   .workspacePage {
     min-height: 100dvh;
-    overflow: hidden;
-    padding-top: 60px;
-    padding-bottom: 120px;
+    overflow-x: clip;
+    overscroll-behavior-y: contain;
+    padding: 56px 10px 32px;
   }
 
   .topRightBar {
-    right: 14px;
+    right: 10px;
     top: 12px;
+    max-width: calc(100% - 20px);
+    justify-content: flex-end;
   }
 
   .companyBadge {
+    max-width: 58vw;
     font-size: 0.8rem;
     padding: 5px 8px 5px 6px;
   }
 
+  .companyBadge span {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .grid {
-    grid-template-columns: repeat(3, 96px);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 20px 12px;
+    width: min(100%, 320px);
   }
 
   .moduleTile {
-    width: 96px;
+    width: auto;
+    min-width: 0;
   }
 
   .moduleIcon {
