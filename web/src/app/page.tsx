@@ -1,8 +1,14 @@
 'use client';
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PackageSearch, Users, Warehouse, RefreshCcw } from "lucide-react";
+import {
+  authHeaders,
+  clearStoredAuth,
+  restoreAuthSession,
+  type AuthUser,
+} from "../lib/auth";
 import styles from "./page.module.css";
 
 const features = [
@@ -40,6 +46,28 @@ const footerNav = [
 
 export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [user, setUser] = useState<AuthUser | null>(null);
+
+  useEffect(() => {
+    restoreAuthSession().then(setUser);
+  }, []);
+
+  async function handleLogout() {
+    try {
+      await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/auth/logout`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: authHeaders(),
+        }
+      );
+    } finally {
+      clearStoredAuth();
+      setUser(null);
+      setMenuOpen(false);
+    }
+  }
 
   return (
     <main className={styles.landingPage}>
@@ -58,25 +86,49 @@ export default function Home() {
           <a href="#contact">Contact</a>
         </nav>
 
-        <button
-          type="button"
-          className={styles.menuButton}
-          aria-label={menuOpen ? "Fermer le menu" : "Ouvrir le menu"}
-          aria-expanded={menuOpen}
-          onClick={() => setMenuOpen((open) => !open)}
-        >
-          <span className={styles.menuButtonInner}>
-            <span className={styles.menuLine}></span>
-            <span className={styles.menuLine}></span>
-          </span>
-        </button>
+        <div className={styles.headerActions}>
+          {user ? (
+            <>
+              <Link href="/workspace" className={styles.workspaceButton}>
+                Workspace
+              </Link>
+              <button type="button" className={styles.logoutButton} onClick={handleLogout}>
+                Se déconnecter
+              </button>
+            </>
+          ) : null}
+
+          <button
+            type="button"
+            className={styles.menuButton}
+            aria-label={menuOpen ? "Fermer le menu" : "Ouvrir le menu"}
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            <span className={styles.menuButtonInner}>
+              <span className={styles.menuLine}></span>
+              <span className={styles.menuLine}></span>
+            </span>
+          </button>
+        </div>
       </header>
 
       <div className={`${styles.mobileMenu} ${menuOpen ? styles.mobileMenuOpen : ""}`} aria-live="polite">
         <div className={styles.mobileMenuInner}>
-          <Link href="/login" className={styles.mobileLoginButton} onClick={() => setMenuOpen(false)}>
-            Se connecter
-          </Link>
+          {user ? (
+            <>
+              <Link href="/workspace" className={styles.mobileLoginButton} onClick={() => setMenuOpen(false)}>
+                Ouvrir le workspace
+              </Link>
+              <button type="button" className={styles.mobileLogoutButton} onClick={handleLogout}>
+                Se déconnecter
+              </button>
+            </>
+          ) : (
+            <Link href="/login" className={styles.mobileLoginButton} onClick={() => setMenuOpen(false)}>
+              Se connecter
+            </Link>
+          )}
 
           <nav className={styles.mobileNav} aria-label="Menu mobile">
             <a href="#solution" onClick={() => setMenuOpen(false)}>La solution</a>
@@ -95,6 +147,11 @@ export default function Home() {
             Gérez votre activité. Gardez l’équilibre. Mizan.
           </p>
           <div className={styles.heroActions}>
+            {user ? (
+              <Link href="/workspace" className={styles.primaryButton}>
+                Ouvrir le workspace
+              </Link>
+            ) : null}
             <Link href="/login" className={styles.primaryButton}>Commencer</Link>
             <a href="#solution" className={styles.textButton}>Découvrir <span>↓</span></a>
           </div>

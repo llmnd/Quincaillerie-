@@ -167,13 +167,6 @@ export default function AppShell({
   const safeUser = effectiveUser;
   const userInitial = (safeUser.full_name ?? safeUser.email ?? "U").trim().charAt(0).toUpperCase();
 
-  function shouldShowBackButton() {
-    if (typeof window === "undefined") return true;
-
-    const referrer = document.referrer || "";
-    return !referrer.includes("/login") && !referrer.includes("/login?");
-  }
-
   function handleBack() {
     if (typeof window !== "undefined" && window.history.length > 1) {
       router.back();
@@ -249,12 +242,10 @@ export default function AppShell({
         {!hideTopbar && (
           <header className={styles.topbar}>
             <div className={styles.topbarLeft}>
-              {shouldShowBackButton() && (
-                <button type="button" className={styles.backButton} onClick={handleBack} aria-label="Retour">
-                  <ArrowLeft size={14} />
-                  <span>Retour</span>
-                </button>
-              )}
+              <button type="button" className={styles.backButton} onClick={handleBack} aria-label="Retour">
+                <ArrowLeft size={14} />
+                <span>Retour</span>
+              </button>
 
               {!hideSidebar && (
                 <button

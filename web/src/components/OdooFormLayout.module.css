@@ -74,7 +74,7 @@
   border: 0;
   border-radius: 5px;
 
-  background: var(--primary);
+  background: #714b67;
   color: #fff;
 
   font-size: 12px;
@@ -88,7 +88,7 @@
 }
 
 .newButton:hover {
-  background: var(--primary-hover);
+  background: #835875;
 }
 
 .newButton:active {

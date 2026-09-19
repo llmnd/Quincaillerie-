@@ -43,6 +43,21 @@ export interface OdooFormLayoutProps {
 
 const noop = () => {};
 
+export function OdooNewButton({
+  children = "Nouveau",
+  onClick,
+}: {
+  children?: ReactNode;
+  onClick?: () => void;
+}) {
+  return (
+    <button type="button" className={styles.newButton} onClick={onClick}>
+      <span className={styles.newIcon}>+</span>
+      <span>{children}</span>
+    </button>
+  );
+}
+
 function IconSettings() {
   return (
     <svg
@@ -182,14 +197,7 @@ export default function OdooFormLayout({
       <header className={styles.topBar}>
         <div className={styles.topLeft}>
           {showNewButton && (
-            <button
-              type="button"
-              className={styles.newButton}
-              onClick={handleNew}
-            >
-              <span className={styles.newIcon}>+</span>
-              <span>Nouveau</span>
-            </button>
+            <OdooNewButton onClick={handleNew} />
           )}
 
           <div className={styles.breadcrumbs}>

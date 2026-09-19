@@ -95,6 +95,34 @@
   color: #6ce1d1;
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.workspaceButton,
+.logoutButton,
+.mobileLogoutButton {
+  border: 1px solid rgba(108, 225, 209, 0.45);
+  background: transparent;
+  color: #edf0f5;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.64rem;
+  letter-spacing: 0.14em;
+  padding: 0.65rem 0.85rem;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.workspaceButton:hover,
+.logoutButton:hover,
+.mobileLogoutButton:hover {
+  border-color: #6ce1d1;
+  color: #6ce1d1;
+}
+
 .mobileMenu {
   width: min(420px, calc(100% - 64px));
   margin: 0 auto 20px;
@@ -168,6 +196,10 @@
   text-decoration: none;
   font-size: 0.64rem;
   font-weight: 600;
+}
+
+.mobileLogoutButton {
+  width: 100%;
 }
 
 .mobileNav {
@@ -913,6 +945,13 @@
   .nav {
     display: none;
   }
+  .headerActions {
+    margin-left: auto;
+  }
+  .headerActions .workspaceButton,
+  .headerActions .logoutButton {
+    display: none;
+  }
   .mobileMenu {
     width: min(1200px, calc(100% - 40px));
   }
@@ -952,6 +991,10 @@
   .brand {
     min-width: 0;
     flex: 1;
+  }
+
+  .headerActions {
+    gap: 0;
   }
 
   .brandMark {

@@ -178,7 +178,7 @@ export default function SalesPage() {
   }, [requiresHandoff]);
 
   return (
-    <AppShell hideTopbar>
+    <AppShell>
       {!hasOpenSession && (
         <div className={styles.sessionNotice}>
           <strong>Caisse à ouvrir.</strong> Une session ouverte est obligatoire pour valider une vente.{" "}

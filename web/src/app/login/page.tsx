@@ -2,14 +2,12 @@
 
 import Link from "next/link";
 import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
 import { setStoredUser } from "../../lib/auth";
 import styles from "./page.module.css";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -49,8 +47,7 @@ export default function LoginPage() {
       window.localStorage.setItem("quincaillerie_from_login", "1");
       window.sessionStorage.setItem("quincaillerie_entry_source", "/login");
       setStoredUser(normalizedUser);
-      window.history.replaceState(null, "", "/workspace");
-      router.replace("/workspace");
+      window.location.replace("/");
     } catch {
       setError("Le service est momentanément indisponible.");
     } finally {

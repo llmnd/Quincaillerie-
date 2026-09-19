@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import AppShell from "../../components/AppShell";
-import OdooFormLayout from "../../components/OdooFormLayout";
+import OdooFormLayout, { OdooNewButton } from "../../components/OdooFormLayout";
 import { authHeaders } from "../../lib/auth";
 import styles from "./page.module.css";
 
@@ -286,431 +286,422 @@ export default function ClientsPage() {
   return (
     <AppShell>
       <div className={styles.page}>
-        <OdooFormLayout
-          category="Clients"
-          title={
-            showForm
-              ? selectedCustomerId === null
-                ? "Nouveau client"
-                : "Modifier client"
-              : "Clients"
-          }
-          actions={
-            showForm
-              ? [
-                  {
-                    label: isSaving ? "Enregistrement..." : "Enregistrer",
-                    variant: "primary",
-                    onClick: submitCurrentCustomerForm,
-                  },
-                ]
-              : []
-          }
-          onNewClick={openCreateForm}
-          onSettingsClick={() => undefined}
-          onCloudClick={showForm ? submitCurrentCustomerForm : undefined}
-          onCloseClick={closeForm}
-        >
-          {showForm ? (
-            <form
-              id="customer-form"
-              className={styles.form}
-              onSubmit={saveCustomer}
+        {!showForm && (
+          <header className={styles.header}>
+            <div className={styles.headerMain}>
+              <div className={styles.titleIcon}>C</div>
+
+              <div>
+                <p className={styles.eyebrow}>Clients</p>
+                <h1>Clients</h1>
+                <p className={styles.subtitle}>
+                  Gestion des contacts et clients du catalogue.
+                </p>
+              </div>
+            </div>
+
+            <OdooNewButton onClick={openCreateForm}>Nouveau client</OdooNewButton>
+          </header>
+        )}
+
+        {showForm ? (
+          <div className={styles.formOverlay}>
+            <OdooFormLayout
+              category="Clients"
+              title={
+                selectedCustomerId === null
+                  ? "Nouveau client"
+                  : "Modifier client"
+              }
+              subtitle={
+                selectedCustomerId === null
+                  ? "Créer un nouveau client pour votre catalogue."
+                  : "Mettre à jour les informations de ce client."
+              }
+              actions={[
+                {
+                  label: isSaving ? "Enregistrement..." : "Enregistrer",
+                  variant: "primary",
+                  onClick: submitCurrentCustomerForm,
+                },
+              ]}
+              onNewClick={openCreateForm}
+              onSettingsClick={() => undefined}
+              onCloudClick={submitCurrentCustomerForm}
+              onCloseClick={closeForm}
+              showNewButton={true}
+              showSettings={true}
+              showCloud={true}
+              showClose={true}
             >
-              <div className={styles.formHeader}>
-                <div>
-                  <span className={styles.formEyebrow}>
-                    {selectedCustomerId === null
-                      ? "Création"
-                      : "Modification"}
-                  </span>
+              <form
+                id="customer-form"
+                className={styles.form}
+                onSubmit={saveCustomer}
+              >
+                <div className={styles.formHeader}>
+                  <div>
+                    <span className={styles.formEyebrow}>
+                      {selectedCustomerId === null
+                        ? "Création"
+                        : "Modification"}
+                    </span>
 
-                  <h2>
-                    {selectedCustomerId === null
-                      ? "Nouveau client"
-                      : "Modifier le client"}
-                  </h2>
+                    <h2>
+                      {selectedCustomerId === null
+                        ? "Nouveau client"
+                        : "Modifier le client"}
+                    </h2>
 
-                  <p>
-                    Renseignez les informations principales du client.
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  className={styles.cancelTopButton}
-                  onClick={closeForm}
-                >
-                  Annuler
-                </button>
-              </div>
-
-              <div className={styles.formSection}>
-                <div className={styles.sectionTitle}>
-                  <span>Informations générales</span>
-                </div>
-
-                <div className={styles.odooFormGrid}>
-                  <div className={styles.formField}>
-                    <label htmlFor="customer-name">
-                      Nom du client <span>*</span>
-                    </label>
-
-                    <input
-                      id="customer-name"
-                      required
-                      autoFocus
-                      value={form.name}
-                      placeholder="Ex. Société ABC"
-                      onChange={(event) =>
-                        setForm({
-                          ...form,
-                          name: event.target.value,
-                        })
-                      }
-                    />
+                    <p>
+                      Renseignez les informations principales du client.
+                    </p>
                   </div>
 
-                  <div className={styles.formField}>
-                    <label htmlFor="customer-email">Email</label>
+                </div>
 
-                    <input
-                      id="customer-email"
-                      type="email"
-                      value={form.email}
-                      placeholder="client@example.com"
-                      onChange={(event) =>
-                        setForm({
-                          ...form,
-                          email: event.target.value,
-                        })
-                      }
-                    />
+                <div className={styles.formSection}>
+                  <div className={styles.sectionTitle}>
+                    <span>Informations générales</span>
                   </div>
 
-                  <div className={styles.formField}>
-                    <label htmlFor="customer-phone">Téléphone</label>
+                  <div className={styles.odooFormGrid}>
+                    <div className={styles.formField}>
+                      <label htmlFor="customer-name">
+                        Nom du client <span>*</span>
+                      </label>
 
-                    <input
-                      id="customer-phone"
-                      value={form.phone}
-                      placeholder="+221 77 000 00 00"
-                      onChange={(event) =>
-                        setForm({
-                          ...form,
-                          phone: event.target.value,
-                        })
-                      }
-                    />
+                      <input
+                        id="customer-name"
+                        required
+                        autoFocus
+                        value={form.name}
+                        placeholder="Ex. Société ABC"
+                        onChange={(event) =>
+                          setForm({
+                            ...form,
+                            name: event.target.value,
+                          })
+                        }
+                      />
+                    </div>
+
+                    <div className={styles.formField}>
+                      <label htmlFor="customer-email">Email</label>
+
+                      <input
+                        id="customer-email"
+                        type="email"
+                        value={form.email}
+                        placeholder="client@example.com"
+                        onChange={(event) =>
+                          setForm({
+                            ...form,
+                            email: event.target.value,
+                          })
+                        }
+                      />
+                    </div>
+
+                    <div className={styles.formField}>
+                      <label htmlFor="customer-phone">Téléphone</label>
+
+                      <input
+                        id="customer-phone"
+                        value={form.phone}
+                        placeholder="+221 77 000 00 00"
+                        onChange={(event) =>
+                          setForm({
+                            ...form,
+                            phone: event.target.value,
+                          })
+                        }
+                      />
+                    </div>
+
+                    <div className={styles.formField}>
+                      <label htmlFor="customer-address">Adresse</label>
+
+                      <input
+                        id="customer-address"
+                        value={form.address}
+                        placeholder="Adresse du client"
+                        onChange={(event) =>
+                          setForm({
+                            ...form,
+                            address: event.target.value,
+                          })
+                        }
+                      />
+                    </div>
                   </div>
+                </div>
 
-                  <div className={styles.formField}>
-                    <label htmlFor="customer-address">Adresse</label>
-
-                    <input
-                      id="customer-address"
-                      value={form.address}
-                      placeholder="Adresse du client"
-                      onChange={(event) =>
-                        setForm({
-                          ...form,
-                          address: event.target.value,
-                        })
-                      }
-                    />
+                {(message || error) && (
+                  <div
+                    className={`${styles.formMessage} ${
+                      error ? styles.errorMessage : styles.successMessage
+                    }`}
+                  >
+                    {error || message}
                   </div>
-                </div>
+                )}
+
+              </form>
+            </OdooFormLayout>
+          </div>
+        ) : (
+          <>
+            <div className={styles.summaryBar}>
+              <div className={styles.summaryItem}>
+                <strong>{customers.length}</strong>
+                <span>clients</span>
               </div>
 
-              {(message || error) && (
-                <div
-                  className={`${styles.formMessage} ${
-                    error ? styles.errorMessage : styles.successMessage
-                  }`}
-                >
-                  {error || message}
-                </div>
-              )}
+              <div className={styles.summaryDivider} />
 
-              <div className={styles.formFooter}>
-                <button
-                  type="button"
-                  className={styles.secondaryButton}
-                  onClick={closeForm}
-                  disabled={isSaving}
-                >
-                  Annuler
-                </button>
-
-                <button
-                  type="submit"
-                  className={styles.primaryButton}
-                  disabled={isSaving}
-                >
-                  {isSaving ? "Enregistrement..." : "Enregistrer"}
-                </button>
-              </div>
-            </form>
-          ) : (
-            <>
-              <div className={styles.summaryBar}>
-                <div className={styles.summaryItem}>
-                  <strong>{customers.length}</strong>
-                  <span>clients</span>
-                </div>
-
-                <div className={styles.summaryDivider} />
-
-                <div className={styles.summaryItem}>
-                  <strong>{activeCustomers}</strong>
-                  <span>actifs</span>
-                </div>
-
-                <div className={styles.summaryDivider} />
-
-                <div className={styles.summaryItem}>
-                  <strong>{inactiveCustomers}</strong>
-                  <span>inactifs</span>
-                </div>
+              <div className={styles.summaryItem}>
+                <strong>{activeCustomers}</strong>
+                <span>actifs</span>
               </div>
 
-              <div className={styles.toolbar}>
-                <div className={styles.searchBox}>
+              <div className={styles.summaryDivider} />
+
+              <div className={styles.summaryItem}>
+                <strong>{inactiveCustomers}</strong>
+                <span>inactifs</span>
+              </div>
+            </div>
+
+            <div className={styles.toolbar}>
+              <div className={styles.searchBox}>
+                <svg
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                  className={styles.searchIcon}
+                >
+                  <circle
+                    cx="11"
+                    cy="11"
+                    r="6.5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                  />
+                  <path
+                    d="M16 16l4.2 4.2"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                  />
+                </svg>
+
+                <input
+                  type="search"
+                  value={search}
+                  placeholder="Rechercher un client..."
+                  aria-label="Rechercher un client"
+                  onChange={(event) => setSearch(event.target.value)}
+                />
+
+                {search && (
+                  <button
+                    type="button"
+                    className={styles.clearSearch}
+                    aria-label="Effacer la recherche"
+                    onClick={() => setSearch("")}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+
+              <div className={styles.toolbarControls}>
+                <select
+                  value={statusFilter}
+                  aria-label="Filtrer par statut"
+                  onChange={(event) =>
+                    setStatusFilter(
+                      event.target.value as
+                        | "all"
+                        | "active"
+                        | "inactive",
+                    )
+                  }
+                >
+                  <option value="all">Tous les statuts</option>
+                  <option value="active">Actifs</option>
+                  <option value="inactive">Inactifs</option>
+                </select>
+
+                <span className={styles.resultCount}>
+                  {filteredCustomers.length}
+                  {filteredCustomers.length > 1
+                    ? " résultats"
+                    : " résultat"}
+                </span>
+
+                {hasFilters && (
+                  <button
+                    type="button"
+                    className={styles.resetButton}
+                    onClick={resetFilters}
+                  >
+                    Réinitialiser
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {message && !error && (
+              <div className={styles.message}>{message}</div>
+            )}
+
+            {error && (
+              <div className={styles.errorBanner}>{error}</div>
+            )}
+
+            {isLoading ? (
+              <div className={styles.state}>
+                <div className={styles.loader} />
+                <span>Chargement des clients...</span>
+              </div>
+            ) : customers.length === 0 ? (
+              <div className={styles.empty}>
+                <div className={styles.emptyIcon}>
                   <svg
                     viewBox="0 0 24 24"
                     aria-hidden="true"
-                    className={styles.searchIcon}
                   >
                     <circle
-                      cx="11"
-                      cy="11"
-                      r="6.5"
+                      cx="9"
+                      cy="8"
+                      r="3"
                       fill="none"
                       stroke="currentColor"
-                      strokeWidth="1.8"
+                      strokeWidth="1.5"
                     />
                     <path
-                      d="M16 16l4.2 4.2"
+                      d="M3.5 19c.7-3.2 2.5-5 5.5-5s4.8 1.8 5.5 5"
                       fill="none"
                       stroke="currentColor"
-                      strokeWidth="1.8"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    />
+                    <path
+                      d="M16 11a3 3 0 1 0 0-6"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                    />
+                    <path
+                      d="M17 14c2 .5 3.2 2 3.7 4.5"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
                       strokeLinecap="round"
                     />
                   </svg>
-
-                  <input
-                    type="search"
-                    value={search}
-                    placeholder="Rechercher un client..."
-                    aria-label="Rechercher un client"
-                    onChange={(event) => setSearch(event.target.value)}
-                  />
-
-                  {search && (
-                    <button
-                      type="button"
-                      className={styles.clearSearch}
-                      aria-label="Effacer la recherche"
-                      onClick={() => setSearch("")}
-                    >
-                      ×
-                    </button>
-                  )}
                 </div>
 
-                <div className={styles.toolbarControls}>
-                  <select
-                    value={statusFilter}
-                    aria-label="Filtrer par statut"
-                    onChange={(event) =>
-                      setStatusFilter(
-                        event.target.value as
-                          | "all"
-                          | "active"
-                          | "inactive",
-                      )
-                    }
-                  >
-                    <option value="all">Tous les statuts</option>
-                    <option value="active">Actifs</option>
-                    <option value="inactive">Inactifs</option>
-                  </select>
+                <strong>Aucun client enregistré</strong>
 
-                  <span className={styles.resultCount}>
-                    {filteredCustomers.length}
-                    {filteredCustomers.length > 1
-                      ? " résultats"
-                      : " résultat"}
-                  </span>
+                <span>Commencez par créer votre premier client.</span>
 
-                  {hasFilters && (
-                    <button
-                      type="button"
-                      className={styles.resetButton}
-                      onClick={resetFilters}
-                    >
-                      Réinitialiser
-                    </button>
-                  )}
-                </div>
+                <OdooNewButton onClick={openCreateForm}>
+                  Nouveau client
+                </OdooNewButton>
               </div>
+            ) : filteredCustomers.length === 0 ? (
+              <div className={styles.empty}>
+                <strong>Aucun résultat</strong>
 
-              {message && !error && (
-                <div className={styles.message}>{message}</div>
-              )}
+                <span>
+                  Aucun client ne correspond à vos critères de recherche.
+                </span>
 
-              {error && (
-                <div className={styles.errorBanner}>{error}</div>
-              )}
-
-              {isLoading ? (
-                <div className={styles.state}>
-                  <div className={styles.loader} />
-                  <span>Chargement des clients...</span>
+                <button
+                  type="button"
+                  className={styles.secondaryButton}
+                  onClick={resetFilters}
+                >
+                  Réinitialiser les filtres
+                </button>
+              </div>
+            ) : (
+              <section className={styles.table}>
+                <div className={styles.tableHead}>
+                  <span>Client</span>
+                  <span>Contact</span>
+                  <span>Statut</span>
                 </div>
-              ) : customers.length === 0 ? (
-                <div className={styles.empty}>
-                  <div className={styles.emptyIcon}>
-                    <svg
-                      viewBox="0 0 24 24"
-                      aria-hidden="true"
-                    >
-                      <circle
-                        cx="9"
-                        cy="8"
-                        r="3"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                      />
-                      <path
-                        d="M3.5 19c.7-3.2 2.5-5 5.5-5s4.8 1.8 5.5 5"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                      />
-                      <path
-                        d="M16 11a3 3 0 1 0 0-6"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                      />
-                      <path
-                        d="M17 14c2 .5 3.2 2 3.7 4.5"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                  </div>
 
-                  <strong>Aucun client enregistré</strong>
-
-                  <span>
-                    Commencez par créer votre premier client.
-                  </span>
-
-                  <button
-                    type="button"
-                    className={styles.primaryButton}
-                    onClick={openCreateForm}
+                {filteredCustomers.map((customer) => (
+                  <article
+                    className={styles.row}
+                    key={customer.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => openEditForm(customer)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        openEditForm(customer);
+                      }
+                    }}
                   >
-                    Nouveau client
-                  </button>
-                </div>
-              ) : filteredCustomers.length === 0 ? (
-                <div className={styles.empty}>
-                  <strong>Aucun résultat</strong>
+                    <div className={styles.customerInfo}>
+                      <div className={styles.customerAvatar}>
+                        {customer.name
+                          .trim()
+                          .charAt(0)
+                          .toUpperCase()}
+                      </div>
 
-                  <span>
-                    Aucun client ne correspond à vos critères de recherche.
-                  </span>
+                      <div className={styles.customerMain}>
+                        <strong>{customer.name}</strong>
 
-                  <button
-                    type="button"
-                    className={styles.secondaryButton}
-                    onClick={resetFilters}
-                  >
-                    Réinitialiser les filtres
-                  </button>
-                </div>
-              ) : (
-                <section className={styles.table}>
-                  <div className={styles.tableHead}>
-                    <span>Client</span>
-                    <span>Contact</span>
-                    <span>Statut</span>
-                  </div>
+                        <small>
+                          {customer.address || "Adresse non renseignée"}
+                        </small>
+                      </div>
+                    </div>
 
-                  {filteredCustomers.map((customer) => (
-                    <article
-                      className={styles.row}
-                      key={customer.id}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => openEditForm(customer)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          openEditForm(customer);
+                    <div className={styles.contactInfo}>
+                      <div className={styles.contactItem}>
+                        <span>Email</span>
+                        <strong>
+                          {customer.email || "Non renseigné"}
+                        </strong>
+                      </div>
+
+                      <div className={styles.contactItem}>
+                        <span>Téléphone</span>
+                        <strong>
+                          {customer.phone || "Non renseigné"}
+                        </strong>
+                      </div>
+                    </div>
+
+                    <div className={styles.statusCell}>
+                      <span
+                        className={
+                          customer.is_active
+                            ? styles.activeBadge
+                            : styles.inactiveBadge
                         }
-                      }}
-                    >
-                      <div className={styles.customerInfo}>
-                        <div className={styles.customerAvatar}>
-                          {customer.name
-                            .trim()
-                            .charAt(0)
-                            .toUpperCase()}
-                        </div>
-
-                        <div className={styles.customerMain}>
-                          <strong>{customer.name}</strong>
-
-                          <small>
-                            {customer.address ||
-                              "Adresse non renseignée"}
-                          </small>
-                        </div>
-                      </div>
-
-                      <div className={styles.contactInfo}>
-                        <div className={styles.contactItem}>
-                          <span>Email</span>
-                          <strong>
-                            {customer.email || "Non renseigné"}
-                          </strong>
-                        </div>
-
-                        <div className={styles.contactItem}>
-                          <span>Téléphone</span>
-                          <strong>
-                            {customer.phone || "Non renseigné"}
-                          </strong>
-                        </div>
-                      </div>
-
-                      <div className={styles.statusCell}>
-                        <span
-                          className={
-                            customer.is_active
-                              ? styles.activeBadge
-                              : styles.inactiveBadge
-                          }
-                        >
-                          <i />
-                          {customer.is_active ? "Actif" : "Inactif"}
-                        </span>
-                      </div>
-                    </article>
-                  ))}
-                </section>
-              )}
-            </>
-          )}
-        </OdooFormLayout>
+                      >
+                        <i />
+                        {customer.is_active ? "Actif" : "Inactif"}
+                      </span>
+                    </div>
+                  </article>
+                ))}
+              </section>
+            )}
+          </>
+        )}
       </div>
     </AppShell>
   );

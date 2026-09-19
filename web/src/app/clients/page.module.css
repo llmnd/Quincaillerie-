@@ -3,6 +3,64 @@
   color: #f5f7fb;
 }
 
+.formOverlay {
+  width: 100%;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 18px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.headerMain {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.titleIcon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  background: #11141a;
+  color: #b8bdc6;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  color: #777f89;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.header h1 {
+  margin: 0;
+  color: #f7f8fa;
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+
+.subtitle {
+  margin: 4px 0 0;
+  color: #858c96;
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
 /* =========================
    FORM
 ========================= */

@@ -6,6 +6,7 @@ import {
   Bird,
   Boxes,
   CalendarDays,
+  ArrowLeft,
   LayoutDashboard,
   LogOut,
   Package,
@@ -182,9 +183,23 @@ export default function WorkspacePage() {
     router.replace("/login");
   }
 
+  function handleBack() {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+      return;
+    }
+
+    router.push("/");
+  }
+
   return (
     <AppShell hideSidebar hideTopbar hideContentPadding>
       <div className={styles.workspacePage}>
+        <button type="button" className={styles.workspaceBackButton} onClick={handleBack} aria-label="Retour">
+          <ArrowLeft size={14} />
+          <span>Retour</span>
+        </button>
+
         <div className={styles.topRightBar}>
           <div className={styles.companyBadge}>
             {organization?.logo ? (
