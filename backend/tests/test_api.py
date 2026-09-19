@@ -48,6 +48,27 @@ def test_register_company_creates_admin_and_organization():
     assert body["role"] == "admin"
 
 
+def test_new_organization_starts_with_default_accounting_chart():
+    payload = {
+        "organization_name": f"Compta Org {uuid.uuid4().hex[:8]}",
+        "full_name": "Compta Admin",
+        "email": f"compta-{uuid.uuid4().hex[:8]}@demo.test",
+        "password": "StrongPass123",
+    }
+
+    response = client.post("/api/v1/auth/register", json=payload)
+    assert response.status_code == 201
+    organization_id = response.json()["organization_id"]
+
+    accounts_response = client.get(
+        "/api/v1/accounting/accounts",
+        headers={"Authorization": f"Bearer {response.cookies.get('access_token', '')}"},
+    )
+    assert accounts_response.status_code == 200
+    codes = {item["code"] for item in accounts_response.json()}
+    assert {"411", "4431", "571", "701"}.issubset(codes)
+
+
 def test_products_crud_flow():
     sku = f"SKU-{uuid.uuid4().hex[:8].upper()}"
     create_response = client.post(
@@ -132,6 +153,12 @@ def test_supplier_customer_and_sale_flow():
     assert sale_payload["customer_id"] == customer_id
     assert sale_payload["total_amount"] == 30.0
     assert len(sale_payload["items"]) == 1
+
+    journal_response = client.get("/api/v1/accounting/journal")
+    assert journal_response.status_code == 200
+    sale_entries = [entry for entry in journal_response.json() if entry["source_type"] == "sale" and entry["source_id"] == sale_payload["id"]]
+    assert len(sale_entries) == 1
+    assert sum(line["debit"] for line in sale_entries[0]["lines"]) == sum(line["credit"] for line in sale_entries[0]["lines"]) == 30.0
 
     stock_response = client.get(f"/api/v1/products/{product_id}")
     assert stock_response.status_code == 200

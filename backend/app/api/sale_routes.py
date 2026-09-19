@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, require_module, require_roles
 from app.api.cash_routes import get_open_cash_session, handoff_is_acknowledged
+from app.core.accounting import create_sale_journal
 from app.models.cash import AuditLog, CashOperation, CashSession
 from app.models.farming import FarmingBatch
 from app.models.user import User
@@ -100,6 +101,14 @@ def create_sale(payload: SaleCreate, db: Session = Depends(get_db), current_user
     if payload.discount_amount > total_amount:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Discount cannot exceed sale subtotal")
     sale.total_amount = total_amount - payload.discount_amount
+    create_sale_journal(
+        db,
+        organization_id=current_user.organization_id,
+        sale_id=sale.id,
+        amount=sale.total_amount,
+        payment_method=payload.payment_method,
+        customer_id=sale.customer_id,
+    )
     db.add(CashOperation(organization_id=current_user.organization_id, register_id=session.register_id, session_id=session.id, user_id=current_user.id, operation_type="sale", amount=sale.total_amount, payment_method=payload.payment_method, reason=f"Sale #{sale.id}"))
     db.add(AuditLog(organization_id=current_user.organization_id, user_id=current_user.id, register_id=session.register_id, session_id=session.id, action="sale.created", entity_type="sale", entity_id=sale.id, amount=sale.total_amount, after_data=f"payment_method={payload.payment_method}"))
     db.commit()

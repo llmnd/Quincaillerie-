@@ -1,10 +1,15 @@
 ﻿.productThumb {
   width: 28px;
   height: 28px;
+  max-width: 28px;
+  max-height: 28px;
   object-fit: cover;
   margin-right: 8px;
   vertical-align: middle;
   border-radius: 4px;
+  display: block;
+  flex-shrink: 0;
+  overflow: hidden;
 }
 
 .header {
@@ -47,36 +52,41 @@
 }
 
 .periodSelector {
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
   gap: 8px;
   padding: 6px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.02);
   border-radius: 999px;
+  min-width: min(100%, 420px);
 }
 
 .periodButton,
 .periodButtonActive {
   border: 0;
   border-radius: 999px;
-  padding: 7px 12px;
+  padding: 8px 12px;
   background: transparent;
   color: #a3a8b3;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   cursor: pointer;
   transition: all 180ms ease;
+  white-space: nowrap;
 }
 
 .periodButtonActive {
   background: #f1f3f7;
   color: #111827;
+  box-shadow: 0 2px 8px rgba(17, 24, 39, 0.18);
 }
 
 .period {
-  padding: 0.6rem 1rem;
+  padding: 0.65rem 0.9rem;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 3px;
   color: #9ba5b8;
@@ -84,6 +94,7 @@
   font-weight: 500;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .empty {
@@ -255,13 +266,39 @@
   gap: 12px;
   align-items: center;
   color: #dfe6f0;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .items span {
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  gap: 10px;
   min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
   color: #edf0f5;
+  line-height: 1.2;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.items span img {
+  display: block;
+  width: 28px;
+  height: 28px;
+  object-fit: cover;
+  border-radius: 4px;
+  flex-shrink: 0;
+  order: 2;
+}
+
+.items span::after {
+  content: "";
+  display: inline-block;
+  width: 0;
+  height: 0;
+  flex-shrink: 0;
 }
 
 .items small {
@@ -272,4 +309,66 @@
 .items b {
   color: #f1f3f7;
   font-weight: 600;
+}
+
+@media (max-width: 720px) {
+  .header {
+    display: block;
+    padding-bottom: 24px;
+  }
+
+  .headerActions {
+    width: 100%;
+    justify-content: stretch;
+    align-items: stretch;
+    margin-top: 18px;
+  }
+
+  .periodSelector {
+    width: 100%;
+    min-width: 0;
+    justify-content: space-between;
+    border-radius: 18px;
+  }
+
+  .periodButton,
+  .periodButtonActive {
+    flex: 1 1 calc(33.333% - 8px);
+    min-width: 88px;
+    text-align: center;
+    padding-inline: 8px;
+  }
+
+  .period {
+    width: 100%;
+    text-align: center;
+  }
+
+  .kpiGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .panelHeader {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .panelHeader select {
+    width: 100%;
+  }
+
+  .saleHeader {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .saleMeta {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .items > div {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
 }

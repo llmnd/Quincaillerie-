@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import AppShell from "../../components/AppShell";
 import { authHeaders } from "../../lib/auth";
 import AccountingCharts from "./AccountingCharts";
@@ -13,10 +14,21 @@ type Invoice = { id: number; number: string; sale_id: number; issue_date: string
 type TrialRow = { code: string; name: string; debit: number; credit: number; balance: number };
 type JournalEntry = { id: number; reference: string; entry_date: string; journal: string; description: string; lines: { account_id: number; label: string; debit: number; credit: number }[] };
 type FinancialReports = { balance: { total_assets: number; total_liabilities: number }; income: { revenue_total: number; expense_total: number; net_result: number }; vat: { taxable_base: number; tax_amount: number; total_amount: number } };
-type ReportPeriod = "month" | "quarter" | "year" | "all";
+type ReportPeriod = "month" | "quarter" | "semester" | "year" | "all";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const money = (value: number) => `${value.toLocaleString("fr-FR")} FCFA`;
+
+function toLocalDateTime(date: Date, endOfDay = false) {
+  const pad = (value: number) => String(value).padStart(2, "0");
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+  const hours = pad(endOfDay ? 23 : 0);
+  const minutes = pad(endOfDay ? 59 : 0);
+  const seconds = pad(endOfDay ? 59 : 0);
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.000`;
+}
 
 function buildPeriodQuery(period: ReportPeriod) {
   const params = new URLSearchParams();
@@ -34,14 +46,18 @@ function buildPeriodQuery(period: ReportPeriod) {
     const month = Math.floor(start.getMonth() / 3) * 3;
     start.setMonth(month, 1);
     start.setHours(0, 0, 0, 0);
+  } else if (period === "semester") {
+    const month = start.getMonth() < 6 ? 0 : 6;
+    start.setMonth(month, 1);
+    start.setHours(0, 0, 0, 0);
   } else if (period === "year") {
     start.setMonth(0, 1);
     start.setHours(0, 0, 0, 0);
   }
 
   end.setHours(23, 59, 59, 999);
-  params.set("date_from", start.toISOString());
-  params.set("date_to", end.toISOString());
+  params.set("date_from", toLocalDateTime(start));
+  params.set("date_to", toLocalDateTime(end, true));
   return `?${params.toString()}`;
 }
 
@@ -355,14 +371,14 @@ export function AccountingPageContent() {
         </div>
         <div className={styles.headerActions}>
           <div className={styles.periodSelector} aria-label="Période comptable">
-            {(["month", "quarter", "year", "all"] as const).map((period) => (
+            {(["month", "quarter", "semester", "year", "all"] as const).map((period) => (
               <button
                 key={period}
                 type="button"
                 className={reportPeriod === period ? styles.periodButtonActive : styles.periodButton}
                 onClick={() => setReportPeriod(period)}
               >
-                {period === "month" ? "Mois" : period === "quarter" ? "Trimestre" : period === "year" ? "Année" : "Tout"}
+                {period === "month" ? "Mois" : period === "quarter" ? "Trimestre" : period === "semester" ? "Semestre" : period === "year" ? "Année" : "Tout"}
               </button>
             ))}
           </div>
@@ -424,14 +440,14 @@ export function AccountingPageContent() {
         </>
       )}
 
-      {activeModal && (
+      {activeModal && typeof document !== "undefined" && createPortal(
         <div className={styles.modalOverlay} onClick={() => setActiveModal(null)}>
           <div className={styles.modalCard} onClick={(event) => event.stopPropagation()}>
             <div className={styles.modalHeader}>
               <div>
                 <span className={styles.eyebrow}>Module comptable</span>
                 <h2>
-                  {activeModal === "manual" && "Nouvel écriture manuelle"}
+                  {activeModal === "manual" && "Nouvelle écriture manuelle"}
                   {activeModal === "upload" && "Importer des documents"}
                   {activeModal === "transactions" && "Transactions bancaires"}
                   {activeModal === "reconcile" && "Rapprochement bancaire"}
@@ -497,7 +513,8 @@ export function AccountingPageContent() {
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
       <section className={styles.grid}>
@@ -605,7 +622,12 @@ export function AccountingPageContent() {
             <span className={styles.eyebrow}>Grand livre</span>
             <h2>Écritures comptables</h2>
           </div>
-          <span>{journal.length} écritures</span>
+          <div className={styles.cardHeaderActions}>
+            <span>{journal.length} écritures</span>
+            <button type="button" className={styles.primaryButton} onClick={() => handleModalAction("manual")}>
+              Nouvelle écriture
+            </button>
+          </div>
         </div>
         <div className={styles.invoiceList}>
           {journal.map((entry) => (

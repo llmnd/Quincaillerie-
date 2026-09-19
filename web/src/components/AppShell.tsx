@@ -199,17 +199,23 @@ export default function AppShell({
       {isNavigating && <output className={styles.navigationLoading} aria-label="Chargement de la page"><span /></output>}
       {!shouldHideSidebar && (
         <aside className={styles.sidebar}>
-          {/* Bouton Hamburger style Zara */}
-          <button
-            type="button"
-            className={`${styles.menuButton} ${menuOpen ? styles.menuOpen : ""}`}
-            onClick={() => setMenuOpen((open) => !open)}
-            aria-expanded={menuOpen}
-            aria-label={menuOpen ? "Fermer le menu" : "Ouvrir le menu"}
-          >
-            <span className={styles.burgerLine}></span>
-            <span className={styles.burgerLine}></span>
-          </button>
+          <div className={styles.sidebarTop}>
+            <button type="button" className={`${styles.backButton} ${styles.backButtonPrimary}`} onClick={handleBack} aria-label="Retour" title="Retour">
+              <span className={styles.backIcon} aria-hidden="true"><ArrowLeft size={15} strokeWidth={2.2} /></span>
+              <span className={styles.backLabel}>Retour</span>
+            </button>
+
+            <button
+              type="button"
+              className={`${styles.menuButton} ${menuOpen ? styles.menuOpen : ""}`}
+              onClick={() => setMenuOpen((open) => !open)}
+              aria-expanded={menuOpen}
+              aria-label={menuOpen ? "Fermer le menu" : "Ouvrir le menu"}
+            >
+              <span className={styles.burgerLine}></span>
+              <span className={styles.burgerLine}></span>
+            </button>
+          </div>
 
           <nav className={menuOpen ? styles.sidebarNavOpen : styles.sidebarNav} aria-label="Navigation">
             
@@ -249,11 +255,6 @@ export default function AppShell({
         {!hideTopbar && (
           <header className={styles.topbar}>
             <div className={styles.topbarLeft}>
-              <button type="button" className={styles.backButton} onClick={handleBack} aria-label="Retour">
-                <ArrowLeft size={14} />
-                <span>Retour</span>
-              </button>
-
               {!hideSidebar && (
                 <button
                   type="button"

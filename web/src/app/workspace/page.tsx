@@ -188,9 +188,9 @@ export default function WorkspacePage() {
   return (
     <AppShell hideSidebar hideTopbar hideContentPadding>
       <div className={styles.workspacePage}>
-        <button type="button" className={styles.workspaceBackButton} onClick={handleBack} aria-label="Retour">
-          <ArrowLeft size={14} />
-          <span>Retour</span>
+        <button type="button" className={styles.workspaceBackButton} onClick={handleBack} aria-label="Retour" title="Retour">
+          <span className={styles.workspaceBackIcon} aria-hidden="true"><ArrowLeft size={15} strokeWidth={2.2} /></span>
+          <span className={styles.workspaceBackLabel}>Retour</span>
         </button>
 
         <div className={styles.topRightBar}>

@@ -5,6 +5,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.api.cash_routes import get_open_cash_session, handoff_is_acknowledged
+from app.core.accounting import get_or_create_default_accounts
 from app.api.deps import get_db, require_module, require_roles
 from app.models.accounting import Account, Invoice, InvoiceLine, JournalEntry, JournalLine, Tax
 from app.models.sale import Sale
@@ -20,6 +21,11 @@ def _validate_date_range(date_from: datetime | None, date_to: datetime | None) -
     return date_from, date_to
 
 
+def ensure_organization_accounting_defaults(db: Session, organization_id: int) -> None:
+    get_or_create_default_accounts(db, organization_id)
+    db.commit()
+
+
 @router.get("")
 def accounting_overview(db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin", "seller"))) -> dict[str, int | str]:
     return {
@@ -33,6 +39,7 @@ def accounting_overview(db: Session = Depends(get_db), current_user: User = Depe
 
 @router.get("/accounts", response_model=list[AccountRead])
 def list_accounts(db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin", "seller"))) -> list[Account]:
+    ensure_organization_accounting_defaults(db, current_user.organization_id)
     return db.scalars(select(Account).where(Account.organization_id == current_user.organization_id, Account.is_active.is_(True)).order_by(Account.code)).all()
 
 
@@ -59,6 +66,7 @@ def trial_balance(
     date_from: datetime | None = Query(default=None),
     date_to: datetime | None = Query(default=None),
 ) -> list[dict[str, object]]:
+    ensure_organization_accounting_defaults(db, current_user.organization_id)
     _validate_date_range(date_from, date_to)
     query = select(
         Account.id,
@@ -207,12 +215,14 @@ def create_invoice_from_sale(
     accounts = {account.code: account for account in account_rows}
     if len(accounts) != 3:
         raise HTTPException(status_code=500, detail="Default accounting accounts are missing")
-    entry = JournalEntry(organization_id=current_user.organization_id, reference=f"VE-{invoice.number}", journal="VENTES", description=f"Facture {invoice.number}", source_type="invoice", source_id=invoice.id)
-    db.add(entry)
-    db.flush()
-    db.add(JournalLine(organization_id=current_user.organization_id, entry_id=entry.id, account_id=accounts["411"].id, label=f"Client facture {invoice.number}", debit=invoice.total_amount, credit=0))
-    db.add(JournalLine(organization_id=current_user.organization_id, entry_id=entry.id, account_id=accounts["701"].id, label=f"Vente facture {invoice.number}", debit=0, credit=invoice.subtotal))
-    if invoice.tax_amount:
-        db.add(JournalLine(organization_id=current_user.organization_id, entry_id=entry.id, account_id=accounts["4431"].id, label=f"TVA facture {invoice.number}", debit=0, credit=invoice.tax_amount))
+    existing_sale_entry = db.scalar(select(JournalEntry).where(JournalEntry.organization_id == current_user.organization_id, JournalEntry.source_type == "sale", JournalEntry.source_id == sale.id))
+    if existing_sale_entry is None:
+        entry = JournalEntry(organization_id=current_user.organization_id, reference=f"VE-{invoice.number}", journal="VENTES", description=f"Facture {invoice.number}", source_type="invoice", source_id=invoice.id)
+        db.add(entry)
+        db.flush()
+        db.add(JournalLine(organization_id=current_user.organization_id, entry_id=entry.id, account_id=accounts["411"].id, label=f"Client facture {invoice.number}", debit=invoice.total_amount, credit=0))
+        db.add(JournalLine(organization_id=current_user.organization_id, entry_id=entry.id, account_id=accounts["701"].id, label=f"Vente facture {invoice.number}", debit=0, credit=invoice.subtotal))
+        if invoice.tax_amount:
+            db.add(JournalLine(organization_id=current_user.organization_id, entry_id=entry.id, account_id=accounts["4431"].id, label=f"TVA facture {invoice.number}", debit=0, credit=invoice.tax_amount))
     db.commit()
     return db.scalar(select(Invoice).options(selectinload(Invoice.lines)).where(Invoice.id == invoice.id, Invoice.organization_id == current_user.organization_id))

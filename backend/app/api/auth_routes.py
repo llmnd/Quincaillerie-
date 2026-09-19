@@ -6,6 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db, require_roles
+from app.models.accounting import Account
 from app.core.audit import record_audit
 from app.core.config import settings
 from app.core.security import create_access_token, hash_password, verify_password
@@ -159,6 +160,19 @@ def register_organization(payload: BootstrapAdminRequest, response: Response, db
     db.add(admin)
     db.commit()
     db.refresh(admin)
+
+    default_accounts = [
+        {"code": "411", "name": "Clients", "account_class": "4"},
+        {"code": "4431", "name": "TVA facturée", "account_class": "4"},
+        {"code": "571", "name": "Caisse", "account_class": "5"},
+        {"code": "701", "name": "Ventes de marchandises", "account_class": "7"},
+    ]
+    for account_spec in default_accounts:
+        existing = db.scalar(select(Account.id).where(Account.organization_id == organization.id, Account.code == account_spec["code"]))
+        if existing is None:
+            db.add(Account(organization_id=organization.id, **account_spec, is_active=True))
+    db.commit()
+
     record_audit(
         db,
         organization_id=organization.id,

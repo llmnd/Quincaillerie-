@@ -112,6 +112,13 @@
   background: #171a24;
 }
 
+.panelTabFull {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
 .panelHeader {
   display: flex;
   align-items: center;

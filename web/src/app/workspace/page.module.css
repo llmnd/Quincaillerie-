@@ -28,23 +28,55 @@
 
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 7px 12px;
-
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.02);
-  color: #edf2ff;
-  font-size: 0.72rem;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  width: 42px;
+  height: 42px;
+  min-height: 42px;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid rgba(130, 200, 188, 0.42);
+  border-radius: 50%;
+  background: transparent;
+  color: #f0f2ff;
   cursor: pointer;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.22);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.workspaceBackIcon {
+  display: inline-grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: #f0f2ff;
+  transition: transform 180ms ease;
+}
+
+.workspaceBackLabel {
+  line-height: 1;
+}
+
+.workspaceBackButton .workspaceBackLabel {
+  display: none;
 }
 
 .workspaceBackButton:hover {
-  border-color: rgba(130, 200, 188, 0.35);
-  background: rgba(130, 200, 188, 0.08);
+  transform: translateX(-2px) scale(1.03);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.26);
+}
+
+.workspaceBackButton:hover .workspaceBackIcon {
+  transform: translateX(-1px);
+}
+
+.workspaceBackButton:active {
+  transform: translateX(-1px) scale(0.98);
+}
+
+.workspaceBackButton:focus-visible {
+  outline: 2px solid #82c8bc;
+  outline-offset: 3px;
 }
 
 .topRightBar {

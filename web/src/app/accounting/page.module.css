@@ -561,7 +561,28 @@
 
   .headerActions {
     width: 100%;
-    flex-wrap: wrap;
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .periodSelector {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 4px;
+    padding: 4px;
+    border-radius: 14px;
+  }
+
+  .periodButton,
+  .periodButtonActive {
+    min-width: 0;
+    min-height: 40px;
+    padding: 7px 3px;
+    font-size: 0.62rem;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
   }
 
   .badge {

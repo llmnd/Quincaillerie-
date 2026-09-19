@@ -21,6 +21,7 @@ export default function AdminPage() {
   ];
 
   const shouldHideSidebar = activeTab === "accounting" || activeTab === "reports";
+  const panelClassName = activeTab === "reports" || activeTab === "accounting" ? styles.panelTabFull : styles.panel;
 
   return (
     <AppShell hideSidebar={shouldHideSidebar}>
@@ -46,7 +47,7 @@ export default function AdminPage() {
           ))}
         </nav>
 
-        <section className={styles.panel}>
+        <section className={panelClassName}>
           {activeTab === "users" && <UsersPageContent />}
           {activeTab === "reports" && <ReportsPageContent />}
           {activeTab === "accounting" && <AccountingPageContent />}

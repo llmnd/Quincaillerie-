@@ -29,6 +29,14 @@
 	color: #ffffff;
 }
 
+.sidebarTop {
+	display: flex;
+	align-items: center;
+	min-height: 46px;
+	margin-top: -16px;
+	margin-bottom: 24px;
+}
+
 .mainArea {
 	display: flex;
 	min-width: 0;
@@ -72,23 +80,80 @@
 	display: inline-flex;
 	align-items: center;
 	gap: 8px;
-	padding: 7px 12px;
-	border: 1px solid rgba(255, 255, 255, 0.12);
-	border-radius: 999px;
-	background: rgba(255, 255, 255, 0.02);
+	min-height: 36px;
+	padding: 7px 13px 7px 10px;
+	border: 1px solid rgba(130, 200, 188, 0.22);
+	border-radius: 10px;
+	background: linear-gradient(135deg, rgba(130, 200, 188, 0.1), rgba(255, 255, 255, 0.025));
 	color: #edf2ff;
 	font-size: 0.72rem;
 	font-weight: 500;
 	letter-spacing: 0.08em;
 	text-transform: uppercase;
 	cursor: pointer;
-	transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
+	box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+	transition: border-color 180ms ease, background 180ms ease, color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+
+.backIcon {
+	display: inline-grid;
+	width: 24px;
+	height: 24px;
+	place-items: center;
+	border: 1px solid rgba(130, 200, 188, 0.32);
+	border-radius: 7px;
+	background: rgba(130, 200, 188, 0.14);
+	color: #9ce0d3;
+	transition: background 180ms ease, color 180ms ease, transform 180ms ease;
+}
+
+.backLabel {
+	line-height: 1;
+}
+
+.backButtonPrimary {
+	width: 42px;
+	height: 42px;
+	min-height: 42px;
+	padding: 0;
+	justify-content: center;
+	border: 1px solid rgba(130, 144, 200, 0.292);
+	border-radius: 50%;
+	background: transparent;
+	color: #f0f2ff;
+	box-shadow: 0 3px 8px rgba(0, 0, 0, 0.22);
+}
+
+.backButtonPrimary .backIcon {
+	width: 26px;
+	height: 26px;
+	border: 0;
+	background: transparent;
+	color: #f0f2ff;
+	filter: none;
+}
+
+.backButtonPrimary .backLabel {
+	display: none;
 }
 
 .backButton:hover {
-	border-color: rgba(130, 200, 188, 0.35);
-	background: rgba(130, 200, 188, 0.08);
-	transform: translateY(-1px);
+	transform: translateX(-2px);
+	box-shadow: 0 4px 10px rgba(0, 0, 0, 0.26);
+}
+
+.backButton:hover .backIcon {
+	
+	transform: translateX(-1px);
+}
+
+.backButton:active {
+	transform: translateX(-1px) scale(0.98);
+}
+
+.backButton:focus-visible {
+	outline: 2px solid #82c8bc;
+	outline-offset: 3px;
 }
 
 .breadcrumb {
@@ -396,6 +461,10 @@
 	display: none;
 }
 
+.sidebarTop .backButtonPrimary {
+	display: inline-flex;
+}
+
 .burgerLine {
 	display: block;
 	width: 24px;
@@ -420,6 +489,12 @@
 		padding: 14px 20px;
 		border-right: none;
 		border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+	}
+
+	.sidebarTop {
+		justify-content: space-between;
+		margin-top: -4px;
+		margin-bottom: 16px;
 	}
 
 	.mainArea {
@@ -537,8 +612,9 @@
 	}
 
 	.backButton {
-		padding: 6px 8px;
-		min-width: 0;
+		min-width: 38px;
+		min-height: 38px;
+		padding: 7px;
 		justify-content: center;
 		position: relative;
 		z-index: 1;
@@ -552,6 +628,10 @@
 
 	.backButton span {
 		display: none;
+	}
+
+	.backButton .backIcon {
+		display: inline-grid;
 	}
 
 	.topbarActions {
@@ -759,4 +839,12 @@
 
 @media (prefers-reduced-motion: reduce) {
 	.navigationLoading span { animation: none; width: 100%; }
+}
+
+.backButtonPrimary:hover {
+	transform: translateX(-2px) scale(1.03);
+}
+
+.backButtonPrimary:hover .backIcon {
+	transform: translateX(-1px);
 }
