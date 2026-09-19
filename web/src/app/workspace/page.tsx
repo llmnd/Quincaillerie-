@@ -153,7 +153,13 @@ export default function WorkspacePage() {
   const displayName = user?.full_name ?? "Utilisateur";
   const userInitial =
     displayName.trim().charAt(0).toUpperCase() || "U";
-  const visibleModules = modules.filter((module) => !module.adminOnly || user?.role === "admin");
+  const visibleModules = modules.filter(
+    (module) => !module.adminOnly || user?.role === "admin"
+  );
+  const moduleRows = [
+    visibleModules.slice(0, 6),
+    visibleModules.slice(6),
+  ].filter((row) => row.length > 0);
 
   async function handleLogout() {
     try {
@@ -250,38 +256,47 @@ export default function WorkspacePage() {
 
         <div className={styles.gridWrap}>
           <div className={styles.grid}>
-            {visibleModules.map((module) => {
-              const Icon = module.icon;
+            {moduleRows.map((row, rowIndex) => (
+              <div
+                key={`row-${rowIndex}`}
+                className={`${styles.row} ${
+                  rowIndex === 0 ? styles.rowWide : styles.rowNarrow
+                }`}
+              >
+                {row.map((module) => {
+                  const Icon = module.icon;
 
-              return (
-                <Link
-                  key={module.name}
-                  href={module.href}
-                  className={styles.moduleTile}
-                  aria-label={module.name}
-                >
-                  <span className={styles.moduleIcon}>
-                    {module.image ? (
-                      <img
-                        src={module.image}
-                        alt={module.name}
-                        className={styles.moduleImage}
-                      />
-                    ) : (
-                      <Icon
-                        size={32}
-                        strokeWidth={1.75}
-                        className={styles.moduleIconSvg}
-                      />
-                    )}
-                  </span>
+                  return (
+                    <Link
+                      key={module.name}
+                      href={module.href}
+                      className={styles.moduleTile}
+                      aria-label={module.name}
+                    >
+                      <span className={styles.moduleIcon}>
+                        {module.image ? (
+                          <img
+                            src={module.image}
+                            alt={module.name}
+                            className={styles.moduleImage}
+                          />
+                        ) : (
+                          <Icon
+                            size={32}
+                            strokeWidth={1.75}
+                            className={styles.moduleIconSvg}
+                          />
+                        )}
+                      </span>
 
-                  <span className={styles.moduleLabel}>
-                    {module.name}
-                  </span>
-                </Link>
-              );
-            })}
+                      <span className={styles.moduleLabel}>
+                        {module.name}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
+            ))}
           </div>
         </div>
       </div>
