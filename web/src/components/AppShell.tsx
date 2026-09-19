@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import Image from "next/image";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Bell, Bird, Boxes, Calculator, LogOut, Package, PanelLeftClose, PanelLeftOpen, Search, Settings, ShoppingCart, UserRound, Users, WalletCards } from "lucide-react";
 import { authHeaders, clearStoredAuth, getStoredUser, restoreAuthSession } from "../lib/auth";
@@ -232,6 +231,13 @@ export default function AppShell({
         {!hideTopbar && (
           <header className={styles.topbar}>
             <div className={styles.topbarLeft}>
+              {shouldShowBackButton() && (
+                <button type="button" className={styles.backButton} onClick={handleBack} aria-label="Retour">
+                  <ArrowLeft size={14} />
+                  <span>Retour</span>
+                </button>
+              )}
+
               {!hideSidebar && (
                 <button
                   type="button"
@@ -241,13 +247,6 @@ export default function AppShell({
                 >
                   {isSidebarCollapsed ? <PanelLeftOpen size={14} /> : <PanelLeftClose size={14} />}
                   <span>{isSidebarCollapsed ? "Menu" : "Masquer"}</span>
-                </button>
-              )}
-
-              {shouldShowBackButton() && (
-                <button type="button" className={styles.backButton} onClick={handleBack} aria-label="Retour">
-                  <ArrowLeft size={14} />
-                  <span>Retour</span>
                 </button>
               )}
 
@@ -266,7 +265,7 @@ export default function AppShell({
               <div className={styles.userMenuWrap}>
                 <span className={styles.company}>
                   {organization?.logo ? (
-                    <Image src={organization.logo} alt="Logo de l'entreprise" width={20} height={20} className={styles.companyLogo} />
+                    <img src={organization.logo} alt="Logo de l'entreprise" className={styles.companyLogo} />
                   ) : null}
                   {organization?.name ?? "Ma société"}
                 </span>

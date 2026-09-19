@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
@@ -102,10 +101,14 @@ type OrganizationProfile = {
 export default function WorkspacePage() {
   const router = useRouter();
 
-  const [user] = useState<User | null>(() => getStoredUser() as User | null);
+  const [user, setUser] = useState<User | null>(null);
   const [organization, setOrganization] =
     useState<OrganizationProfile | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setUser((getStoredUser() as User | null) ?? null);
+  }, []);
 
   useEffect(() => {
     fetch(
@@ -179,11 +182,9 @@ export default function WorkspacePage() {
         <div className={styles.topRightBar}>
           <div className={styles.companyBadge}>
             {organization?.logo ? (
-              <Image
+              <img
                 src={organization.logo}
                 alt="Logo de la société"
-                width={20}
-                height={20}
                 className={styles.companyLogo}
               />
             ) : null}
@@ -261,11 +262,9 @@ export default function WorkspacePage() {
                 >
                   <span className={styles.moduleIcon}>
                     {module.image ? (
-                      <Image
+                      <img
                         src={module.image}
                         alt={module.name}
-                        width={128}
-                        height={128}
                         className={styles.moduleImage}
                       />
                     ) : (

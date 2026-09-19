@@ -498,6 +498,24 @@
     grid-template-columns: 1fr 1fr;
     gap: 8px;
   }
+
+  .odooGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .odooCard {
+    min-height: 220px;
+  }
+
+  .odooCardHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .journalStats {
+    align-items: flex-start;
+    text-align: left;
+  }
 }
 
 @media (max-width: 600px) {
@@ -505,6 +523,50 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
+  }
+
+  .header h1 {
+    font-size: 1.6rem;
+  }
+
+  .headerActions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .badge {
+    width: 100%;
+    text-align: center;
+  }
+
+  .reportGrid,
+  .chartsGrid,
+  .grid {
+    gap: 14px;
+  }
+
+  .card,
+  .chartCard,
+  .odooCard {
+    padding: 16px;
+  }
+
+  .chartHeader,
+  .cardHeader,
+  .modalHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .chartLegend {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .chartFooter {
+    flex-direction: column;
+    gap: 10px;
   }
 
   .taxForm {
@@ -515,9 +577,82 @@
     grid-column: auto;
   }
 
+  .saleRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
   .saleAction {
+    width: 100%;
+    justify-content: space-between;
     padding-top: 8px;
     border-top: 1px dashed rgba(255, 255, 255, 0.05);
+  }
+
+  .actionRow {
+    flex-wrap: wrap;
+  }
+
+  .odooPrimaryBtn,
+  .odooSecondaryBtn,
+  .odooBadgeBtn,
+  .secondaryButton,
+  .primaryButton {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .invoiceRow {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .journalRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .reconcileRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .modalForm {
+    grid-template-columns: 1fr;
+  }
+
+  .modalCard {
+    width: min(92vw, 520px);
+    padding: 18px;
+  }
+}
+
+@media (max-width: 420px) {
+  .header {
+    padding-bottom: 18px;
+    margin-bottom: 22px;
+  }
+
+  .header p {
+    font-size: 0.74rem;
+  }
+
+  .reportGrid article {
+    padding: 16px;
+  }
+
+  .reportGrid strong {
+    font-size: 1.05rem;
+  }
+
+  .barChartFlex {
+    gap: 6px;
+  }
+
+  .barLabel {
+    font-size: 0.54rem;
   }
 }
 

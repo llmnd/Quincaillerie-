@@ -2,9 +2,7 @@
   position: relative;
   width: 100%;
   min-height: 100vh;
-  height: 100vh;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
   background:
     radial-gradient(circle at 20% 0%, rgba(27, 75, 93, 0.9), transparent 32%),
     radial-gradient(circle at 70% 15%, rgba(16, 24, 43, 0.8), transparent 26%),
@@ -209,7 +207,8 @@
 
 @media (max-width: 520px) {
   .workspacePage {
-    height: 100dvh;
+    min-height: 100dvh;
+    overflow: hidden;
     padding-top: 60px;
     padding-bottom: 120px;
   }
