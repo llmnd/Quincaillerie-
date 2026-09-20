@@ -12,7 +12,7 @@ from app.core.config import settings
 from app.core.security import create_access_token, hash_password, verify_password
 from app.models.organization import Organization
 from app.models.user import User
-from app.schemas.auth import BootstrapAdminRequest, LoginRequest, UserCreate, UserRead, UserUpdate
+from app.schemas.auth import BootstrapAdminRequest, LoginRequest, PasswordChangeRequest, UserCreate, UserRead, UserUpdate
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -197,6 +197,16 @@ def get_me(current_user: User = Depends(get_current_user)) -> User:
     return current_user
 
 
+@router.post("/me/password", status_code=status.HTTP_204_NO_CONTENT)
+def change_my_password(payload: PasswordChangeRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)) -> None:
+    if not verify_password(payload.current_password, current_user.password_hash):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Current password is incorrect")
+    if payload.current_password == payload.new_password:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="New password must be different")
+    current_user.password_hash = hash_password(payload.new_password)
+    db.commit()
+
+
 @router.get("/users", response_model=list[UserRead])
 def list_users(
     db: Session = Depends(get_db),
@@ -220,6 +230,7 @@ def create_user(
         full_name=payload.full_name,
         password_hash=hash_password(payload.password),
         role=payload.role,
+        permissions=payload.permissions,
         organization_id=current_user.organization_id,
     )
     db.add(user)
@@ -256,6 +267,9 @@ def update_user(
 
     if payload.password is not None:
         user.password_hash = hash_password(payload.password)
+
+    if payload.permissions is not None:
+        user.permissions = payload.permissions
 
     db.commit()
     db.refresh(user)

@@ -58,7 +58,7 @@ def create_sale(payload: SaleCreate, db: Session = Depends(get_db), current_user
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Open a cash session before creating a sale")
     if current_user.role != "admin" and not handoff_is_acknowledged(session.id, current_user.id, db):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Acknowledge the cash handoff before creating a sale")
-    if payload.payment_method not in {"cash", "card", "mobile_money", "other"}:
+    if payload.payment_method not in {"cash", "card", "mobile_money", "wave", "orange_money", "other"}:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported payment method")
 
     if payload.farming_batch_id is not None and db.scalar(select(FarmingBatch.id).where(FarmingBatch.id == payload.farming_batch_id, FarmingBatch.organization_id == current_user.organization_id)) is None:

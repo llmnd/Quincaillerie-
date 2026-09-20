@@ -8,6 +8,12 @@ import styles from "./page.module.css";
 type Product = { id: number; sku: string; name: string; image_url?: string | null; category?: string | null; unit_price: number; initial_stock_quantity: number; sold_quantity: number; remaining_stock: number; is_active: boolean };
 type Movement = { id: number; product_id: number; movement_type: string; quantity: number; reason?: string | null; created_at: string };
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const movementTypeLabels: Record<string, string> = {
+  sale: "Vente",
+  purchase: "Achat",
+  adjustment: "Ajustement",
+  return: "Retour",
+};
 
 export default function StockPage() {
   const [products, setProducts] = useState<Product[]>([]); const [movements, setMovements] = useState<Movement[]>([]); const [search, setSearch] = useState(""); const [message, setMessage] = useState("Chargement de l’inventaire…");
@@ -47,9 +53,10 @@ export default function StockPage() {
   }, []);
 
   const filteredProducts = products.filter((product) => `${product.name} ${product.sku} ${product.category ?? ""}`.toLowerCase().includes(search.toLowerCase()));
-  return <AppShell><header className={styles.header}><div><p className={styles.eyebrow}>Contrôle des opérations</p><h1>Stock & inventaire</h1><p>Une vue complète des produits, des ventes et des quantités restantes.</p></div><span className={styles.countBadge}>{products.length} produit{products.length > 1 ? "s" : ""}</span></header>
+  const productsById = new Map(products.map((product) => [product.id, product]));
+  return <AppShell><div className={styles.page}><header className={styles.header}><div><p className={styles.eyebrow}>Contrôle des opérations</p><h1>Stock & inventaire</h1><p>Une vue complète des produits, des ventes et des quantités restantes.</p></div><span className={styles.countBadge}>{products.length} produit{products.length > 1 ? "s" : ""}</span></header>
     <section className={styles.toolbar}><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Rechercher par nom, SKU ou catégorie…" aria-label="Rechercher dans l’inventaire" /><span>{filteredProducts.length} résultat{filteredProducts.length > 1 ? "s" : ""}</span></section>
     {message ? <div className={styles.empty}>{message}</div> : filteredProducts.length === 0 ? <div className={styles.empty}>Aucun produit dans l’inventaire.</div> : <section className={styles.inventory}><div className={styles.tableHead}><span>Produit</span><span>Prix</span><span>Départ</span><span>Vendu</span><span>Restant</span><span>État</span></div>{filteredProducts.map((product) => <article className={styles.productRow} key={product.id}><div className={styles.productInfo}><strong>{product.image_url ? <img src={product.image_url} alt="" className={styles.productThumb} /> : null}{product.name}</strong><span>{product.sku}</span><small>{product.category || "Sans catégorie"}</small></div><b className={styles.price}>{product.unit_price.toLocaleString("fr-FR")} FCFA</b><span className={styles.number}>{product.initial_stock_quantity}</span><span className={styles.sold}>{product.sold_quantity}</span><span className={styles.remaining}>{product.remaining_stock}</span><span className={product.remaining_stock === 0 ? styles.out : styles.available}>{product.remaining_stock === 0 ? "Rupture" : "Disponible"}</span></article>)}</section>}
-    <section className={styles.movementPanel}><div className={styles.panelHeader}><div><p className={styles.eyebrow}>Traçabilité</p><h2>Derniers mouvements</h2></div><span>Journal des opérations</span></div>{movements.length === 0 ? <p className={styles.muted}>Aucun mouvement enregistré.</p> : <div className={styles.movementList}>{movements.slice(0, 10).map((movement) => <div className={styles.movementRow} key={movement.id}><span>#{movement.id}</span><strong>Produit #{movement.product_id}</strong><b className={movement.movement_type === "sale" ? styles.sale : styles.purchase}>{movement.movement_type === "sale" ? "Sortie" : "Entrée"}</b><span>{movement.quantity} unité{movement.quantity > 1 ? "s" : ""}</span><small>{movement.reason || "Sans motif"}</small><time>{new Date(movement.created_at).toLocaleDateString("fr-FR")}</time></div>)}</div>}</section>
-  </AppShell>;
+    <section className={styles.movementPanel}><div className={styles.panelHeader}><div><p className={styles.eyebrow}>Traçabilité</p><h2>Derniers mouvements</h2></div><span>Journal des opérations</span></div>{movements.length === 0 ? <p className={styles.muted}>Aucun mouvement enregistré.</p> : <div className={styles.movementList}>{movements.slice(0, 10).map((movement) => { const product = productsById.get(movement.product_id); const movementLabel = movementTypeLabels[movement.movement_type] ?? "Mouvement"; return <div className={styles.movementRow} key={movement.id}><span>#{movement.id}</span><strong>{product?.name ?? `Produit #${movement.product_id}`}</strong><b className={movement.movement_type === "sale" ? styles.sale : styles.purchase}>{movementLabel}</b><span>{movement.quantity} unité{movement.quantity > 1 ? "s" : ""}</span><small>{product?.sku ? `Réf. ${product.sku} · ` : ""}{movement.reason || "Sans motif"}</small><time>{new Date(movement.created_at).toLocaleDateString("fr-FR")}</time></div>; })}</div>}</section>
+  </div></AppShell>;
 }

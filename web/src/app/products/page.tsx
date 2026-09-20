@@ -643,10 +643,6 @@ export default function ProductsPage() {
             </div>
 
             <div>
-              <p className={styles.eyebrow}>
-                Catalogue
-              </p>
-
               <h1>Produits</h1>
 
               <p className={styles.subtitle}>

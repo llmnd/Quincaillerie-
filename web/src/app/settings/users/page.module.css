@@ -1,3 +1,4 @@
+.permissionsField{margin:14px 0;padding:14px;border:1px solid rgba(148,163,184,.16);background:rgba(255,255,255,.02)}.permissionsField legend{padding:0 6px;color:#c07bbc;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase}.permissionsGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:6px}.permissionOption{display:flex;align-items:center;gap:8px;padding:9px;border:1px solid rgba(148,163,184,.12);color:#e2e8f0;font-size:.76rem}.permissionOption input{accent-color:#c07bbc}@media(max-width:700px){.permissionsGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 /* ==========================================================================
    DESIGN ODOO - FORMULAIRES ET LISTES
    ========================================================================== */

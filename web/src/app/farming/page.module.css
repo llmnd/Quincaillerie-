@@ -19,15 +19,15 @@
 .workspaceHeader h1 {
   margin: 7px 0 5px;
   color: #f8fafc;
-  font-size: 2rem;
-  font-weight: 400;
+  font-size: 2.4rem;
+  font-weight: 700;
   letter-spacing: -0.045em;
 }
 
 .workspaceHeader p {
   margin: 0;
   color: #94a3b8;
-  font-size: 0.78rem;
+  font-size: 0.9rem;
 }
 
 .headerDate {
@@ -36,7 +36,7 @@
   gap: 8px;
   padding-bottom: 5px;
   color: #cbd5e1;
-  font-size: 0.72rem;
+  font-size: 0.9rem;
   white-space: nowrap;
 }
 
@@ -56,8 +56,8 @@
   padding: 0 1px;
   border: 0;
   background: transparent;
-  color: #64748b !important;
-  font-size: 0.74rem;
+  color: #fcfcfc !important;
+  font-size: 0.89rem;
   cursor: pointer;
 }
 
@@ -126,13 +126,13 @@
 .boardToolbar h2 {
   margin: 4px 0 0;
   color: #f8fafc;
-  font-size: 0.98rem;
-  font-weight: 400;
+  font-size: 1.5rem;
+  font-weight: 600;
 }
 
 .panelKicker {
-  color: #94a3b8;
-  font-size: 0.58rem;
+  color: #cb90c6;
+  font-size: 0.8rem;
   font-weight: 600;
   letter-spacing: 0.13em;
   text-transform: uppercase;
@@ -146,7 +146,7 @@
   border-radius: 50%;
   background: #a3e635;
   color: #1a2e05;
-  font-size: 0.65rem;
+  font-size: 0.9rem;
   font-weight: 700;
 }
 
@@ -248,7 +248,7 @@
   border-radius: 5px;
   background: rgba(22, 32, 42, 0.72);
   color: #fff !important;
-  font-size: 0.62rem;
+  font-size: 1rem;
   cursor: pointer;
   transform: translate(-50%, -50%);
 }
@@ -271,28 +271,28 @@
 .insightRail { display: flex; flex-direction: column; gap: 0; }
 .insightRail > .panelHeading { padding-bottom: 13px; border-bottom: 1px solid rgba(148, 163, 184, 0.1); }
 .insightMetric { padding: 13px 0; border-bottom: 1px solid rgba(148, 163, 184, 0.1); }
-.insightMetric > span { display: block; color: #94a3b8; font-size: 0.62rem; }
-.insightMetric strong { display: block; margin-top: 5px; color: #f8fafc; font-size: 1.45rem; font-weight: 300; }
-.insightMetric em { color: #94a3b8; font-size: 0.62rem; font-style: normal; }
-.insightMetric small { display: block; margin-top: 4px; color: #64748b; font-size: 0.61rem; }
+.insightMetric > span { display: block; color: #94a3b8; font-size: 1rem; }
+.insightMetric strong { display: block; margin-top: 5px; color: #f8fafc; font-size: 2rem; font-weight: 400; }
+.insightMetric em { color: #94a3b8; font-size: 0.9rem; font-style: normal; }
+.insightMetric small { display: block; margin-top: 4px; color: #64748b; font-size: 0.9rem; }
 .goodText { color: #a3e635 !important; }
 .alertText { color: #fb7185 !important; }
 .progressTrack { height: 3px; margin-top: 10px; background: rgba(148, 163, 184, 0.16); }
 .progressTrack span { display: block; height: 100%; background: #a3e635; }
-.weatherStrip { display: flex; align-items: center; gap: 7px; margin-top: auto; padding-top: 15px; color: #94a3b8; font-size: 0.62rem; }
+.weatherStrip { display: flex; align-items: center; gap: 7px; margin-top: auto; padding-top: 15px; color: #94a3b8; font-size: 0.8rem; }
 .weatherStrip svg { color: #38bdf8; }
 .weatherStrip strong { margin-left: auto; color: #bef264; font-weight: 500; }
 
 .quickActions { display: flex; align-items: center; gap: 8px; min-height: 58px; margin-bottom: 14px; padding: 9px 10px; border: 1px solid rgba(148, 163, 184, 0.12); border-radius: 10px; background: rgba(15, 23, 42, 0.34); box-shadow: 0 8px 24px rgba(2, 6, 23, 0.1); }
-.quickLabel { margin: 0 8px 0 3px; color: #94a3b8; font-size: 0.6rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; }
+.quickLabel { margin: 0 8px 0 3px; color: #94a3b8; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; }
 .quickActionList, .quickActionListOpen { display: flex; align-items: center; gap: 8px; }
-.quickActions .btnMinimal, .quickActions .btnPrimary { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; }
-.quickActions .btnMinimal svg { color: #a3e635; }
-.quickActions .btnPrimary { margin-left: auto; border-color: #a3e635; background: #a3e635; color: #17210b !important; box-shadow: none; }
-.quickActions .btnPrimary:hover { background: #bef264; color: #17210b !important; }
+.quickActions .btnMinimal, .quickActions .btnPrimary { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px;  font-size: 16; font-weight: 700px;}
+.quickActions .btnMinimal svg { color: #a2e63500; }
+.quickActions .btnPrimary { margin-left: auto; border-color: #a3e635; background: #a2e63500; color: #ffffff !important; box-shadow: none; }
+.quickActions .btnPrimary:hover { background: #bef26400; color: #fefefc !important; }
 .quickActionsToggle { display: none; align-items: center; justify-content: center; width: 30px; height: 30px; margin-left: auto; padding: 0; border: 1px solid rgba(163, 230, 53, 0.32); border-radius: 7px; background: rgba(163, 230, 53, 0.08); color: #a3e635 !important; cursor: pointer; }
-.quickActionsToggle:hover { background: rgba(163, 230, 53, 0.16); }
-.taskToggle { display: inline-flex; align-items: center; gap: 7px; padding: 8px 11px; border: 1px solid rgba(163, 230, 53, 0.28); border-radius: 7px; background: rgba(163, 230, 53, 0.08); color: #d9f99d !important; font-size: 0.72rem; cursor: pointer; }
+.quickActionsToggle:hover { background: rgba(139, 139, 139, 0.336); }
+.taskToggle { display: inline-flex; align-items: center; gap: 7px; padding: 8px 11px; border: 1px solid rgba(163, 230, 53, 0.28); border-radius: 7px; background: rgba(163, 230, 53, 0.08); color: #d9f99d !important; font-size: 1.3rem; cursor: pointer; }
 .taskToggle:hover, .taskToggle[aria-expanded="true"] { border-color: rgba(163, 230, 53, 0.6); background: rgba(163, 230, 53, 0.15); }
 .taskToggle > span { display: grid; min-width: 18px; height: 18px; place-items: center; border-radius: 50%; background: #a3e635; color: #1a2e05; font-size: 0.58rem; font-weight: 700; }
 .taskRevealBar { display: flex; justify-content: center; margin: -2px 0 18px; padding-top: 2px; }
@@ -306,10 +306,10 @@
   background: rgba(15, 23, 42, 0.3);
 }
 
-.focusHint { color: #64748b; font-size: 0.62rem; }
+.focusHint { color: #603e58; font-size: 0.8rem; }
 .tabStats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; margin-top: 15px; }
 .tabStats > div { padding: 10px 11px; border: 1px solid rgba(148, 163, 184, 0.1); background: rgba(255, 255, 255, 0.02); }
-.tabStats span { display: block; color: #94a3b8; font-size: 0.6rem; }
+.tabStats span { display: block; color: #94a3b8; font-size: 1rem; }
 .tabStats strong { display: block; margin-top: 5px; color: #f8fafc; font-size: 1.12rem; font-weight: 300; }
 .focusRows { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; margin-top: 15px; }
 .tabList { margin-top: 22px; }

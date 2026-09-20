@@ -55,6 +55,8 @@ def ensure_sqlite_schema() -> None:
         if "organization_id" not in user_columns:
             connection.execute(text("ALTER TABLE users ADD COLUMN organization_id INTEGER"))
             connection.execute(text("UPDATE users SET organization_id = :org_id WHERE organization_id IS NULL"), {"org_id": default_org_id})
+        if "permissions" not in user_columns:
+            connection.execute(text("ALTER TABLE users ADD COLUMN permissions JSON NOT NULL DEFAULT '{}'"))
 
         for table_name in [
             "products",

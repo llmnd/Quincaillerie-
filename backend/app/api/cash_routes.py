@@ -225,18 +225,28 @@ def list_sessions(db: Session = Depends(get_db), current_user: User = Depends(re
 
 
 @router.get("/sessions/{session_id}/balance")
-def session_balance(session_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin", "seller"))) -> dict[str, float | int | str]:
+def session_balance(session_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin", "seller"))) -> dict[str, object]:
     session = db.get(CashSession, session_id)
     if session is None:
         raise HTTPException(status_code=404, detail="Cash session not found")
     if current_user.role != "admin" and not handoff_is_acknowledged(session.id, current_user.id, db):
         raise HTTPException(status_code=403, detail="This is not your cash session")
+    sales = db.scalars(select(Sale).where(Sale.session_id == session.id)).all()
+    operations = db.scalars(select(CashOperation).where(CashOperation.session_id == session.id)).all()
+    payment_totals: dict[str, float] = {}
+    for sale in sales:
+        payment_totals[sale.payment_method] = payment_totals.get(sale.payment_method, 0.0) + float(sale.total_amount)
+    cash_in = sum(operation.amount for operation in operations if operation.operation_type in {"cash_in", "adjustment_in"})
+    cash_out = sum(operation.amount for operation in operations if operation.operation_type in {"cash_out", "refund", "adjustment_out"})
     return {
         "session_id": session.id,
         "register_id": session.register_id,
         "status": session.status,
         "opening_amount": session.actual_opening_amount,
         "expected_cash_amount": calculate_expected_cash(session.id, db),
+        "payment_totals": payment_totals,
+        "cash_in": cash_in,
+        "cash_out": cash_out,
     }
 
 

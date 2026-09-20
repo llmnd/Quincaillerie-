@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, ForeignKey, String
+from sqlalchemy import Boolean, ForeignKey, JSON, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -14,5 +14,6 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[str] = mapped_column(String(20), nullable=False, default="seller")
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    permissions: Mapped[dict[str, bool]] = mapped_column(JSON, nullable=False, default=dict)
 
     organization: Mapped["Organization"] = relationship(back_populates="users")

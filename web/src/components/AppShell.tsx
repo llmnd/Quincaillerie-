@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Bell, Bird, Boxes, Calculator, LayoutDashboard, LayoutGrid, LogOut, Package, PanelLeftClose, PanelLeftOpen, Settings, ShoppingCart, UserRound, Users, WalletCards } from "lucide-react";
 import { authHeaders, clearStoredAuth, getStoredUser, restoreAuthSession } from "../lib/auth";
@@ -12,6 +12,100 @@ type User = { full_name?: string; email?: string; role?: "admin" | "seller" };
 type ModuleState = { key: string; enabled: boolean };
 type OrganizationProfile = { name: string; logo?: string | null };
 type Application = { label: string; description: string; href: string; icon: typeof ShoppingCart; roles: string[]; moduleKey?: string };
+type BreadcrumbItem = { href: string; label: string };
+
+const breadcrumbLabels: Record<string, string> = {
+  "/": "Accueil",
+  "/workspace": "Espace de travail",
+  "/dashboard": "Tableau de bord",
+  "/sales": "Ventes",
+  "/orders": "Commandes",
+  "/products": "Produits",
+  "/stock": "Stock",
+  "/cash": "Caisse",
+  "/clients": "Clients",
+  "/farming": "Élevage",
+  "/calendar": "Calendrier",
+  "/admin": "Administration",
+  "/accounting": "Comptabilité",
+  "/reports": "Rapports",
+  "/profile": "Mon profil",
+  "/settings/modules": "Modules",
+  "/settings/support": "Support",
+  "/settings/users": "Utilisateurs",
+};
+
+const breadcrumbStorageKey = "quincaillerie_breadcrumbs";
+
+function BreadcrumbTrail({ items, className = "", compact = true }: Readonly<{ items: BreadcrumbItem[]; className?: string; compact?: boolean }>) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLSpanElement>(null);
+  const isCompact = compact && items.length > 3;
+  const visibleItems = isCompact ? [items[0], items.at(-1)!] : items;
+  const hiddenItems = isCompact ? items.slice(1, -1) : [];
+
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    function closeMenu(event: MouseEvent) {
+      if (!menuRef.current?.contains(event.target as Node)) setMenuOpen(false);
+    }
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setMenuOpen(false);
+    }
+
+    document.addEventListener("mousedown", closeMenu);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeMenu);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [menuOpen]);
+
+  return (
+    <nav className={`${styles.breadcrumbTrail} ${className}`} aria-label="Fil d’Ariane">
+      {visibleItems.map((item, index) => (
+        <span key={`${item.href}-${index}`} className={styles.breadcrumbItem}>
+          {index > 0 && <span className={styles.breadcrumbSep}>/</span>}
+          {isCompact && index === 1 && (
+            <span ref={menuRef} className={styles.breadcrumbMoreWrap}>
+              <button
+                type="button"
+                className={styles.breadcrumbMore}
+                aria-label="Afficher les niveaux intermédiaires"
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  setMenuOpen((open) => !open);
+                }}
+              >
+                …
+              </button>
+              {menuOpen && (
+                <span className={styles.breadcrumbMenu} role="menu">
+                  {hiddenItems.map((hiddenItem) => (
+                    <Link key={hiddenItem.href} href={hiddenItem.href} className={styles.breadcrumbMenuLink} role="menuitem" onClick={() => setMenuOpen(false)}>
+                      {hiddenItem.label}
+                    </Link>
+                  ))}
+                </span>
+              )}
+              <span className={styles.breadcrumbSep}>/</span>
+            </span>
+          )}
+          {index === visibleItems.length - 1 ? (
+            <strong className={styles.breadcrumbCurrent} aria-current="page">{item.label}</strong>
+          ) : (
+            <Link href={item.href} className={styles.breadcrumbLink}>{item.label}</Link>
+          )}
+        </span>
+      ))}
+    </nav>
+  );
+}
 
 const applications: Application[] = [
   { label: "Ventes", description: "Devis et commandes", href: "/sales", icon: ShoppingCart, roles: ["admin", "seller"], moduleKey: "sales" },
@@ -32,9 +126,8 @@ const sidebarItems = [
   { label: "Produits", href: "/products", icon: Package, image: "https://i.pinimg.com/1200x/06/a0/80/06a080194e88100b55e25cdfdf51d7f4.jpg", moduleKey: "products" },
   { label: "Clients", href: "/clients", icon: Users, image: "https://i.pinimg.com/736x/24/93/ec/2493ec2ab1a2f4dab8989b1ad23762db.jpg", moduleKey: "customers" },
   { label: "Stock", href: "/stock", icon: Boxes, image: "https://i.pinimg.com/736x/71/16/ba/7116bafcb4ae414d6fd8c74a8cd2a46b.jpg", roles: ["admin"], moduleKey: "stock" },
-  { label: "Comptabilité", href: "/accounting", icon: Calculator, image: "https://i.pinimg.com/736x/ca/2a/0b/ca2a0bd781025c7a6e7ab6073847ea41.jpg", roles: ["admin"], moduleKey: "accounting" },
   { label: "Élevage", href: "/farming", icon: Bird, image: "https://i.pinimg.com/originals/6e/cd/13/6ecd136e249649f0ba8452d13613bcfd.gif", moduleKey: "farming" },
-  { label: "Administration", href: "/admin", icon: Settings, image: "https://i.pinimg.com/736x/ca/2a/0b/ca2a0bd781025c7a6e7ab6073847ea41.jpg", roles: ["admin"], moduleKey: "users" },
+  { label: "Admin", href: "/admin", icon: Settings, image: "https://i.pinimg.com/1200x/8b/a4/80/8ba4808a95e33280a92660249a971bbd.jpg", roles: ["admin"], moduleKey: "users" },
 ];
 
 export default function AppShell({
@@ -42,7 +135,8 @@ export default function AppShell({
   hideTopbar = false,
   hideSidebar = false,
   hideContentPadding = false,
-}: Readonly<{ children: React.ReactNode; hideTopbar?: boolean; hideSidebar?: boolean; hideContentPadding?: boolean }>) {
+  showBreadcrumbWhenHidden = false,
+}: Readonly<{ children: React.ReactNode; hideTopbar?: boolean; hideSidebar?: boolean; hideContentPadding?: boolean; showBreadcrumbWhenHidden?: boolean }>) {
   const router = useRouter();
   const pathname = usePathname();
   const queryClient = useQueryClient();
@@ -53,6 +147,9 @@ export default function AppShell({
   const [isNavigating, setIsNavigating] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>(() => [{ href: pathname, label: breadcrumbLabels[pathname] ?? pathname }]);
+  const [breadcrumbsReady, setBreadcrumbsReady] = useState(false);
+  const navigationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     // Keep the first client render identical to the server before reading session-dependent data.
     useEffect(() => {
       // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -124,9 +221,55 @@ export default function AppShell({
 
   useEffect(() => {
     // Reset the visual route indicator once the new route is committed.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (navigationTimerRef.current) clearTimeout(navigationTimerRef.current);
+    navigationTimerRef.current = null;
     setIsNavigating(false);
   }, [pathname]);
+
+  useEffect(() => () => {
+    if (navigationTimerRef.current) clearTimeout(navigationTimerRef.current);
+  }, []);
+
+  useEffect(() => {
+    const stored = window.sessionStorage.getItem(breadcrumbStorageKey);
+    let parsed: BreadcrumbItem[] = [];
+
+    if (stored) {
+      try {
+        const saved = JSON.parse(stored) as BreadcrumbItem[];
+        if (Array.isArray(saved)) parsed = saved;
+      } catch {
+        window.sessionStorage.removeItem(breadcrumbStorageKey);
+      }
+    }
+
+    const currentIndex = parsed.findIndex((item) => item.href === pathname);
+    const nextBreadcrumbs = currentIndex >= 0
+      ? parsed.slice(0, currentIndex + 1)
+      : [...parsed, { href: pathname, label: breadcrumbLabels[pathname] ?? pathname.split("/").filter(Boolean).pop() ?? "Page" }];
+
+    setBreadcrumbs(nextBreadcrumbs.length > 0 ? nextBreadcrumbs : [{ href: pathname, label: breadcrumbLabels[pathname] ?? pathname }]);
+    setBreadcrumbsReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!breadcrumbsReady) return;
+
+    setBreadcrumbs((current) => {
+      const existingIndex = current.findIndex((item) => item.href === pathname);
+      if (existingIndex >= 0) return current.slice(0, existingIndex + 1);
+
+      return [
+        ...current,
+        { href: pathname, label: breadcrumbLabels[pathname] ?? pathname.split("/").filter(Boolean).pop() ?? "Page" },
+      ];
+    });
+  }, [breadcrumbsReady, pathname]);
+
+  useEffect(() => {
+    if (!breadcrumbsReady) return;
+    window.sessionStorage.setItem(breadcrumbStorageKey, JSON.stringify(breadcrumbs));
+  }, [breadcrumbs, breadcrumbsReady]);
 
   useEffect(() => {
     if (!user) return;
@@ -139,12 +282,7 @@ export default function AppShell({
   const enabledModuleKeys = new Set((modulesQuery.data ?? []).filter((module) => module.enabled).map((module) => module.key));
   const safeEnabledModules = enabledModuleKeys.size > 0 ? enabledModuleKeys : allModuleKeys;
   const organization = isHydrated ? organizationQuery.data ?? null : null;
-  let breadcrumbLabel = pathname.split("/").filter(Boolean).join(" / ");
-  if (pathname === "/dashboard") {
-    breadcrumbLabel = "Tableau de bord";
-  } else if (pathname === "/workspace") {
-    breadcrumbLabel = "Espace de travail";
-  }
+  const visibleBreadcrumbs = breadcrumbs.length > 0 ? breadcrumbs : [{ href: pathname, label: breadcrumbLabels[pathname] ?? pathname }];
   const visibleSidebar = (isHydrated ? sidebarItems.filter((item) => {
     const allowedByRole = !item.roles || (role ? item.roles.includes(role) : false);
     if (!allowedByRole) return false;
@@ -160,17 +298,19 @@ export default function AppShell({
   }
 
   function startNavigation(route: string) {
-    if (route !== pathname) setIsNavigating(true);
+    if (route === pathname) return;
+    if (navigationTimerRef.current) clearTimeout(navigationTimerRef.current);
+    navigationTimerRef.current = setTimeout(() => setIsNavigating(true), 250);
   }
 
   function handleBack() {
     if (typeof window !== "undefined" && window.history.length > 1) {
-      setIsNavigating(true);
+      startNavigation("history");
       router.back();
       return;
     }
 
-    setIsNavigating(true);
+    startNavigation("/workspace");
     router.push("/workspace");
   }
 
@@ -254,6 +394,9 @@ export default function AppShell({
       )}
 
       <main className={shouldHideSidebar ? styles.mainAreaFull : styles.mainArea}>
+        {hideTopbar && showBreadcrumbWhenHidden && (
+          <BreadcrumbTrail items={visibleBreadcrumbs} className={styles.breadcrumbOverlay} />
+        )}
         {!hideTopbar && (
           <header className={styles.topbar}>
             <div className={styles.topbarLeft}>
@@ -269,10 +412,7 @@ export default function AppShell({
                 </button>
               )}
 
-              <div className={styles.breadcrumb}>
-                <span className={styles.breadcrumbSep}>/</span>
-                <strong>{breadcrumbLabel}</strong>
-              </div>
+              <BreadcrumbTrail items={visibleBreadcrumbs} className={styles.breadcrumb} compact={false} />
             </div>
 
             <div className={styles.topbarActions}>

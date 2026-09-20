@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { FormEvent, useState } from "react";
 import { LogOut, Mail, ShieldCheck, UserRound } from "lucide-react";
 import { useRouter } from "next/navigation";
 import AppShell from "../../components/AppShell";
@@ -28,6 +28,32 @@ export default function ProfilePage() {
       return {};
     }
   });
+  const [passwordForm, setPasswordForm] = useState({ current_password: "", new_password: "", confirmation: "" });
+  const [passwordMessage, setPasswordMessage] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+
+  async function changePassword(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setPasswordMessage("");
+    setPasswordError("");
+    if (passwordForm.new_password !== passwordForm.confirmation) {
+      setPasswordError("Les nouveaux mots de passe ne correspondent pas.");
+      return;
+    }
+    const response = await fetch(`${API_URL}/api/v1/auth/me/password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ current_password: passwordForm.current_password, new_password: passwordForm.new_password }),
+    });
+    if (!response.ok) {
+      const payload = await response.json().catch(() => null) as { detail?: string } | null;
+      setPasswordError(payload?.detail === "Current password is incorrect" ? "Votre mot de passe actuel est incorrect." : "Impossible de modifier le mot de passe.");
+      return;
+    }
+    setPasswordForm({ current_password: "", new_password: "", confirmation: "" });
+    setPasswordMessage("Mot de passe modifié avec succès.");
+  }
 
   function logout() {
     fetch(`${API_URL}/api/v1/auth/logout`, { method: "POST", credentials: "include" }).catch(() => undefined);
@@ -71,6 +97,20 @@ export default function ProfilePage() {
           <div className={styles.profileActions}>
             <button type="button" className={styles.logoutButton} onClick={logout}><LogOut size={16} /> Se déconnecter</button>
           </div>
+        </section>
+        <section className={styles.passwordCard}>
+          <div>
+            <p className={styles.sectionEyebrow}>Sécurité</p>
+            <h2>Modifier mon mot de passe</h2>
+          </div>
+          <form className={styles.passwordForm} onSubmit={changePassword}>
+            <input required minLength={8} type="password" placeholder="Mot de passe actuel" value={passwordForm.current_password} onChange={(event) => setPasswordForm({ ...passwordForm, current_password: event.target.value })} />
+            <input required minLength={8} type="password" placeholder="Nouveau mot de passe" value={passwordForm.new_password} onChange={(event) => setPasswordForm({ ...passwordForm, new_password: event.target.value })} />
+            <input required minLength={8} type="password" placeholder="Confirmer le nouveau mot de passe" value={passwordForm.confirmation} onChange={(event) => setPasswordForm({ ...passwordForm, confirmation: event.target.value })} />
+            <button type="submit" className={styles.passwordButton}>Modifier le mot de passe</button>
+          </form>
+          {passwordError ? <p className={styles.formError}>{passwordError}</p> : null}
+          {passwordMessage ? <p className={styles.formSuccess}>{passwordMessage}</p> : null}
         </section>
         {profile.role === "admin" ? <OrganizationSettings /> : null}
       </main>

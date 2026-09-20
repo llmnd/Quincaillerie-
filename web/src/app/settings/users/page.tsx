@@ -6,10 +6,13 @@ import OdooFormLayout from "../../../components/OdooFormLayout";
 import { authHeaders } from "../../../lib/auth";
 import styles from "./page.module.css";
 
-type User = { id: number; full_name: string; email: string; role: "admin" | "seller"; is_active: boolean };
+type PermissionKey = "sales" | "cash" | "stock" | "customers" | "farming" | "reports";
+type User = { id: number; full_name: string; email: string; role: "admin" | "seller"; is_active: boolean; permissions?: Partial<Record<PermissionKey, boolean>> };
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-type UserForm = { full_name: string; email: string; password: string; role: "admin" | "seller" };
-const emptyForm: UserForm = { full_name: "", email: "", password: "", role: "seller" };
+type UserForm = { full_name: string; email: string; password: string; role: "admin" | "seller"; permissions: Record<PermissionKey, boolean> };
+const defaultPermissions: Record<PermissionKey, boolean> = { sales: true, cash: true, stock: false, customers: true, farming: false, reports: false };
+const emptyForm: UserForm = { full_name: "", email: "", password: "", role: "seller", permissions: defaultPermissions };
+const permissionLabels: Record<PermissionKey, string> = { sales: "Ventes", cash: "Caisse", stock: "Stock", customers: "Clients", farming: "Élevage", reports: "Rapports" };
 
 export function UsersPageContent() {
   const [users, setUsers] = useState<User[]>([]);
@@ -76,6 +79,7 @@ export function UsersPageContent() {
       if (form.password.trim()) {
         payload.password = form.password;
       }
+      payload.permissions = JSON.stringify(form.permissions);
 
       const response = await fetch(`${API_URL}/api/v1/auth/users/${editingUserId}`, {
         method: "PATCH",
@@ -104,6 +108,7 @@ export function UsersPageContent() {
       email: user.email,
       password: "",
       role: user.role,
+      permissions: { ...defaultPermissions, ...(user.permissions ?? {}) },
     });
     setShowForm(true);
   }
@@ -152,6 +157,18 @@ export function UsersPageContent() {
             <label>Nom complet</label>
             <input required value={form.full_name} onChange={(event) => setForm({ ...form, full_name: event.target.value })} />
           </div>
+
+          <fieldset className={styles.permissionsField}>
+            <legend>Droits accordés</legend>
+            <div className={styles.permissionsGrid}>
+              {(Object.keys(permissionLabels) as PermissionKey[]).map((permission) => (
+                <label key={permission} className={styles.permissionOption}>
+                  <input type="checkbox" checked={form.permissions[permission]} onChange={(event) => setForm({ ...form, permissions: { ...form.permissions, [permission]: event.target.checked } })} />
+                  <span>{permissionLabels[permission]}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
 
           <div className={styles.formField}>
             <label>Email professionnel</label>

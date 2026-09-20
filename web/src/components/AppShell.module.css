@@ -55,6 +55,132 @@
 	margin-bottom: 24px;
 }
 
+.sidebarBreadcrumb {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	min-width: 0;
+	margin-left: 9px;
+	overflow: visible;
+	color: #eef1f5;
+	font-size: 0.68rem;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	white-space: nowrap;
+}
+
+.sidebarTop {
+	overflow: visible;
+}
+
+.sidebarBreadcrumb .breadcrumbItem {
+	min-width: 0;
+}
+
+.sidebarBreadcrumb .breadcrumbLink,
+.sidebarBreadcrumb strong {
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.breadcrumbTrail {
+	position: relative;
+	min-width: 0;
+	max-width: 100%;
+	overflow: visible;
+}
+
+.breadcrumbCurrent {
+	display: inline-block;
+	max-width: 14rem;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	vertical-align: bottom;
+	animation: breadcrumbCurrentIn 220ms ease-out both;
+}
+
+.breadcrumbMoreWrap {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.breadcrumbMore {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 20px;
+	min-height: 22px;
+	padding: 0 3px;
+	border: 0;
+	background: transparent;
+	color: #dce8f5;
+	font: inherit;
+	line-height: 1;
+	cursor: pointer;
+}
+
+.breadcrumbMore:hover,
+.breadcrumbMore[aria-expanded="true"] {
+	color: #82c8bc;
+}
+
+.breadcrumbMenu {
+	position: absolute;
+	top: calc(100% + 10px);
+	left: 0;
+	display: flex;
+	flex-direction: column;
+	min-width: 150px;
+	padding: 6px;
+	border: 1px solid rgba(148, 163, 184, 0.24);
+	border-radius: 8px;
+	background: #171a24;
+	box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+	z-index: 40;
+	pointer-events: auto;
+	animation: breadcrumbMenuIn 140ms ease-out both;
+}
+
+.breadcrumbMenuLink {
+	display: block;
+	padding: 7px 9px;
+	border-radius: 5px;
+	color: #dce5f0;
+	font-size: 0.68rem;
+	letter-spacing: 0.04em;
+	white-space: nowrap;
+}
+
+.breadcrumbMenuLink:hover {
+	background: rgba(130, 200, 188, 0.12);
+	color: #ffffff;
+}
+
+@keyframes breadcrumbCurrentIn {
+	from { opacity: 0; transform: translateX(5px); }
+	to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes breadcrumbMenuIn {
+	from { opacity: 0; transform: translateY(-4px); }
+	to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.breadcrumbCurrent,
+	.breadcrumbMenu { animation: none; }
+}
+
+.sidebarBreadcrumb.breadcrumbDense {
+	font-size: 0.58rem;
+}
+
+.sidebarBreadcrumb.breadcrumbVeryDense {
+	font-size: 0.5rem;
+}
+
 .mainArea {
 	display: flex;
 	min-width: 0;
@@ -177,10 +303,59 @@
 .breadcrumb {
 	display: flex;
 	align-items: center;
-	gap: 12px;
+	gap: 8px;
 	font-size: 0.72rem;
 	letter-spacing: 0.18em;
 	text-transform: uppercase;
+}
+
+.breadcrumbOverlay {
+	position: absolute;
+	top: 16px;
+	left: 72px;
+	z-index: 25;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	max-width: calc(100% - 180px);
+	overflow: hidden;
+	color: #eef1f5;
+	font-size: 0.72rem;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	white-space: nowrap;
+}
+
+.breadcrumbOverlay strong {
+	color: #eef1f5;
+	font-weight: 500;
+}
+
+.breadcrumbDense {
+	font-size: 0.62rem;
+	letter-spacing: 0.06em;
+	gap: 5px;
+}
+
+.breadcrumbVeryDense {
+	font-size: 0.54rem;
+	letter-spacing: 0.03em;
+	gap: 3px;
+}
+
+.breadcrumbItem {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.breadcrumbLink {
+	color: #c07bbc !important;
+	transition: color 180ms ease;
+}
+
+.breadcrumbLink:hover {
+	color: #c77ac2 !important;
 }
 
 .breadcrumbBrand {

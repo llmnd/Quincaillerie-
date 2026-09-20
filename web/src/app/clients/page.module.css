@@ -52,7 +52,7 @@
 .eyebrow {
   margin: 0 0 4px;
   color: #777f89;
-  font-size: 0.6rem;
+  font-size: 1.1rem;
   font-weight: 600;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -61,8 +61,8 @@
 .header h1 {
   margin: 0;
   color: #f7f8fa;
-  font-size: 1.5rem;
-  font-weight: 600;
+  font-size: 1.9rem;
+  font-weight: 700;
   letter-spacing: -0.025em;
   line-height: 1.15;
 }
@@ -70,7 +70,7 @@
 .subtitle {
   margin: 4px 0 0;
   color: #858c96;
-  font-size: 0.72rem;
+  font-size: 1.2rem;
   line-height: 1.4;
 }
 
@@ -98,8 +98,8 @@
 }
 
 .statLabel {
-  color: #737d8a;
-  font-size: 0.62rem;
+  color: #f3f6f9;
+  font-size: 0.8rem;
   font-weight: 500;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -137,7 +137,7 @@
   display: block;
   margin-bottom: 6px;
   color: #a46aa3;
-  font-size: 0.68rem;
+  font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -178,7 +178,7 @@
 .sectionHeading h3 {
   margin: 0;
   color: #e1e7ef;
-  font-size: 0.76rem;
+  font-size: 0.9rem;
   font-weight: 650;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -187,7 +187,7 @@
 .sectionHeading p {
   margin: 4px 0 0;
   color: #707c8c;
-  font-size: 0.68rem;
+  font-size: 0.8rem;
 }
 
 .odooFormGrid {
@@ -199,12 +199,12 @@
 .formField {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 10px;
 }
 
 .formField label {
   color: rgba(255, 255, 255, 0.8);
-  font-size: 0.76rem;
+  font-size: 0.9rem;
   font-weight: 500;
 }
 
@@ -217,7 +217,7 @@
   height: 38px;
   padding: 0 11px;
   border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 5px;
+  border-radius: 0px;
   background: #151920;
   color: #f4f7fb;
   font: inherit;
@@ -231,7 +231,7 @@
 }
 
 .formField input::placeholder {
-  color: #596575;
+  color: #93a0b0;
 }
 
 .formField input:hover {
@@ -239,9 +239,9 @@
 }
 
 .formField input:focus {
-  border-color: rgba(0, 199, 195, 0.65);
-  background: #171c23;
-  box-shadow: 0 0 0 2px rgba(0, 199, 195, 0.08);
+  border-color: rgba(0, 199, 196, 0.386);
+  background: #171c236b;
+  box-shadow: 0 0 0 2px rgba(0, 199, 196, 0);
 }
 
 .formMessage {
@@ -281,11 +281,11 @@
   min-height: 34px;
   padding: 0 14px;
   border: 1px solid rgba(174, 116, 170, 0.75);
-  border-radius: 5px;
+  border-radius: 0px;
   background: #714b67;
   color: #fff;
   font: inherit;
-  font-size: 0.7rem;
+  font-size: 0.9rem;
   font-weight: 650;
   cursor: pointer;
   transition:
@@ -313,11 +313,11 @@
   min-height: 34px;
   padding: 0 13px;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 5px;
+  border-radius: 0px;
   background: rgba(255, 255, 255, 0.025);
   color: #aeb8c6;
   font: inherit;
-  font-size: 0.7rem;
+  font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
   transition:
@@ -369,20 +369,20 @@
   border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: 4px;
   background: #0d1117;
-  color: #f3f6fa;
+  color: #f5f6f8;
   font: inherit;
-  font-size: 0.76rem;
+  font-size: 0.9rem;
   outline: none;
   box-sizing: border-box;
 }
 
 .searchBox input::placeholder {
-  color: #596575;
+  color: #c7cdd6;
 }
 
 .searchBox input:focus {
-  border-color: rgba(0, 199, 195, 0.55);
-  box-shadow: 0 0 0 2px rgba(0, 199, 195, 0.06);
+  border-color: rgba(0, 199, 196, 0.244);
+  box-shadow: 0 0 0 2px rgba(0, 199, 196, 0.005);
 }
 
 .searchIcon {
@@ -390,7 +390,7 @@
   left: 10px;
   width: 15px;
   height: 15px;
-  color: #6e7b8c;
+  color: #d0d7e0;
   pointer-events: none;
   z-index: 1;
 }
@@ -405,7 +405,7 @@
   height: 24px;
   border: 0;
   background: transparent;
-  color: #738093;
+  color: #c9d0da;
   font-size: 1.05rem;
   cursor: pointer;
 }
@@ -428,19 +428,19 @@
   background: #0d1117;
   color: #b7c1cf;
   font: inherit;
-  font-size: 0.72rem;
+  font-size: 0.9rem;
   outline: none;
   cursor: pointer;
 }
 
 .toolbarControls select:focus {
-  border-color: rgba(0, 199, 195, 0.55);
+  border-color: rgba(0, 199, 196, 0.018);
 }
 
 .resultCount {
   white-space: nowrap;
-  color: #748193;
-  font-size: 0.68rem;
+  color: #bdc8d8;
+  font-size: 0.78rem;
 }
 
 .resetButton {
@@ -489,7 +489,7 @@
   justify-content: center;
   gap: 9px;
   min-height: 180px;
-  color: #778495;
+  color: #d6dde5;
   font-size: 0.76rem;
 }
 
@@ -540,7 +540,7 @@
   padding: 0 15px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.055);
   color: #697584;
-  font-size: 0.62rem;
+  font-size: 0.72rem;
   font-weight: 650;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -628,7 +628,7 @@
 .contactItem {
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  gap: 24px;
   min-width: 0;
   overflow: hidden;
 }
@@ -636,7 +636,7 @@
 .contactItem span {
   flex: 0 0 55px;
   color: #606e7f;
-  font-size: 0.6rem;
+  font-size: 0.74rem;
   text-transform: uppercase;
 }
 
@@ -644,7 +644,7 @@
   overflow: hidden;
   color: #bdc7d4;
   font-size: 0.7rem;
-  font-weight: 450;
+  font-weight: 550;
   text-overflow: ellipsis;
   white-space: nowrap;
 }

@@ -30,6 +30,7 @@ class UserCreate(BaseModel):
     full_name: str = Field(min_length=2, max_length=255)
     password: str = Field(min_length=8)
     role: Literal["admin", "seller"] = "seller"
+    permissions: dict[str, bool] = {}
 
     @field_validator("email")
     @classmethod
@@ -48,6 +49,7 @@ class UserUpdate(BaseModel):
     email: str | None = None
     role: Literal["admin", "seller"] | None = None
     password: str | None = Field(default=None, min_length=8)
+    permissions: dict[str, bool] | None = None
 
     @field_validator("email")
     @classmethod
@@ -72,7 +74,13 @@ class UserRead(BaseModel):
     full_name: str
     role: Literal["admin", "seller"]
     is_active: bool
+    permissions: dict[str, bool] = {}
     access_token: str | None = None
+
+
+class PasswordChangeRequest(BaseModel):
+    current_password: str = Field(min_length=8)
+    new_password: str = Field(min_length=8)
 
 
 class TokenResponse(BaseModel):

@@ -322,7 +322,6 @@ export default function ClientsPage() {
               </div>
 
               <div>
-                <p className={styles.eyebrow}>Ventes</p>
                 <h1>Clients</h1>
                 <p className={styles.subtitle}>
                   Contacts, coordonnées et suivi de votre clientèle.

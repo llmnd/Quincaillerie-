@@ -245,7 +245,7 @@ export default function SalesPage() {
             <span>{cart.length} ligne{cart.length > 1 ? "s" : ""}</span>
           </div>
 
-          {isPaymentStep && <div className={styles.paymentStep}><p className={styles.stepEyebrow}>Étape 2 sur 2</p><h3>Choisir le paiement</h3><div className={styles.saleOptions}><label htmlFor="payment">Paiement<select id="payment" value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value)}><option value="cash">Espèces</option><option value="card">Carte</option><option value="mobile_money">Mobile Money</option><option value="other">Autre</option></select></label><label htmlFor="discount">Remise FCFA<input id="discount" type="number" min="0" value={discount} onChange={(event) => setDiscount(event.target.value)} /></label></div></div>}
+          {isPaymentStep && <div className={styles.paymentStep}><p className={styles.stepEyebrow}>Étape 2 sur 2</p><h3>Choisir le paiement</h3><div className={styles.saleOptions}><label htmlFor="payment">Paiement<select id="payment" value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value)}><option value="cash">Espèces</option><option value="wave">Wave</option><option value="orange_money">Orange Money</option><option value="mobile_money">Mobile Money</option><option value="card">Carte</option><option value="other">Autre</option></select></label><label htmlFor="discount">Remise FCFA<input id="discount" type="number" min="0" value={discount} onChange={(event) => setDiscount(event.target.value)} /></label></div></div>}
 
           <div className={styles.cartLines}>
             {cart.length === 0 ? (

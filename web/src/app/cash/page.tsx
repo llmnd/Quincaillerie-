@@ -22,7 +22,7 @@ type CashSession = {
   opened_at: string;
   closed_at?: string | null;
 };
-type CashBalance = { expected_cash_amount: number };
+type CashBalance = { expected_cash_amount: number; payment_totals?: Record<string, number>; cash_in?: number; cash_out?: number };
 type CashOperation = { id: number; operation_type: string; amount: number; created_at: string };
 type SessionRecap = CashSession & { 
   session_id: number; 
@@ -48,6 +48,15 @@ const operationLabel = (value: string) => ({
 const dateTime = (value?: string | null) =>
   value ? new Date(value).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" }) : "En cours";
 
+const paymentMethodLabel = (key: string): string => ({
+  cash: "Espèces",
+  wave: "Wave",
+  orange_money: "Orange Money",
+  mobile_money: "Mobile Money",
+  card: "Carte",
+  other: "Autre"
+}[key] ?? key);
+
 export default function CashPage() {
   const router = useRouter();
   const [registers, setRegisters] = useState<Register[]>([]);
@@ -64,13 +73,16 @@ export default function CashPage() {
   const [isCreatingRegister, setIsCreatingRegister] = useState(false);
   const [registerError, setRegisterError] = useState("");
   
-  // Accordéons
   const [showHistory, setShowHistory] = useState(false);
   const [expandedRecapId, setExpandedRecapId] = useState<number | null>(null);
 
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isClosing, setIsClosing] = useState(false);
+  const [operationType, setOperationType] = useState<"cash_in" | "cash_out">("cash_in");
+  const [operationAmount, setOperationAmount] = useState("");
+  const [operationReason, setOperationReason] = useState("");
+  const [isSavingOperation, setIsSavingOperation] = useState(false);
   const [isAdmin] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     try {
@@ -251,6 +263,31 @@ export default function CashPage() {
     await load();
   }
 
+  async function saveCashOperation(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!openSession || !operationAmount || !operationReason.trim()) return;
+    setIsSavingOperation(true);
+    const response = await fetch(`${API_URL}/api/v1/cash/operations`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...headers() },
+      credentials: "include",
+      body: JSON.stringify({ session_id: openSession.id, operation_type: operationType, amount: Number(operationAmount), payment_method: "cash", reason: operationReason.trim() }),
+    });
+    if (!response.ok) {
+      setMessage("Impossible d'enregistrer cette opération de caisse.");
+    } else {
+      setMessage(operationType === "cash_in" ? "Entrée de caisse enregistrée." : "Sortie de caisse enregistrée.");
+      setOperationAmount("");
+      setOperationReason("");
+      const balanceResponse = await fetch(`${API_URL}/api/v1/cash/sessions/${openSession.id}/balance`, { headers: headers(), credentials: "include" });
+      if (balanceResponse.ok) setBalance(await balanceResponse.json());
+      await load();
+    }
+    setIsSavingOperation(false);
+  }
+
+  const totalPayments = Object.values(balance?.payment_totals ?? {}).reduce((sum, value) => sum + value, 0);
+
   return (
     <AppShell>
       {isLoading ? (
@@ -260,21 +297,21 @@ export default function CashPage() {
         </div>
       ) : (
       <div className={styles.container}>
-        {/* HEADER ZARA STYLE */}
+        {/* HEADER */}
         <header className={styles.header}>
           <div>
-            <span className={styles.categoryLabel}>POINT DE VENTE</span>
-            <h1 className={styles.title}>CAISSE</h1>
+            <span className={styles.categoryLabel}>Point de Vente</span>
+            <h1 className={styles.title}>Caisse</h1>
           </div>
           <div className={styles.headerActions}>
             {isAdmin && (
               <button type="button" className={styles.addRegisterButton} onClick={() => { setRegisterError(""); setIsRegisterModalOpen(true); }}>
-                + NOUVELLE CAISSE
+                + Nouvelle Caisse
               </button>
             )}
             <div className={styles.statusIndicator}>
               <span className={openSession ? styles.dotActive : styles.dotInactive} />
-              <span className={styles.statusText}>{openSession ? "SESSION ACTIVE" : "FERMÉ"}</span>
+              <span className={styles.statusText}>{openSession ? "Session Active" : "Fermé"}</span>
             </div>
           </div>
         </header>
@@ -292,35 +329,72 @@ export default function CashPage() {
 
               <div className={styles.metricsRow}>
                 <div className={styles.metricBlock}>
-                  <label>Mise en caisse</label>
-                  <p>{money(openSession.expected_opening_amount)}</p>
+                  <label>Mise initiale</label>
+                  <p>{money(openSession.actual_opening_amount)}</p>
                 </div>
                 <div className={styles.metricBlock}>
                   <label>Solde théorique</label>
                   <p className={styles.highlight}>{money(expectedCash)}</p>
                 </div>
                 <div className={styles.metricBlock}>
-                  <label>Écart ouverture</label>
-                  <p>{money(openSession.opening_difference)}</p>
+                  <label>Total ventes</label>
+                  <p>{money(totalPayments)}</p>
                 </div>
               </div>
+
+              {/* RÉSUMÉ PAIEMENTS */}
+              <div className={styles.paymentSummary}>
+                <h3>Encaissements par moyen de paiement</h3>
+                <div className={styles.paymentGrid}>
+                  {["cash", "wave", "orange_money", "mobile_money", "card", "other"].map((key) => (
+                    <div key={key}>
+                      <span>{paymentMethodLabel(key)}</span>
+                      <strong>{money(balance?.payment_totals?.[key] ?? 0)}</strong>
+                    </div>
+                  ))}
+                </div>
+                <div className={styles.cashFlowLine}>
+                  <div>
+                    <span>Entrées cash</span>
+                    <strong>{money(balance?.cash_in ?? 0)}</strong>
+                  </div>
+                  <div>
+                    <span>Sorties cash</span>
+                    <strong>{money(balance?.cash_out ?? 0)}</strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* MOUVEMENT DE CAISSE */}
+              <form className={styles.cashOperationForm} onSubmit={saveCashOperation}>
+                <h3>Mouvement de Caisse</h3>
+                <div className={styles.operationFields}>
+                  <select value={operationType} onChange={(event) => setOperationType(event.target.value as "cash_in" | "cash_out")} aria-label="Type de mouvement">
+                    <option value="cash_in">Entrée</option>
+                    <option value="cash_out">Sortie</option>
+                  </select>
+                  <input required min="1" type="number" value={operationAmount} onChange={(event) => setOperationAmount(event.target.value)} placeholder="Montant FCFA" />
+                  <input required value={operationReason} onChange={(event) => setOperationReason(event.target.value)} placeholder="Motif" />
+                  <button type="submit" className={styles.outlineButton} disabled={isSavingOperation}>{isSavingOperation ? "…" : "Enregistrer"}</button>
+                </div>
+              </form>
 
               {isAdmin && (
                 <div className={styles.actionRow}>
                   <button type="button" className={styles.zaraButton} onClick={() => setIsCloseModalOpen(true)}>
-                    CLÔTURER LA CAISSE
+                    Clôturer la Caisse
                   </button>
                 </div>
               )}
             </article>
           ) : (
             <article className={styles.minimalCard}>
-              <h2>Ouverture de session</h2>
+              <h2>Ouverture de Session</h2>
               <form onSubmit={open} className={styles.zaraForm}>
                 <div className={styles.inputGroup}>
-                  <label htmlFor="register">Caisse cible</label>
+                  <label htmlFor="register">Sélectionner une caisse</label>
                   <select id="register" required value={registerId} onChange={(e) => setRegisterId(e.target.value)}>
-                    <option value="">Sélectionner une caisse...</option>
+                    <option value="">Choisir une caisse...</option>
                     {registers.map((r) => (
                       <option key={r.id} value={r.id}>{r.name} ({r.code})</option>
                     ))}
@@ -329,7 +403,7 @@ export default function CashPage() {
 
                 {registerId && (
                   <div className={styles.infoLine}>
-                    <span>Dernière clôture enregistrée :</span>
+                    <span>Dernier montant clôturé :</span>
                     <strong>{money(previousSession?.actual_closing_amount ?? 0)}</strong>
                   </div>
                 )}
@@ -347,13 +421,13 @@ export default function CashPage() {
                   />
                 </div>
 
-                <button className={styles.zaraButton}>OUVRIR LA SESSION</button>
+                <button className={styles.zaraButton}>Ouvrir la Session</button>
               </form>
             </article>
           )}
         </section>
 
-        {/* ACCORDÉON 1 : HISTORIQUE DES SESSIONS */}
+        {/* ACCORDÉON : HISTORIQUE */}
         <section className={styles.accordionSection}>
           <button 
             type="button" 
@@ -361,7 +435,7 @@ export default function CashPage() {
             onClick={() => setShowHistory(!showHistory)}
           >
             <span className={styles.accordionTitle}>
-              <History size={16} /> HISTORIQUE D&apos;EXPLOITATION ({sessions.length})
+              <History size={16} /> Historique d'Exploitation ({sessions.length})
             </span>
             <ChevronDown size={16} className={`${styles.chevron} ${showHistory ? styles.chevronRotated : ''}`} />
           </button>
@@ -392,11 +466,11 @@ export default function CashPage() {
           )}
         </section>
 
-        {/* ACCORDÉON 2 : RÉCAPITULATIFS DE CLÔTURE */}
+        {/* ACCORDÉON : RÉCAPITULATIFS */}
         {recaps.length > 0 && (
           <section className={styles.accordionSection}>
             <div className={styles.sectionHeaderZara}>
-              <h3>CONTRÔLE ET RÉCAPITULATIFS DE CAISSE</h3>
+              <h3>Contrôle et Récapitulatifs de Caisse</h3>
             </div>
 
             <div className={styles.recapList}>
@@ -447,7 +521,7 @@ export default function CashPage() {
 
                         {recap.handoffs.length > 1 && (
                           <div className={styles.handoffBox}>
-                            <label>Historique des passations</label>
+                            <label>Historique des Passations</label>
                             {recap.handoffs.map((h, idx) => (
                               <p key={idx}>{idx + 1}. {h.seller} à {dateTime(h.acknowledged_at)}</p>
                             ))}
@@ -481,22 +555,22 @@ export default function CashPage() {
           </section>
         )}
 
-        {/* MODAL DE CLÔTURE */}
+        {/* MODAL : CRÉATION CAISSE */}
         {isRegisterModalOpen && (
           <div className={styles.modalOverlay} onClick={() => setIsRegisterModalOpen(false)}>
             <form className={styles.zaraModal} onSubmit={createRegister} onClick={(event) => event.stopPropagation()}>
               <div className={styles.modalHeader}>
                 <div>
                   <span className={styles.modalEyebrow}>Administration</span>
-                  <h3 id="register-modal-title">NOUVELLE CAISSE</h3>
+                  <h3 id="register-modal-title">Nouvelle Caisse</h3>
                 </div>
-                <button type="button" onClick={() => setIsRegisterModalOpen(false)} aria-label="Fermer la fenêtre">
-                  <X size={18} />
+                <button type="button" onClick={() => setIsRegisterModalOpen(false)} aria-label="Fermer">
+                  <X size={20} />
                 </button>
               </div>
 
               <div className={styles.registerFormBody}>
-                <p className={styles.modalIntro}>Créez une caisse pour qu’elle soit disponible à l’ouverture d’une session.</p>
+                <p className={styles.modalIntro}>Créez une caisse pour qu'elle soit disponible à l'ouverture d'une session.</p>
                 {registerError && <p className={styles.registerError} role="alert">{registerError}</p>}
                 <div className={styles.modalInputGroup}>
                   <label htmlFor="registerName">Nom de la caisse</label>
@@ -509,13 +583,14 @@ export default function CashPage() {
               </div>
 
               <div className={styles.modalActions}>
-                <button type="button" className={styles.outlineButton} onClick={() => setIsRegisterModalOpen(false)}>ANNULER</button>
-                <button type="submit" className={styles.zaraButton} disabled={isCreatingRegister}>{isCreatingRegister ? "CRÉATION…" : "CRÉER LA CAISSE"}</button>
+                <button type="button" className={styles.outlineButton} onClick={() => setIsRegisterModalOpen(false)}>Annuler</button>
+                <button type="submit" className={styles.zaraButton} disabled={isCreatingRegister}>{isCreatingRegister ? "Création…" : "Créer la Caisse"}</button>
               </div>
             </form>
           </div>
         )}
 
+        {/* MODAL : CLÔTURE CAISSE - STRUCTURE PAR MOYEN DE PAIEMENT */}
         {isCloseModalOpen && openSession && (
           <div className={styles.modalOverlay} onClick={() => setIsCloseModalOpen(false)}>
             <div 
@@ -523,53 +598,221 @@ export default function CashPage() {
               onClick={(e) => e.stopPropagation()}
               role="dialog"
               aria-modal="true"
-              aria-labelledby="modal-title"
+              aria-labelledby="close-modal-title"
+              style={{ maxHeight: "90vh", overflowY: "auto", width: "min(600px, 100%)" }}
             >
               <div className={styles.modalHeader}>
-                <h3 id="modal-title">CLÔTURE DE SESSION</h3>
-                <button type="button" onClick={() => setIsCloseModalOpen(false)} aria-label="Fermer la fenêtre">
-                  <X size={18} />
+                <div>
+                  <span className={styles.modalEyebrow}>Clôture de Caisse</span>
+                  <h3 id="close-modal-title">Fermeture de la Caisse #{openSession.register_id}</h3>
+                </div>
+                <button type="button" onClick={() => setIsCloseModalOpen(false)} aria-label="Fermer">
+                  <X size={20} />
                 </button>
               </div>
 
               <div className={styles.modalBody}>
-                <div className={styles.modalLine}>
-                  <span>Solde théorique</span>
-                  <strong>{money(expectedCash)}</strong>
+                {/* EN-TÊTE : RÉSUMÉ COMMANDES */}
+                <div style={{ padding: "14px", background: "var(--bg-tertiary)", borderRadius: "4px", fontSize: "0.8rem", marginBottom: "20px" }}>
+                  <div style={{ color: "var(--text-secondary)", marginBottom: "4px" }}>Résumé de la journée</div>
+                  <div style={{ fontSize: "1.1rem", fontWeight: 600, color: "var(--text-primary)" }}>
+                    {/* Nombre de commandes + total */}
+                    0 commandes : {money(totalPayments)}
+                  </div>
                 </div>
 
-                <div className={styles.modalInputGroup}>
-                  <label htmlFor="closeInput">Montant réellement en caisse (FCFA)</label>
+                {/* GROUPES PAR MOYEN DE PAIEMENT */}
+                <div style={{ marginBottom: "20px" }}>
+                  {/* ESPÈCES */}
+                  <div className={styles.paymentMethodGroup}>
+                    <div className={styles.paymentMethodHeader}>
+                      <h4>Espèces</h4>
+                      <span style={{ fontWeight: 600, fontSize: "1rem" }}>{money(balance?.payment_totals?.cash ?? 0)}</span>
+                    </div>
+                    <div className={styles.paymentMethodDetails}>
+                      <div className={styles.detailRow}>
+                        <span>Ouverture</span>
+                        <strong>{money(openSession.actual_opening_amount)}</strong>
+                      </div>
+                      <div className={styles.detailRow} style={{ borderTop: "1px dashed var(--border-soft)", paddingTop: "8px", marginTop: "8px" }}>
+                        <span>Cash entrant/sortant</span>
+                        <strong>
+                          {balance?.cash_in !== 0 || balance?.cash_out !== 0 ? (
+                            <span>{money((balance?.cash_in ?? 0) - (balance?.cash_out ?? 0))}</span>
+                          ) : (
+                            <span style={{ color: "var(--text-muted)" }}>+ {money(balance?.cash_in ?? 0)} / - {money(balance?.cash_out ?? 0)}</span>
+                          )}
+                        </strong>
+                      </div>
+                      <div className={styles.detailRow}>
+                        <span>Compté</span>
+                        <strong>{money(balance?.payment_totals?.cash ?? 0)}</strong>
+                      </div>
+                      <div className={`${styles.detailRow} ${styles.differenceRow}`}>
+                        <span>Différence</span>
+                        <strong className={(balance?.payment_totals?.cash ?? 0) === expectedCash ? styles.goodText : styles.badText}>
+                          {money((balance?.payment_totals?.cash ?? 0) - expectedCash)}
+                        </strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* CARTE */}
+                  <div className={styles.paymentMethodGroup}>
+                    <div className={styles.paymentMethodHeader}>
+                      <h4>Carte</h4>
+                      <span style={{ fontWeight: 600, fontSize: "1rem" }}>{money(balance?.payment_totals?.card ?? 0)}</span>
+                    </div>
+                    <div className={styles.paymentMethodDetails}>
+                      <div className={styles.detailRow}>
+                        <span>Compté</span>
+                        <strong>{money(balance?.payment_totals?.card ?? 0)}</strong>
+                      </div>
+                      <div className={`${styles.detailRow} ${styles.differenceRow}`}>
+                        <span>Différence</span>
+                        <strong className={styles.goodText}>0 FCFA</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* AUTRES MOYENS */}
+                  {["wave", "orange_money", "mobile_money", "other"].map((key) => {
+                    const amount = balance?.payment_totals?.[key] ?? 0;
+                    if (amount === 0) return null;
+                    return (
+                      <div key={key} className={styles.paymentMethodGroup}>
+                        <div className={styles.paymentMethodHeader}>
+                          <h4>{paymentMethodLabel(key)}</h4>
+                          <span style={{ fontWeight: 600, fontSize: "1rem" }}>{money(amount)}</span>
+                        </div>
+                        <div className={styles.paymentMethodDetails}>
+                          <div className={styles.detailRow}>
+                            <span>Compté</span>
+                            <strong>{money(amount)}</strong>
+                          </div>
+                          <div className={`${styles.detailRow} ${styles.differenceRow}`}>
+                            <span>Différence</span>
+                            <strong className={styles.goodText}>0 FCFA</strong>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* COMPTE CLIENT */}
+                  <div className={styles.paymentMethodGroup}>
+                    <div className={styles.paymentMethodHeader}>
+                      <h4>Compte Client</h4>
+                      <span style={{ fontWeight: 600, fontSize: "1rem" }}>0 FCFA</span>
+                    </div>
+                    <div className={styles.paymentMethodDetails}>
+                      <div className={styles.detailRow}>
+                        <span>Compté</span>
+                        <strong>0 FCFA</strong>
+                      </div>
+                      <div className={`${styles.detailRow} ${styles.differenceRow}`}>
+                        <span>Différence</span>
+                        <strong className={styles.goodText}>0 FCFA</strong>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* SECTION COMPTAGE */}
+                <div style={{ padding: "16px", background: "var(--bg-primary)", border: "1px solid var(--border-medium)", borderRadius: "4px", marginBottom: "20px" }}>
+                  <label style={{ display: "block", fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-secondary)", fontWeight: 600, marginBottom: "8px" }}>
+                    Comptage de Caisse (Espèces)
+                  </label>
                   <input
-                    id="closeInput"
                     type="number"
                     min="0"
                     autoFocus
                     value={closeAmount}
                     onChange={(e) => setCloseAmount(e.target.value)}
                     placeholder="0"
+                    style={{
+                      width: "100%",
+                      padding: "12px",
+                      fontSize: "1.2rem",
+                      fontWeight: 600,
+                      background: "var(--bg-secondary)",
+                      border: "1px solid var(--border-strong)",
+                      color: "var(--text-primary)",
+                      borderRadius: "3px",
+                      outline: "none"
+                    }}
+                  />
+                  {closeAmount && (
+                    <div style={{ marginTop: "10px", fontSize: "0.75rem", color: "var(--text-tertiary)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", paddingBottom: "6px", borderBottom: "1px dashed var(--border-soft)" }}>
+                        <span>Solde théorique</span>
+                        <strong style={{ color: "var(--text-primary)" }}>{money(expectedCash)}</strong>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginTop: "6px" }}>
+                        <span>Écart</span>
+                        <strong className={closingDifference === 0 ? styles.goodText : closingDifference > 0 ? styles.warningText : styles.badText} style={{ fontSize: "0.85rem" }}>
+                          {money(closingDifference)}
+                        </strong>
+                      </div>
+                      {closingDifference !== 0 && (
+                        <div style={{ marginTop: "8px", fontSize: "0.7rem", color: "var(--text-tertiary)", fontStyle: "italic" }}>
+                          {closingDifference > 0 ? "✓ Excédent" : "⚠ Manque"}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* NOTE DE CLÔTURE */}
+                <div style={{ marginBottom: "20px" }}>
+                  <label style={{ display: "block", fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.08em", color: "var(--text-secondary)", fontWeight: 600, marginBottom: "8px" }}>
+                    Note de Clôture
+                  </label>
+                  <textarea
+                    placeholder="Ajouter une note de fermeture..."
+                    style={{
+                      width: "100%",
+                      minHeight: "80px",
+                      padding: "10px",
+                      background: "var(--bg-primary)",
+                      border: "1px solid var(--border-strong)",
+                      color: "var(--text-primary)",
+                      borderRadius: "3px",
+                      fontFamily: "inherit",
+                      fontSize: "0.85rem",
+                      outline: "none",
+                      resize: "vertical"
+                    }}
                   />
                 </div>
 
-                <div className={styles.modalLine}>
-                  <span>Écart résultant</span>
-                  <strong className={closingDifference === 0 ? styles.goodText : styles.badText}>
-                    {money(closingDifference)}
-                  </strong>
+                {/* CHECKLIST */}
+                <div style={{ padding: "12px", background: "rgba(82, 196, 26, 0.05)", border: "1px solid rgba(82, 196, 26, 0.2)", borderRadius: "3px", fontSize: "0.75rem", marginBottom: "20px" }}>
+                  <strong style={{ color: "var(--accent-good)", display: "block", marginBottom: "8px" }}>✓ Vérifications complétées :</strong>
+                  <div style={{ color: "var(--text-secondary)", lineHeight: 1.6 }}>
+                    <div>✓ Tous les paiements enregistrés</div>
+                    <div>✓ Tous les mouvements de cash notés</div>
+                    <div>✓ Comptage physique exact</div>
+                  </div>
                 </div>
               </div>
 
-              <div className={styles.modalActions}>
-                <button type="button" className={styles.outlineButton} onClick={() => setIsCloseModalOpen(false)}>
-                  ANNULER
+              {/* ACTIONS */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px", paddingTop: "16px", borderTop: "1px solid var(--border-soft)" }}>
+                <button type="button" className={styles.outlineButton} onClick={() => setIsCloseModalOpen(false)} style={{ gridColumn: "1 / 2" }}>
+                  Ignorer
+                </button>
+                <button type="button" className={styles.outlineButton} style={{ gridColumn: "2 / 3", fontSize: "0.7rem" }}>
+                  Cash In/Out
                 </button>
                 <button
                   type="button"
                   className={styles.zaraButton}
                   onClick={confirmClose}
                   disabled={isClosing || !closeAmount}
+                  style={{ gridColumn: "3 / 4" }}
                 >
-                  {isClosing ? "TRAITEMENT..." : "CONFIRMER LA CLÔTURE"}
+                  {isClosing ? "…" : "Fermer"}
                 </button>
               </div>
             </div>

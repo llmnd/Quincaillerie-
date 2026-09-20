@@ -84,43 +84,34 @@ export function AccountingPageContent() {
 
   const load = useCallback(async () => {
     const periodQuery = buildPeriodQuery(reportPeriod);
-    const [taxResponse, saleResponse, invoiceResponse, trialResponse, journalResponse, balanceResponse, incomeResponse, vatResponse] = await Promise.all([
-      fetch(`${API_URL}/api/v1/accounting/taxes`, { headers: headers(), credentials: "include" }),
-      fetch(`${API_URL}/api/v1/sales${periodQuery}`, { headers: headers(), credentials: "include" }),
-      fetch(`${API_URL}/api/v1/accounting/invoices${periodQuery}`, { headers: headers(), credentials: "include" }),
-      fetch(`${API_URL}/api/v1/accounting/trial-balance${periodQuery}`, { headers: headers(), credentials: "include" }),
-      fetch(`${API_URL}/api/v1/accounting/journal`, { headers: headers(), credentials: "include" }),
-      fetch(`${API_URL}/api/v1/accounting/reports/balance-sheet${periodQuery}`, { headers: headers(), credentials: "include" }),
-      fetch(`${API_URL}/api/v1/accounting/reports/income-statement${periodQuery}`, { headers: headers(), credentials: "include" }),
-      fetch(`${API_URL}/api/v1/accounting/reports/vat${periodQuery}`, { headers: headers(), credentials: "include" }),
+    const request = (path: string) => fetch(`${API_URL}${path}`, { headers: headers(), credentials: "include" }).then((response) => {
+      if (!response.ok) throw new Error(`${path}: ${response.status}`);
+      return response.json();
+    });
+    const results = await Promise.allSettled([
+      request("/api/v1/accounting/taxes"),
+      request(`/api/v1/sales${periodQuery}`),
+      request(`/api/v1/accounting/invoices${periodQuery}`),
+      request(`/api/v1/accounting/trial-balance${periodQuery}`),
+      request("/api/v1/accounting/journal"),
+      request(`/api/v1/accounting/reports/balance-sheet${periodQuery}`),
+      request(`/api/v1/accounting/reports/income-statement${periodQuery}`),
+      request(`/api/v1/accounting/reports/vat${periodQuery}`),
     ]);
-
-    if (!taxResponse.ok || !saleResponse.ok || !invoiceResponse.ok || !trialResponse.ok || !journalResponse.ok || !balanceResponse.ok || !incomeResponse.ok || !vatResponse.ok) {
-      throw new Error();
-    }
-
-    const [nextTaxes, nextSales, nextInvoices, nextTrialBalance, nextJournal, nextBalance, nextIncome, nextVat] = await Promise.all([
-      taxResponse.json() as Promise<Tax[]>,
-      saleResponse.json() as Promise<Sale[]>,
-      invoiceResponse.json() as Promise<Invoice[]>,
-      trialResponse.json() as Promise<TrialRow[]>,
-      journalResponse.json() as Promise<JournalEntry[]>,
-      balanceResponse.json() as Promise<{ total_assets: number; total_liabilities: number }>,
-      incomeResponse.json() as Promise<{ revenue_total: number; expense_total: number; net_result: number }>,
-      vatResponse.json() as Promise<{ taxable_base: number; tax_amount: number; total_amount: number }>,
-    ]);
+    const value = <T,>(index: number, fallback: T): T => results[index].status === "fulfilled" ? results[index].value as T : fallback;
 
     return {
-      taxes: nextTaxes,
-      sales: nextSales,
-      invoices: nextInvoices,
-      trialBalance: nextTrialBalance,
-      journal: nextJournal,
+      taxes: value<Tax[]>(0, []),
+      sales: value<Sale[]>(1, []),
+      invoices: value<Invoice[]>(2, []),
+      trialBalance: value<TrialRow[]>(3, []),
+      journal: value<JournalEntry[]>(4, []),
       reports: {
-        balance: nextBalance,
-        income: nextIncome,
-        vat: nextVat,
+        balance: value(5, { total_assets: 0, total_liabilities: 0 }),
+        income: value(6, { revenue_total: 0, expense_total: 0, net_result: 0 }),
+        vat: value(7, { taxable_base: 0, tax_amount: 0, total_amount: 0 }),
       },
+      hasErrors: results.some((result) => result.status === "rejected"),
     };
   }, [reportPeriod]);
 
@@ -137,7 +128,7 @@ export function AccountingPageContent() {
         setTrialBalance(data.trialBalance);
         setJournal(data.journal);
         setReports(data.reports);
-        setMessage("");
+        setMessage(data.hasErrors ? "Certaines données comptables sont momentanément indisponibles." : "");
       } catch {
         if (isMounted) {
           setMessage("La comptabilité n'est pas disponible pour le moment.");
