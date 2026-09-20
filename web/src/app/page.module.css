@@ -1,43 +1,31 @@
 /* ==========================================================================
    MIZAN ERP — Landing publique
-   Esthétique éditoriale · Zara-like · monochrome
+   Éditorial · monochrome · interactions minimales (sans hover)
    ========================================================================== */
 
 @import url("https://rsms.me/inter/inter.css");
 
 /* -------------------------------------------------------------------------
-   Tokens — fond plus clair, palette neutre
+   Tokens
    ------------------------------------------------------------------------- */
 .landingPage {
-  /* Surfaces — plus claires, moins "night mode" */
-  --bg-0: #22293d;      /* fond global */
-  --bg-1: #1d2336;      /* cartes / panneaux */
-  --bg-2: #262c3d;      /* hover léger */
-  --bg-3: #26282f;      /* inputs / images */
-  --bg-4: #2c2e35;      /* accent de fond */
+  --bg-0: #22293d;
+  --bg-1: #1d2336;
+  --bg-2: #262c3d;
+  --bg-3: #26282f;
 
-  /* Traits — fins, peu contrastés */
   --line-1: rgba(255, 255, 255, 0.045);
   --line-2: rgba(255, 255, 255, 0.075);
   --line-3: rgba(255, 255, 255, 0.12);
 
-  /* Texte */
   --ink-1: #eceef2;
   --ink-2: #c9ccd3;
   --ink-3: #8b8f97;
   --ink-4: #63666d;
   --ink-5: #45484e;
 
-  /* Accent — très discret, uniquement pour focus + un marqueur */
   --accent: #c8a8c5;
-  --accent-ink: #1a1019;
 
-  /* Rayons — style Zara : anguleux */
-  --r-0: 0px;
-  --r-xs: 1px;
-  --r-sm: 2px;
-
-  /* Courbe */
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
 
   width: 100%;
@@ -90,87 +78,83 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 36px;
-  padding: 20px 40px;
-  background: rgba(27, 32, 45, 0.88);
+  gap: 24px;
+  padding: 18px 40px;
+  background: rgba(17, 20, 28, 0.88);
   border-bottom: 1px solid var(--line-1);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
 }
 
-/* Marque — monochrome, sans halo */
 .brand {
   display: inline-flex;
   align-items: center;
   gap: 14px;
+  min-width: 0;
   color: inherit;
   text-decoration: none;
-  transition: opacity 200ms var(--ease);
 }
-
-.brand:hover { opacity: 0.7; }
 
 .brandMark {
   display: grid;
+  place-items: center;
   width: 38px;
   height: 38px;
-  place-items: center;
   flex-shrink: 0;
   border: 1px solid var(--line-3);
-  border-radius: 0;
-  background: transparent;
+  background: rgba(255, 255, 255, 0.02);
   color: var(--ink-1);
-  font-weight: 500;
-  font-size: 0.92rem;
-  letter-spacing: 0.08em;
-  transition: border-color 200ms var(--ease);
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
 }
 
-.brand:hover .brandMark {
-  border-color: var(--ink-3);
+.brandText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .brand small {
   display: block;
-  margin-bottom: 2px;
   color: var(--ink-4);
-  font-size: 0.58rem;
-  letter-spacing: 0.24em;
+  font-size: 0.52rem;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
-  font-weight: 500;
 }
 
 .brand strong {
   display: block;
   color: var(--ink-1);
-  font-size: 0.86rem;
-  font-weight: 500;
+  font-size: 0.84rem;
   letter-spacing: 0.18em;
   text-transform: uppercase;
 }
 
-/* Nav */
 .nav {
   display: flex;
-  gap: 44px;
-  margin-left: auto;
   align-items: center;
+  justify-content: center;
+  gap: 32px;
+  margin-left: auto;
+  margin-right: 12px;
 }
 
 .nav a {
-  position: relative;
   color: var(--ink-3);
-  font-size: 0.68rem;
-  letter-spacing: 0.24em;
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   text-decoration: none;
-  font-weight: 500;
-  transition: color 200ms var(--ease);
+  transition: color 180ms ease;
 }
 
-.nav a:hover { color: var(--ink-1); }
+.nav a:hover,
+.nav a:focus-visible {
+  color: var(--ink-1);
+}
 
-/* Header actions */
 .headerActions {
   display: flex;
   align-items: center;
@@ -178,68 +162,76 @@
   flex-shrink: 0;
 }
 
+.primaryCta,
 .workspaceButton,
 .logoutButton,
 .mobileLogoutButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 10px 18px;
+  min-height: 42px;
+  padding: 0 18px;
   border: 1px solid var(--line-2);
-  border-radius: 0;
   background: transparent;
-  color: var(--ink-2);
+  color: var(--ink-1);
   font-family: inherit;
-  font-size: 0.66rem;
-  font-weight: 500;
-  letter-spacing: 0.22em;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   text-decoration: none;
   cursor: pointer;
   white-space: nowrap;
   transition:
-    border-color 200ms var(--ease),
-    color 200ms var(--ease),
-    background 200ms var(--ease);
+    background 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease;
 }
 
-.workspaceButton:hover {
-  border-color: var(--ink-3);
-  color: var(--ink-1);
+.primaryCta:hover,
+.workspaceButton:hover,
+.logoutButton:hover,
+.mobileLogoutButton:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.primaryCta:active,
+.workspaceButton:active,
+.mobileLogoutButton:active,
+.logoutButton:active {
+  background: var(--ink-1);
+  border-color: var(--ink-1);
+  color: var(--bg-0);
 }
 
 .logoutButton {
-  color: var(--ink-4);
+  color: var(--ink-3);
 }
 
-.logoutButton:hover {
-  border-color: var(--ink-4);
-  color: var(--ink-2);
-}
-
-/* Hamburger */
 .menuButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
+  width: 42px;
+  height: 42px;
   padding: 0;
   border: 1px solid var(--line-2);
-  border-radius: 0;
   background: transparent;
   cursor: pointer;
-  transition: border-color 200ms var(--ease);
+  transition: background 180ms ease;
 }
 
-.menuButton:hover { border-color: var(--ink-3); }
+.menuButton:active,
+.menuButton:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
 
 .menuButtonInner {
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 5px;
-  width: 16px;
+  width: 18px;
   height: 12px;
 }
 
@@ -248,71 +240,73 @@
   width: 100%;
   height: 1px;
   background: var(--ink-1);
-  transition: background 200ms var(--ease);
+  transition: transform 220ms var(--ease), opacity 220ms var(--ease);
 }
 
-.menuButton:hover .menuLine { background: var(--ink-1); }
+.menuButton[aria-expanded="true"] .menuLine:first-child {
+  transform: translateY(5px) rotate(45deg);
+}
 
-/* Menu mobile */
+.menuButton[aria-expanded="true"] .menuLine:last-child {
+  transform: translateY(-5px) rotate(-45deg);
+}
+
+/* Menu mobile — monté uniquement quand ouvert (rendu conditionnel React) */
 .mobileMenu {
-  width: min(1280px, calc(100% - 80px));
-  margin: 16px auto 0;
-  opacity: 0;
-  max-height: 0;
-  overflow: hidden;
-  transition:
-    opacity 220ms var(--ease),
-    max-height 260ms var(--ease);
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 29;
+  box-sizing: border-box;
+  padding: 8px 40px 0;
+  animation: mobileMenuIn 160ms var(--ease);
 }
 
-.mobileMenuOpen {
-  opacity: 1;
-  max-height: 560px;
+@keyframes mobileMenuIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .mobileMenuInner {
   display: flex;
   flex-direction: column;
   gap: 18px;
-  padding: 22px 24px;
-  border: 1px solid var(--line-1);
-  border-radius: 0;
-  background: var(--bg-1);
+  padding: 22px 20px;
+  border: 1px solid var(--line-2);
+  background: #181c25;
 }
 
 .mobileLoginButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 14px 18px;
-  border: 1px solid var(--ink-3);
-  border-radius: 0;
+  min-height: 46px;
+  padding: 0 18px;
+  border: 1px solid var(--line-2);
   background: transparent;
   color: var(--ink-1);
-  font-size: 0.68rem;
-  font-weight: 500;
-  letter-spacing: 0.22em;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   text-decoration: none;
-  transition:
-    background 200ms var(--ease),
-    border-color 200ms var(--ease),
-    color 200ms var(--ease);
 }
 
-.mobileLoginButton:hover {
+.mobileLoginButton:active {
   background: var(--ink-1);
   border-color: var(--ink-1);
   color: var(--bg-0);
 }
 
-.mobileLogoutButton { width: 100%; }
+.mobileLogoutButton {
+  width: 100%;
+}
 
 .mobileNav {
   display: flex;
   flex-direction: column;
   gap: 0;
-  margin-top: 6px;
 }
 
 .mobileNav a {
@@ -320,18 +314,82 @@
   border-bottom: 1px solid var(--line-1);
   color: var(--ink-3);
   text-decoration: none;
-  font-size: 0.72rem;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
+  font-size: 0.62rem;
   font-weight: 500;
-  transition: color 200ms var(--ease);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
 }
 
-.mobileNav a:hover { color: var(--ink-1); }
-.mobileNav a:last-child { border-bottom: 0; }
+.mobileNav a:last-child {
+  border-bottom: 0;
+}
+
+.mobileNav a:active {
+  color: var(--ink-1);
+}
+
+@media (max-width: 900px) {
+  .header {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .nav {
+    display: none;
+  }
+
+  .headerActions {
+    gap: 8px;
+  }
+
+  .primaryCta,
+  .workspaceButton,
+  .logoutButton {
+    display: none;
+  }
+
+  .mobileMenu {
+    padding: 8px 20px 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .header {
+    min-height: 72px;
+    padding-top: 14px;
+    padding-bottom: 14px;
+  }
+
+  .brandText {
+    display: none;
+  }
+
+  .brandMark {
+    width: 34px;
+    height: 34px;
+  }
+
+  .menuButton {
+    width: 38px;
+    height: 38px;
+  }
+
+  .mobileMenu {
+    padding: 6px 14px 0;
+  }
+
+  .mobileMenuInner {
+    padding: 18px 16px;
+    gap: 16px;
+  }
+
+  .mobileNav a {
+    letter-spacing: 0.14em;
+  }
+}
 
 /* ==========================================================================
-   BOUTONS — style Zara
+   BOUTONS
    ========================================================================== */
 .primaryButton {
   display: inline-flex;
@@ -351,18 +409,12 @@
   text-decoration: none;
   cursor: pointer;
   white-space: nowrap;
-  transition:
-    background 240ms var(--ease),
-    color 240ms var(--ease),
-    border-color 240ms var(--ease);
 }
 
-.primaryButton:hover {
+.primaryButton:active {
   background: var(--ink-1);
   color: var(--bg-0);
 }
-
-.primaryButton:active { opacity: 0.85; }
 
 .textButton {
   display: inline-flex;
@@ -376,22 +428,12 @@
   letter-spacing: 0.24em;
   text-transform: uppercase;
   text-decoration: none;
-  transition:
-    color 200ms var(--ease),
-    border-color 200ms var(--ease);
 }
 
-.textButton span {
-  display: inline-block;
-  transition: transform 260ms var(--ease);
-}
-
-.textButton:hover {
+.textButton:active {
   color: var(--ink-1);
   border-bottom-color: var(--ink-1);
 }
-
-.textButton:hover span { transform: translateY(3px); }
 
 /* ==========================================================================
    HERO
@@ -402,7 +444,7 @@
   align-items: center;
   justify-content: center;
   min-height: 640px;
-  padding: 112px 40px 112px;
+  padding: 112px 40px;
   text-align: center;
 }
 
@@ -415,7 +457,6 @@
   min-height: 0;
 }
 
-/* Eyebrow — plus de point, juste du texte */
 .eyebrow {
   display: inline-block;
   margin: 0 0 24px;
@@ -558,10 +599,9 @@
   background: var(--bg-1);
   color: var(--ink-1);
   text-decoration: none;
-  transition: background 220ms var(--ease);
 }
 
-.quickAccessCard:hover {
+.quickAccessCard:active {
   background: var(--bg-2);
 }
 
@@ -572,12 +612,6 @@
   height: 128px;
   overflow: hidden;
   background: var(--bg-3);
-  filter: grayscale(0.4);
-  transition: filter 320ms var(--ease);
-}
-
-.quickAccessCard:hover .quickAccessImageWrap {
-  filter: grayscale(0);
 }
 
 .quickAccessImage {
@@ -585,10 +619,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 500ms var(--ease);
 }
-
-.quickAccessCard:hover .quickAccessImage { transform: scale(1.04); }
 
 .quickAccessMeta {
   display: flex;
@@ -618,10 +649,7 @@
   letter-spacing: 0.24em;
   text-transform: uppercase;
   flex: 0 0 auto;
-  transition: color 220ms var(--ease);
 }
-
-.quickAccessCard:hover strong { color: var(--ink-2); }
 
 /* ==========================================================================
    MODULE SHOWCASE (déconnecté)
@@ -631,8 +659,6 @@
   margin: 64px 0 0;
   padding: 0;
 }
-
-.moduleShowcaseHeader { display: none; }
 
 .moduleShowcaseGrid {
   display: grid;
@@ -655,10 +681,12 @@
   font: inherit;
   cursor: pointer;
   text-decoration: none;
-  transition: background 220ms var(--ease);
+  appearance: none;
 }
 
-.moduleShowcaseTile:hover { background: var(--bg-2); }
+.moduleShowcaseTile:active {
+  background: var(--bg-2);
+}
 
 .moduleShowcaseIcon {
   width: 76px;
@@ -667,21 +695,14 @@
   border: 0;
   border-radius: 0;
   background: var(--bg-3);
-  filter: grayscale(0.4);
-  transition: filter 320ms var(--ease);
 }
-
-.moduleShowcaseTile:hover .moduleShowcaseIcon { filter: grayscale(0); }
 
 .moduleShowcaseImage {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 500ms var(--ease);
 }
-
-.moduleShowcaseTile:hover .moduleShowcaseImage { transform: scale(1.04); }
 
 .moduleShowcaseNumber {
   margin-top: 18px;
@@ -775,10 +796,7 @@
   border: 0;
   border-radius: 0;
   background: var(--bg-1);
-  transition: background 260ms var(--ease);
 }
-
-.featureCard:hover { background: var(--bg-2); }
 
 .featureCard > span {
   display: inline-block;
@@ -912,10 +930,9 @@
   font-weight: 400;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  transition: color 200ms var(--ease);
 }
 
-.footerColumn a:hover { color: var(--ink-1); }
+.footerColumn a:active { color: var(--ink-1); }
 
 .footerNewsletter p {
   margin: 0 0 24px;
@@ -931,7 +948,6 @@
   padding-bottom: 12px;
   border-bottom: 1px solid var(--line-2);
   background: transparent;
-  transition: border-color 200ms var(--ease);
 }
 
 .newsletterForm:focus-within { border-color: var(--ink-3); }
@@ -963,10 +979,9 @@
   color: var(--ink-2);
   font-size: 1.05rem;
   cursor: pointer;
-  transition: transform 220ms var(--ease);
 }
 
-.newsletterForm button:hover { transform: translateX(6px); }
+.newsletterForm button:active { color: var(--ink-1); }
 
 .footerMeta {
   display: flex;
@@ -993,11 +1008,10 @@
   font-weight: 500;
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  transition: color 200ms var(--ease);
 }
 
-.socialsZara a:hover,
-.legalZara a:hover { color: var(--ink-1); }
+.socialsZara a:active,
+.legalZara a:active { color: var(--ink-1); }
 
 .footerBottomZara {
   color: var(--ink-5);
@@ -1065,18 +1079,15 @@
   font-size: 1.3rem;
   line-height: 1;
   cursor: pointer;
-  transition:
-    border-color 200ms var(--ease),
-    color 200ms var(--ease);
 }
 
-.moduleModalClose:hover {
+.moduleModalClose:active {
   border-color: var(--ink-3);
   color: var(--ink-1);
 }
 
 /* ==========================================================================
-   LOADING (skeleton initial)
+   LOADING
    ========================================================================== */
 .homeLoading {
   min-height: 100vh;
@@ -1169,7 +1180,7 @@
   }
 
   .hero {
-    padding: 88px 0 88px;
+    padding: 88px 0;
     min-height: 0;
   }
 
@@ -1230,88 +1241,100 @@
   .featureSection,
   .ctaSection,
   .moduleShowcase {
-    width: calc(100% - 1px);
+    width: 100%;
   }
 
-  .header { padding: 14px 0; }
+  .header {
+    padding: 10px 14px;
+    gap: 10px;
+  }
 
-  .brand { gap: 12px; }
+  .brand {
+    gap: 10px;
+    min-width: 0;
+  }
 
   .brandMark {
-    width: 34px;
-    height: 34px;
-    font-size: 0.84rem;
+    width: 30px;
+    height: 30px;
+    font-size: 0.78rem;
   }
 
-  .brand small { font-size: 0.5rem; }
-  .brand strong { font-size: 0.8rem; }
+  .brand small { font-size: 0.46rem; }
+  .brand strong { font-size: 0.72rem; }
 
-  .mobileMenu {
-    width: calc(100% - 40px);
-    margin-top: 12px;
-  }
-
-  .mobileMenuInner {
-    padding: 18px 16px;
-    gap: 16px;
+  .menuButton {
+    width: 32px;
+    height: 32px;
   }
 
   .hero {
-    padding: 72px 0 72px;
+    padding: 56px 16px 48px;
   }
 
   .hero h2,
   .heroText {
-    font-size: clamp(2rem, 9vw, 2.8rem);
-    line-height: 1.1;
+    font-size: clamp(1.9rem, 9vw, 2.5rem);
+    line-height: 1.08;
   }
 
   .heroConnected .heroText {
-    font-size: clamp(1.35rem, 6vw, 1.75rem);
+    font-size: clamp(1.3rem, 6vw, 1.7rem);
   }
 
   .heroActions {
     flex-direction: column;
     align-items: stretch;
     width: 100%;
-    gap: 16px;
-    margin-top: 40px;
-  }
-
-  .primaryButton,
-  .textButton {
-    width: 100%;
-    justify-content: center;
+    gap: 12px;
+    margin-top: 28px;
   }
 
   .primaryButton {
-    padding: 16px 24px;
+    width: 100%;
+    padding: 14px 20px;
+    letter-spacing: 0.18em;
   }
 
-  .textButton { padding-bottom: 10px; }
+  .textButton {
+    align-self: center;
+    padding-bottom: 8px;
+    font-size: 0.6rem;
+  }
 
   .connectedPanel {
-    padding: 32px 22px;
+    padding: 28px 18px;
   }
 
   .connectedModules {
-    margin-top: 48px;
-    padding-top: 32px;
+    margin-top: 40px;
+    padding-top: 24px;
   }
 
   .connectedModulesHeader {
     flex-direction: column;
     align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 18px;
   }
 
   .quickAccessGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .quickAccessImageWrap { height: 160px; }
+  .quickAccessImageWrap { height: 140px; }
+
+  .quickAccessMeta {
+    padding: 12px 10px;
+  }
+
+  .quickAccessLabel {
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+  }
 
   .moduleShowcase {
-    margin-top: 48px;
+    margin-top: 38px;
   }
 
   .moduleShowcaseGrid {
@@ -1319,20 +1342,20 @@
   }
 
   .moduleShowcaseTile {
-    padding: 26px 12px 22px;
+    padding: 22px 10px 18px;
   }
 
   .moduleShowcaseIcon {
-    width: 64px;
-    height: 64px;
+    width: 58px;
+    height: 58px;
   }
 
-  .moduleShowcaseName { font-size: 0.68rem; }
-  .moduleShowcaseNumber { font-size: 0.52rem; }
+  .moduleShowcaseName { font-size: 0.62rem; }
+  .moduleShowcaseNumber { font-size: 0.5rem; }
 
   .statement,
   .featureSection {
-    padding: 72px 0;
+    padding: 52px 16px;
   }
 
   .statement h2,

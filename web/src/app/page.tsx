@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { AlertTriangle, ShoppingCart, WalletCards } from "lucide-react";
 import {
   authHeaders,
   clearStoredAuth,
   restoreAuthSession,
   type AuthUser,
 } from "../lib/auth";
+import SimpleHeader from "../components/SimpleHeader";
 import styles from "./page.module.css";
 
 const modules = [
@@ -33,11 +33,11 @@ const featureItems = [
 ];
 
 export default function Home() {
-  const [menuOpen, setMenuOpen] = useState(false);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isSessionResolved, setIsSessionResolved] = useState(false);
   const [selectedModule, setSelectedModule] = useState<(typeof modules)[number] | null>(null);
 
+  /* Session */
   useEffect(() => {
     let isMounted = true;
 
@@ -62,18 +62,6 @@ export default function Home() {
     };
   }, []);
 
-  /* Fermer le menu quand la route change / à l'Escape */
-  useEffect(() => {
-    if (!menuOpen) return;
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setMenuOpen(false);
-    }
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [menuOpen]);
-
   async function handleLogout() {
     try {
       await fetch(
@@ -88,7 +76,6 @@ export default function Home() {
       clearStoredAuth();
       window.sessionStorage.removeItem("quincaillerie_authenticated");
       setUser(null);
-      setMenuOpen(false);
     }
   }
 
@@ -141,96 +128,10 @@ export default function Home() {
   );
 
   return (
-    <main className={styles.landingPage}>
-      {/* =====================================================================
-          HEADER
-      ===================================================================== */}
-      <header className={styles.header}>
-        <Link href="/" className={styles.brand} aria-label="MIZAN ERP, accueil">
-          <span className={styles.brandMark}>M</span>
-          <span>
-            <small>Amanah · Ihsan · Baraka</small>
-            <strong>MIZAN ERP</strong>
-          </span>
-        </Link>
-
-        <div className={styles.headerActions}>
-          {user ? (
-            <>
-              <Link href="/workspace" className={styles.workspaceButton}>
-                Workspace
-              </Link>
-              <button
-                type="button"
-                className={styles.logoutButton}
-                onClick={handleLogout}
-              >
-                Se déconnecter
-              </button>
-            </>
-          ) : null}
-
-          <button
-            type="button"
-            className={styles.menuButton}
-            aria-label={menuOpen ? "Fermer le menu" : "Ouvrir le menu"}
-            aria-expanded={menuOpen}
-            aria-controls="mobile-menu"
-            onClick={() => setMenuOpen((open) => !open)}
-          >
-            <span className={styles.menuButtonInner}>
-              <span className={styles.menuLine} />
-              <span className={styles.menuLine} />
-            </span>
-          </button>
-        </div>
-      </header>
-
-      {/* =====================================================================
-          MENU MOBILE
-      ===================================================================== */}
-      <div
-        id="mobile-menu"
-        className={`${styles.mobileMenu} ${menuOpen ? styles.mobileMenuOpen : ""}`}
-      >
-        <div className={styles.mobileMenuInner}>
-          {user ? (
-            <>
-              <Link
-                href="/workspace"
-                className={styles.mobileLoginButton}
-                onClick={() => setMenuOpen(false)}
-              >
-                Ouvrir le workspace
-              </Link>
-              <button
-                type="button"
-                className={styles.mobileLogoutButton}
-                onClick={handleLogout}
-              >
-                Se déconnecter
-              </button>
-            </>
-          ) : (
-            <Link
-              href="/login"
-              className={styles.mobileLoginButton}
-              onClick={() => setMenuOpen(false)}
-            >
-              Se connecter
-            </Link>
-          )}
-
-          <nav className={styles.mobileNav} aria-label="Menu mobile">
-            <a href="#solution" onClick={() => setMenuOpen(false)}>La solution</a>
-            <a href="#fonctionnalites" onClick={() => setMenuOpen(false)}>Fonctionnalités</a>
-            <a href="#contact" onClick={() => setMenuOpen(false)}>Contact</a>
-            <a href="/legal/support" onClick={() => setMenuOpen(false)}>Support</a>
-          </nav>
-        </div>
-      </div>
-
-      {/* =====================================================================
+    <>
+      <SimpleHeader />
+      <main className={styles.landingPage}>
+        {/* =====================================================================
           HERO
       ===================================================================== */}
       <section className={`${styles.hero} ${user ? styles.heroConnected : ""}`}>
@@ -243,7 +144,7 @@ export default function Home() {
               <h1 className={styles.heroText}>Bonjour, {connectedUserName}</h1>
 
               <p className={styles.connectedSubtitle}>
-                Votre plateforme est prête. Cliquez sur un module pour reprendre votre activité.
+                Votre plateforme est prête.
               </p>
 
               <div className={styles.heroActions}>
@@ -254,7 +155,6 @@ export default function Home() {
                   Voir les modules <span aria-hidden="true">↓</span>
                 </a>
               </div>
-              
             </div>
           ) : (
             <>
@@ -273,10 +173,7 @@ export default function Home() {
           )}
 
           {!user && (
-            <section
-              className={styles.moduleShowcase}
-              aria-label="Modules Mizan"
-            >
+            <section className={styles.moduleShowcase} aria-label="Modules Mizan">
               <div className={styles.moduleShowcaseGrid}>
                 {modules.map((module) => (
                   <button
@@ -469,6 +366,7 @@ export default function Home() {
           </section>
         </div>
       )}
-    </main>
+      </main>
+    </>
   );
 }

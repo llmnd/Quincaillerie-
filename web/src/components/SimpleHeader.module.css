@@ -1,0 +1,239 @@
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 18px 24px;
+  background: rgb(24, 28, 40);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.brandMark {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.02);
+  color: #f3f4f6;
+  font-size: 0.84rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+}
+
+.brandText {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand small {
+  display: block;
+  color: #8d93a0;
+  font-size: 0.46rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.brand strong {
+  display: block;
+  color: #f3f4f6;
+  font-size: 0.78rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.loginButton,
+.modalLoginButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: transparent;
+  color: #f3f4f6;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: background 180ms ease, border-color 180ms ease;
+}
+
+.loginButton:hover,
+.modalLoginButton:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.menuButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: transparent;
+  cursor: pointer;
+}
+
+.menuIcon {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 18px;
+  height: 12px;
+}
+
+.menuIcon span {
+  display: block;
+  width: 100%;
+  height: 1px;
+  background: #f3f4f6;
+}
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  background: rgb(10, 12, 18);
+  animation: fadeIn 200ms ease;
+}
+
+.modalHeader,
+.modalNav,
+.modalFooter {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.modalBrand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: #f3f4f6;
+  text-decoration: none;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.closeButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: transparent;
+  color: #f3f4f6;
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.modalNav {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  padding: 32px 24px;
+}
+
+.modalNav a {
+  display: flex;
+  align-items: center;
+  min-height: 64px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: #f3f4f6;
+  text-decoration: none;
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  font-weight: 300;
+  letter-spacing: -0.04em;
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: center;
+  padding: 0 24px 32px;
+}
+
+.modalLoginButton {
+  width: 100%;
+  max-width: 360px;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .header {
+    padding: 14px 16px;
+  }
+
+  .brandText {
+    display: none;
+  }
+
+  .loginButton {
+    display: none;
+  }
+
+  .brandMark {
+    width: 30px;
+    height: 30px;
+  }
+
+  .modalHeader,
+  .modalNav,
+  .modalFooter {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .modalNav a {
+    min-height: 56px;
+    font-size: clamp(1.6rem, 9vw, 2.6rem);
+  }
+}
