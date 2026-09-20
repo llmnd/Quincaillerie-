@@ -21,9 +21,15 @@ const modules = [
 ] as const;
 
 const footerNav = [
-  { category: "PLATEFORME", links: ["Fonctionnalités", "Documentation", "Open Source"] },
-  { category: "SERVICES", links: ["Hébergement", "Assistance", "Partenaires"] },
-  { category: "ÉCOSYSTÈME", links: ["Communauté", "Événements", "Blog"] },
+  { category: "Plateforme", links: ["Fonctionnalités", "Documentation", "Open Source"] },
+  { category: "Services", links: ["Hébergement", "Assistance", "Partenaires"] },
+  { category: "Écosystème", links: ["Communauté", "Événements", "Blog"] },
+];
+
+const featureItems = [
+  { title: "Vendre avec précision", description: "Créez vos ventes et maîtrisez chaque opération." },
+  { title: "Piloter le stock", description: "Une vue claire de vos références et mouvements." },
+  { title: "Centraliser l’activité", description: "Clients, rapports et données réunis." },
 ];
 
 export default function Home() {
@@ -56,13 +62,28 @@ export default function Home() {
     };
   }, []);
 
+  /* Fermer le menu quand la route change / à l'Escape */
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setMenuOpen(false);
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [menuOpen]);
+
   async function handleLogout() {
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-        headers: authHeaders(),
-      });
+      await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/auth/logout`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: authHeaders(),
+        }
+      );
     } finally {
       clearStoredAuth();
       window.sessionStorage.removeItem("quincaillerie_authenticated");
@@ -73,7 +94,11 @@ export default function Home() {
 
   if (!isSessionResolved) {
     return (
-      <main className={styles.homeLoading} aria-busy="true" aria-label="Chargement de l'accueil">
+      <main
+        className={styles.homeLoading}
+        aria-busy="true"
+        aria-label="Chargement de l'accueil"
+      >
         <header className={styles.homeLoadingHeader}>
           <span className={`${styles.homeSkeleton} ${styles.homeBrandSkeleton}`} />
           <span className={`${styles.homeSkeleton} ${styles.homeMenuSkeleton}`} />
@@ -84,7 +109,10 @@ export default function Home() {
           <span className={`${styles.homeSkeleton} ${styles.homeTextSkeleton}`} />
           <div className={styles.homeModuleSkeletons}>
             {modules.map((module) => (
-              <span key={module[1]} className={`${styles.homeSkeleton} ${styles.homeModuleSkeleton}`} />
+              <span
+                key={module[1]}
+                className={`${styles.homeSkeleton} ${styles.homeModuleSkeleton}`}
+              />
             ))}
           </div>
         </section>
@@ -92,30 +120,90 @@ export default function Home() {
     );
   }
 
+  const primaryHref = user ? "/workspace" : "/login";
+  const primaryLabel = user ? "Ouvrir le workspace" : "Commencer";
+
   return (
     <main className={styles.landingPage}>
+      {/* =====================================================================
+          HEADER
+      ===================================================================== */}
       <header className={styles.header}>
         <Link href="/" className={styles.brand} aria-label="MIZAN ERP, accueil">
           <span className={styles.brandMark}>M</span>
-          <span><small>Amanah · Ihsan · Baraka</small><strong>MIZAN ERP</strong></span>
+          <span>
+            <small>Amanah · Ihsan · Baraka</small>
+            <strong>MIZAN ERP</strong>
+          </span>
         </Link>
+
         <div className={styles.headerActions}>
-          {user ? <>
-            <Link href="/workspace" className={styles.workspaceButton}>Workspace</Link>
-            <button type="button" className={styles.logoutButton} onClick={handleLogout}>Se déconnecter</button>
-          </> : null}
-          <button type="button" className={styles.menuButton} aria-label={menuOpen ? "Fermer le menu" : "Ouvrir le menu"} aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)}>
-            <span className={styles.menuButtonInner}><span className={styles.menuLine} /><span className={styles.menuLine} /></span>
+          {user ? (
+            <>
+              <Link href="/workspace" className={styles.workspaceButton}>
+                Workspace
+              </Link>
+              <button
+                type="button"
+                className={styles.logoutButton}
+                onClick={handleLogout}
+              >
+                Se déconnecter
+              </button>
+            </>
+          ) : null}
+
+          <button
+            type="button"
+            className={styles.menuButton}
+            aria-label={menuOpen ? "Fermer le menu" : "Ouvrir le menu"}
+            aria-expanded={menuOpen}
+            aria-controls="mobile-menu"
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            <span className={styles.menuButtonInner}>
+              <span className={styles.menuLine} />
+              <span className={styles.menuLine} />
+            </span>
           </button>
         </div>
       </header>
 
-      <div className={`${styles.mobileMenu} ${menuOpen ? styles.mobileMenuOpen : ""}`}>
+      {/* =====================================================================
+          MENU MOBILE
+      ===================================================================== */}
+      <div
+        id="mobile-menu"
+        className={`${styles.mobileMenu} ${menuOpen ? styles.mobileMenuOpen : ""}`}
+      >
         <div className={styles.mobileMenuInner}>
-          {user ? <>
-            <Link href="/workspace" className={styles.mobileLoginButton} onClick={() => setMenuOpen(false)}>Ouvrir le workspace</Link>
-            <button type="button" className={styles.mobileLogoutButton} onClick={handleLogout}>Se déconnecter</button>
-          </> : <Link href="/login" className={styles.mobileLoginButton} onClick={() => setMenuOpen(false)}>Se connecter</Link>}
+          {user ? (
+            <>
+              <Link
+                href="/workspace"
+                className={styles.mobileLoginButton}
+                onClick={() => setMenuOpen(false)}
+              >
+                Ouvrir le workspace
+              </Link>
+              <button
+                type="button"
+                className={styles.mobileLogoutButton}
+                onClick={handleLogout}
+              >
+                Se déconnecter
+              </button>
+            </>
+          ) : (
+            <Link
+              href="/login"
+              className={styles.mobileLoginButton}
+              onClick={() => setMenuOpen(false)}
+            >
+              Se connecter
+            </Link>
+          )}
+
           <nav className={styles.mobileNav} aria-label="Menu mobile">
             <a href="#solution" onClick={() => setMenuOpen(false)}>La solution</a>
             <a href="#fonctionnalites" onClick={() => setMenuOpen(false)}>Fonctionnalités</a>
@@ -125,66 +213,172 @@ export default function Home() {
         </div>
       </div>
 
+      {/* =====================================================================
+          HERO
+      ===================================================================== */}
       <section className={styles.hero}>
         <div className={styles.heroContent}>
           <p className={styles.eyebrow}>ERP modulaire et multi-entreprises</p>
-          <p className={styles.heroText}>Gérez votre activité.</p>
+
+          <h1 className={styles.heroText}>Gérez votre activité.</h1>
+
           <div className={styles.heroActions}>
-            {user ? <Link href="/workspace" className={styles.primaryButton}>Ouvrir le bureau</Link> : null}
-            <Link href={user ? "/workspace" : "/login"} className={styles.primaryButton}>{user ? "Ouvrir le workspace" : "Commencer"}</Link>
-            <a href="#solution" className={styles.textButton}>Découvrir <span>↓</span></a>
+            <Link href={primaryHref} className={styles.primaryButton}>
+              {primaryLabel}
+            </Link>
+            <a href="#solution" className={styles.textButton}>
+              Découvrir <span aria-hidden="true">↓</span>
+            </a>
           </div>
-          {!user && <section className={styles.moduleShowcase} aria-label="Modules Mizan">
-            <div className={styles.moduleShowcaseGrid}>
-              {modules.map((module) => <button key={module[1]} type="button" className={styles.moduleShowcaseTile} onClick={() => setSelectedModule(module)}>
-                <div className={styles.moduleShowcaseIcon}><img src={module[3]} alt="" className={styles.moduleShowcaseImage} /></div>
-                <span className={styles.moduleShowcaseNumber}>{module[0]}</span>
-                <span className={styles.moduleShowcaseName}>{module[1]}</span>
-              </button>)}
-            </div>
-          </section>}
+
+          {!user && (
+            <section
+              className={styles.moduleShowcase}
+              aria-label="Modules Mizan"
+            >
+              <div className={styles.moduleShowcaseGrid}>
+                {modules.map((module) => (
+                  <button
+                    key={module[1]}
+                    type="button"
+                    className={styles.moduleShowcaseTile}
+                    onClick={() => setSelectedModule(module)}
+                    aria-label={`Découvrir le module ${module[1]}`}
+                  >
+                    <div className={styles.moduleShowcaseIcon}>
+                      <img
+                        src={module[3]}
+                        alt=""
+                        className={styles.moduleShowcaseImage}
+                      />
+                    </div>
+                    <span className={styles.moduleShowcaseNumber}>{module[0]}</span>
+                    <span className={styles.moduleShowcaseName}>{module[1]}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
         </div>
 
-        <div className={styles.heroArtwork} aria-label="Aperçu de l’interface MIZAN">
-          <div className={styles.phone}><div className={styles.phoneNotch} /><div className={styles.phoneScreen}>
-            <div className={styles.appHeader}>
-              <span className={styles.appEyebrow}>VOTRE ACTIVITÉ</span>
-              <h3 className={styles.appTitle}>Bonjour, Lamine</h3>
-              <p className={styles.appSubtitle}>Une vue simple de votre journée.</p>
+        {/* ---------- Mockup téléphone ---------- */}
+        <div className={styles.heroArtwork} aria-hidden="true">
+          <div className={styles.phone}>
+            <div className={styles.phoneNotch} />
+            <div className={styles.phoneScreen}>
+              <div className={styles.appHeader}>
+                <span className={styles.appEyebrow}>Votre activité</span>
+                <h3 className={styles.appTitle}>Bonjour, Lamine</h3>
+                <p className={styles.appSubtitle}>Une vue simple de votre journée.</p>
+              </div>
+
+              <div className={styles.dashboardGrid}>
+                <div className={`${styles.dashCard} ${styles.highlightCard}`}>
+                  <span className={styles.cardLabel}>Ventes du jour</span>
+                  <div className={styles.metricRow}>
+                    <span className={styles.metricIcon}><ShoppingCart size={11} /></span>
+                    <strong className={styles.cardValue}>5</strong>
+                  </div>
+                </div>
+
+                <div className={styles.dashCard}>
+                  <span className={styles.cardLabel}>Caisse</span>
+                  <div className={styles.metricRow}>
+                    <span className={styles.metricIcon}><WalletCards size={11} /></span>
+                    <strong className={`${styles.cardValue} ${styles.greenText}`}>Active</strong>
+                  </div>
+                </div>
+
+                <div className={styles.dashCard}>
+                  <span className={styles.cardLabel}>Alertes</span>
+                  <div className={styles.metricRow}>
+                    <span className={styles.metricIconRed}><AlertTriangle size={11} /></span>
+                    <strong className={`${styles.cardValue} ${styles.redValue}`}>2</strong>
+                  </div>
+                </div>
+
+                <div className={styles.dashCard}>
+                  <span className={styles.cardLabel}>Stock à surveiller</span>
+                  <div className={styles.metricRow}>
+                    <span className={styles.metricIconRed}><AlertTriangle size={11} /></span>
+                    <strong className={`${styles.cardValue} ${styles.redValue}`}>4</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.tracabilityCard}>
+                <div className={styles.tracabilityHeader}>
+                  <span className={styles.tracabilityTitle}>Activité récente</span>
+                </div>
+                <div className={styles.activityList}>
+                  <div className={styles.activityRow}>
+                    <span>Fatou a vendu une perceuse</span>
+                    <strong>35 000 FCFA</strong>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className={styles.dashboardGrid}>
-              <div className={`${styles.dashCard} ${styles.highlightCard}`}><span className={styles.cardLabel}>Ventes du jour</span><div className={styles.metricRow}><span className={styles.metricIcon}><ShoppingCart size={11} /></span><strong className={styles.cardValue}>5</strong></div></div>
-              <div className={styles.dashCard}><span className={styles.cardLabel}>Caisse</span><div className={styles.metricRow}><span className={styles.metricIcon}><WalletCards size={11} /></span><strong className={`${styles.cardValue} ${styles.greenText}`}>Active</strong></div></div>
-              <div className={styles.dashCard}><span className={styles.cardLabel}>Alertes</span><div className={styles.metricRow}><span className={styles.metricIconRed}><AlertTriangle size={11} /></span><strong className={`${styles.cardValue} ${styles.redValue}`}>2</strong></div></div>
-              <div className={styles.dashCard}><span className={styles.cardLabel}>Stock à surveiller</span><div className={styles.metricRow}><span className={styles.metricIconRed}><AlertTriangle size={11} /></span><strong className={`${styles.cardValue} ${styles.redValue}`}>4</strong></div></div>
-            </div>
-            <div className={styles.tracabilityCard}>
-              <div className={styles.tracabilityHeader}><span className={styles.tracabilityTitle}>ACTIVITÉ RÉCENTE</span></div>
-              <div className={styles.activityList}><div className={styles.activityRow}><span>Fatou a vendu une perceuse</span><strong>35 000 FCFA</strong></div></div>
-            </div>
-          </div></div>
+          </div>
         </div>
       </section>
 
+      {/* =====================================================================
+          STATEMENT
+      ===================================================================== */}
       <section id="solution" className={styles.statement}>
         <p className={styles.eyebrow}>Une seule interface</p>
-        <div><h2>Tout ce dont vous avez besoin. Rien de plus.</h2><p>Les données appartiennent à votre équipe. Le logiciel fournit les outils pour les faire vivre.</p></div>
-      </section>
-
-      <section id="fonctionnalites" className={styles.featureSection}>
-        <div className={styles.sectionIntro}><div><p className={styles.eyebrow}>Pensé pour le quotidien</p><h2>Une base solide pour avancer.</h2></div></div>
-        <div className={styles.featureGrid}>
-          {["Vendre avec précision", "Piloter le stock", "Centraliser l’activité"].map((title, index) => <article key={title} className={styles.featureCard}><span>0{index + 1}</span><h3>{title}</h3><p>{["Créez vos ventes et maîtrisez chaque opération.", "Une vue claire de vos références et mouvements.", "Clients, rapports et données réunis."][index]}</p></article>)}
+        <div>
+          <h2>Tout ce dont vous avez besoin. Rien de plus.</h2>
+          <p>
+            Les données appartiennent à votre équipe. Le logiciel fournit les
+            outils pour les faire vivre.
+          </p>
         </div>
       </section>
 
-      <section id="contact" className={styles.ctaSection}><div><p className={styles.eyebrow}>Quand vous êtes prêt</p><h2>Commencez. Remplissez avec votre métier.</h2></div><Link href={user ? "/workspace" : "/login"} className={styles.primaryButton}>{user ? "Ouvrir le workspace" : "Se connecter"}</Link></section>
+      {/* =====================================================================
+          FEATURES
+      ===================================================================== */}
+      <section id="fonctionnalites" className={styles.featureSection}>
+        <div className={styles.sectionIntro}>
+          <div>
+            <p className={styles.eyebrow}>Pensé pour le quotidien</p>
+            <h2>Une base solide pour avancer.</h2>
+          </div>
+        </div>
 
+        <div className={styles.featureGrid}>
+          {featureItems.map((item, index) => (
+            <article key={item.title} className={styles.featureCard}>
+              <span>0{index + 1}</span>
+              <h3>{item.title}</h3>
+              <p>{item.description}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      {/* =====================================================================
+          CTA
+      ===================================================================== */}
+      <section id="contact" className={styles.ctaSection}>
+        <div>
+          <p className={styles.eyebrow}>Quand vous êtes prêt</p>
+          <h2>Commencez. Remplissez avec votre métier.</h2>
+        </div>
+        <Link href={primaryHref} className={styles.primaryButton}>
+          {user ? "Ouvrir le workspace" : "Se connecter"}
+        </Link>
+      </section>
+
+      {/* =====================================================================
+          FOOTER
+      ===================================================================== */}
       <footer className={styles.footer}>
         <div className={styles.footerInner}>
           <div className={styles.footerHeader}>
             <span className={styles.footerLogo}>MIZAN ERP</span>
-            <span className={styles.countrySelector}>AMANAH · IHSAN · BARAKA</span>
+            <span className={styles.countrySelector}>Amanah · Ihsan · Baraka</span>
           </div>
 
           <div className={styles.footerNavGrid}>
@@ -192,36 +386,82 @@ export default function Home() {
               <div key={column.category} className={styles.footerColumn}>
                 <h4>{column.category}</h4>
                 <ul>
-                  {column.links.map((link) => <li key={link}><a href="#">{link}</a></li>)}
+                  {column.links.map((link) => (
+                    <li key={link}>
+                      <a href="#">{link}</a>
+                    </li>
+                  ))}
                 </ul>
               </div>
             ))}
+
             <div className={styles.footerNewsletter}>
-              <h4>NEWSLETTER</h4>
+              <h4>Newsletter</h4>
               <p>Recevez les dernières nouvelles de Mizan.</p>
               <div className={styles.newsletterForm}>
-                <input type="email" placeholder="VOTRE EMAIL" aria-label="Votre email" />
+                <input
+                  type="email"
+                  placeholder="Votre email"
+                  aria-label="Votre email"
+                />
                 <button type="button" aria-label="S'inscrire">→</button>
               </div>
             </div>
           </div>
 
           <div className={styles.footerMeta}>
-            <div className={styles.socialsZara}><a href="#">INSTAGRAM</a><a href="#">LINKEDIN</a><a href="#">GITHUB</a></div>
-            <div className={styles.legalZara}><Link href="/legal/privacy">CONFIDENTIALITÉ</Link><Link href="/legal/support">SUPPORT</Link><Link href="/legal/security">SÉCURITÉ</Link></div>
+            <div className={styles.socialsZara}>
+              <a href="#">Instagram</a>
+              <a href="#">LinkedIn</a>
+              <a href="#">GitHub</a>
+            </div>
+            <div className={styles.legalZara}>
+              <Link href="/legal/privacy">Confidentialité</Link>
+              <Link href="/legal/support">Support</Link>
+              <Link href="/legal/security">Sécurité</Link>
+            </div>
           </div>
-          <div className={styles.footerBottomZara}>© 2026 MIZAN ERP — AMANAH · IHSAN · BARAKA</div>
+
+          <div className={styles.footerBottomZara}>
+            © 2026 MIZAN ERP — Amanah · Ihsan · Baraka
+          </div>
         </div>
       </footer>
 
+      {/* =====================================================================
+          MODAL MODULE
+      ===================================================================== */}
       {selectedModule && (
-        <div className={styles.moduleModalBackdrop} role="presentation" onClick={() => setSelectedModule(null)}>
-          <section className={styles.moduleModal} role="dialog" aria-modal="true" aria-labelledby="module-modal-title" onClick={(event) => event.stopPropagation()}>
-            <button type="button" className={styles.moduleModalClose} onClick={() => setSelectedModule(null)} aria-label="Fermer">×</button>
-            <span className={styles.eyebrow}>Module MIZAN</span>
+        <div
+          className={styles.moduleModalBackdrop}
+          role="presentation"
+          onClick={() => setSelectedModule(null)}
+        >
+          <section
+            className={styles.moduleModal}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="module-modal-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className={styles.moduleModalClose}
+              onClick={() => setSelectedModule(null)}
+              aria-label="Fermer"
+            >
+              ×
+            </button>
+            <span className={styles.eyebrow}>Module Mizan</span>
             <h2 id="module-modal-title">{selectedModule[1]}</h2>
             <p>{selectedModule[2]}</p>
-            <Link href="/login" className={styles.primaryButton} onClick={() => setSelectedModule(null)}>Découvrir MIZAN</Link>
+            <Link
+              href="/login"
+              className={styles.primaryButton}
+              onClick={() => setSelectedModule(null)}
+            >
+              Découvrir Mizan
+            </Link>
           </section>
         </div>
       )}

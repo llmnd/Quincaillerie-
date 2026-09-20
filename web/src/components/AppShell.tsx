@@ -4,14 +4,38 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Bell, Bird, Boxes, Calculator, LayoutDashboard, LayoutGrid, LogOut, Package, PanelLeftClose, PanelLeftOpen, Settings, ShoppingCart, UserRound, Users, WalletCards } from "lucide-react";
+import {
+  ArrowLeft,
+  Bell,
+  Bird,
+  Boxes,
+  Calculator,
+  LayoutDashboard,
+  LayoutGrid,
+  LogOut,
+  Package,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Settings,
+  ShoppingCart,
+  UserRound,
+  Users,
+  WalletCards,
+} from "lucide-react";
 import { authHeaders, clearStoredAuth, getStoredUser, restoreAuthSession } from "../lib/auth";
 import styles from "./AppShell.module.css";
 
 type User = { full_name?: string; email?: string; role?: "admin" | "seller" };
 type ModuleState = { key: string; enabled: boolean };
 type OrganizationProfile = { name: string; logo?: string | null };
-type Application = { label: string; description: string; href: string; icon: typeof ShoppingCart; roles: string[]; moduleKey?: string };
+type Application = {
+  label: string;
+  description: string;
+  href: string;
+  icon: typeof ShoppingCart;
+  roles: string[];
+  moduleKey?: string;
+};
 type BreadcrumbItem = { href: string; label: string };
 
 const breadcrumbLabels: Record<string, string> = {
@@ -37,7 +61,11 @@ const breadcrumbLabels: Record<string, string> = {
 
 const breadcrumbStorageKey = "quincaillerie_breadcrumbs";
 
-function BreadcrumbTrail({ items, className = "", compact = true }: Readonly<{ items: BreadcrumbItem[]; className?: string; compact?: boolean }>) {
+function BreadcrumbTrail({
+  items,
+  className = "",
+  compact = true,
+}: Readonly<{ items: BreadcrumbItem[]; className?: string; compact?: boolean }>) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLSpanElement>(null);
   const isCompact = compact && items.length > 3;
@@ -87,7 +115,13 @@ function BreadcrumbTrail({ items, className = "", compact = true }: Readonly<{ i
               {menuOpen && (
                 <span className={styles.breadcrumbMenu} role="menu">
                   {hiddenItems.map((hiddenItem) => (
-                    <Link key={hiddenItem.href} href={hiddenItem.href} className={styles.breadcrumbMenuLink} role="menuitem" onClick={() => setMenuOpen(false)}>
+                    <Link
+                      key={hiddenItem.href}
+                      href={hiddenItem.href}
+                      className={styles.breadcrumbMenuLink}
+                      role="menuitem"
+                      onClick={() => setMenuOpen(false)}
+                    >
                       {hiddenItem.label}
                     </Link>
                   ))}
@@ -97,9 +131,13 @@ function BreadcrumbTrail({ items, className = "", compact = true }: Readonly<{ i
             </span>
           )}
           {index === visibleItems.length - 1 ? (
-            <strong className={styles.breadcrumbCurrent} aria-current="page">{item.label}</strong>
+            <strong className={styles.breadcrumbCurrent} aria-current="page">
+              {item.label}
+            </strong>
           ) : (
-            <Link href={item.href} className={styles.breadcrumbLink}>{item.label}</Link>
+            <Link href={item.href} className={styles.breadcrumbLink}>
+              {item.label}
+            </Link>
           )}
         </span>
       ))}
@@ -136,7 +174,13 @@ export default function AppShell({
   hideSidebar = false,
   hideContentPadding = false,
   showBreadcrumbWhenHidden = false,
-}: Readonly<{ children: React.ReactNode; hideTopbar?: boolean; hideSidebar?: boolean; hideContentPadding?: boolean; showBreadcrumbWhenHidden?: boolean }>) {
+}: Readonly<{
+  children: React.ReactNode;
+  hideTopbar?: boolean;
+  hideSidebar?: boolean;
+  hideContentPadding?: boolean;
+  showBreadcrumbWhenHidden?: boolean;
+}>) {
   const router = useRouter();
   const pathname = usePathname();
   const queryClient = useQueryClient();
@@ -147,14 +191,15 @@ export default function AppShell({
   const [isNavigating, setIsNavigating] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>(() => [{ href: pathname, label: breadcrumbLabels[pathname] ?? pathname }]);
+  const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>(() => [
+    { href: pathname, label: breadcrumbLabels[pathname] ?? pathname },
+  ]);
   const [breadcrumbsReady, setBreadcrumbsReady] = useState(false);
   const navigationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    // Keep the first client render identical to the server before reading session-dependent data.
-    useEffect(() => {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setIsHydrated(true);
-    }, []);
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   const sessionQuery = useQuery<User | null>({
     queryKey: ["auth", "me"],
@@ -165,20 +210,31 @@ export default function AppShell({
   });
   const user = sessionQuery.data ?? null;
 
-  const effectiveUser = user ?? { full_name: "Utilisateur", email: "", role: undefined as "admin" | "seller" | undefined };
+  const effectiveUser = user ?? {
+    full_name: "Utilisateur",
+    email: "",
+    role: undefined as "admin" | "seller" | undefined,
+  };
   const role: "admin" | "seller" | undefined = effectiveUser.role;
   const adminOnlyRoutes = ["/admin", "/accounting", "/reports", "/settings/users"];
-  const isAdminOnlyRoute = adminOnlyRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
-  const allModuleKeys = new Set(sidebarItems.flatMap((item) => item.moduleKey ? [item.moduleKey] : []));
+  const isAdminOnlyRoute = adminOnlyRoutes.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`)
+  );
+  const allModuleKeys = new Set(
+    sidebarItems.flatMap((item) => (item.moduleKey ? [item.moduleKey] : []))
+  );
 
   const modulesQuery = useQuery<ModuleState[]>({
     queryKey: ["organization", "modules"],
     enabled: Boolean(user),
     queryFn: async () => {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/organization/modules`, {
-        credentials: "include",
-        headers: { Accept: "application/json", ...authHeaders() },
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/organization/modules`,
+        {
+          credentials: "include",
+          headers: { Accept: "application/json", ...authHeaders() },
+        }
+      );
       if (!response.ok) throw new Error("Impossible de charger les modules.");
       return response.json() as Promise<ModuleState[]>;
     },
@@ -188,10 +244,13 @@ export default function AppShell({
     queryKey: ["organization", "profile"],
     enabled: Boolean(user),
     queryFn: async () => {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/organization/profile`, {
-        credentials: "include",
-        headers: authHeaders(),
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/organization/profile`,
+        {
+          credentials: "include",
+          headers: authHeaders(),
+        }
+      );
       if (!response.ok) return null;
       return response.json() as Promise<OrganizationProfile>;
     },
@@ -220,15 +279,17 @@ export default function AppShell({
   }, [isLoggingOut, router, sessionQuery.isFetched, user]);
 
   useEffect(() => {
-    // Reset the visual route indicator once the new route is committed.
     if (navigationTimerRef.current) clearTimeout(navigationTimerRef.current);
     navigationTimerRef.current = null;
     setIsNavigating(false);
   }, [pathname]);
 
-  useEffect(() => () => {
-    if (navigationTimerRef.current) clearTimeout(navigationTimerRef.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (navigationTimerRef.current) clearTimeout(navigationTimerRef.current);
+    },
+    []
+  );
 
   useEffect(() => {
     const stored = window.sessionStorage.getItem(breadcrumbStorageKey);
@@ -244,11 +305,22 @@ export default function AppShell({
     }
 
     const currentIndex = parsed.findIndex((item) => item.href === pathname);
-    const nextBreadcrumbs = currentIndex >= 0
-      ? parsed.slice(0, currentIndex + 1)
-      : [...parsed, { href: pathname, label: breadcrumbLabels[pathname] ?? pathname.split("/").filter(Boolean).pop() ?? "Page" }];
+    const nextBreadcrumbs =
+      currentIndex >= 0
+        ? parsed.slice(0, currentIndex + 1)
+        : [
+            ...parsed,
+            {
+              href: pathname,
+              label: breadcrumbLabels[pathname] ?? pathname.split("/").filter(Boolean).pop() ?? "Page",
+            },
+          ];
 
-    setBreadcrumbs(nextBreadcrumbs.length > 0 ? nextBreadcrumbs : [{ href: pathname, label: breadcrumbLabels[pathname] ?? pathname }]);
+    setBreadcrumbs(
+      nextBreadcrumbs.length > 0
+        ? nextBreadcrumbs
+        : [{ href: pathname, label: breadcrumbLabels[pathname] ?? pathname }]
+    );
     setBreadcrumbsReady(true);
   }, []);
 
@@ -261,7 +333,10 @@ export default function AppShell({
 
       return [
         ...current,
-        { href: pathname, label: breadcrumbLabels[pathname] ?? pathname.split("/").filter(Boolean).pop() ?? "Page" },
+        {
+          href: pathname,
+          label: breadcrumbLabels[pathname] ?? pathname.split("/").filter(Boolean).pop() ?? "Page",
+        },
       ];
     });
   }, [breadcrumbsReady, pathname]);
@@ -279,19 +354,34 @@ export default function AppShell({
   }, [isAdminOnlyRoute, role, router, user]);
 
   const shouldHideSidebar = hideSidebar || isSidebarCollapsed;
-  const enabledModuleKeys = new Set((modulesQuery.data ?? []).filter((module) => module.enabled).map((module) => module.key));
+  const enabledModuleKeys = new Set(
+    (modulesQuery.data ?? [])
+      .filter((module) => module.enabled)
+      .map((module) => module.key)
+  );
   const safeEnabledModules = enabledModuleKeys.size > 0 ? enabledModuleKeys : allModuleKeys;
   const organization = isHydrated ? organizationQuery.data ?? null : null;
-  const visibleBreadcrumbs = breadcrumbs.length > 0 ? breadcrumbs : [{ href: pathname, label: breadcrumbLabels[pathname] ?? pathname }];
-  const visibleSidebar = (isHydrated ? sidebarItems.filter((item) => {
-    const allowedByRole = !item.roles || (role ? item.roles.includes(role) : false);
-    if (!allowedByRole) return false;
-    const moduleKey = item.moduleKey ?? "";
-    return moduleKey.length === 0 || safeEnabledModules.has(moduleKey);
-  }) : sidebarItems);
-  const safeUser = isHydrated ? effectiveUser : { full_name: "Utilisateur", email: "", role: undefined };
+  const visibleBreadcrumbs =
+    breadcrumbs.length > 0
+      ? breadcrumbs
+      : [{ href: pathname, label: breadcrumbLabels[pathname] ?? pathname }];
+  const visibleSidebar = isHydrated
+    ? sidebarItems.filter((item) => {
+        const allowedByRole = !item.roles || (role ? item.roles.includes(role) : false);
+        if (!allowedByRole) return false;
+        const moduleKey = item.moduleKey ?? "";
+        return moduleKey.length === 0 || safeEnabledModules.has(moduleKey);
+      })
+    : sidebarItems;
+  const safeUser = isHydrated
+    ? effectiveUser
+    : { full_name: "Utilisateur", email: "", role: undefined };
   const userInitial = (safeUser.full_name ?? safeUser.email ?? "U").trim().charAt(0).toUpperCase();
-  const roleLabel = !isHydrated ? "Utilisateur" : role === "admin" ? "Administrateur" : "Vendeur";
+  const roleLabel = !isHydrated
+    ? "Utilisateur"
+    : role === "admin"
+    ? "Administrateur"
+    : "Vendeur";
 
   function prefetchRoute(route: string) {
     router.prefetch(route);
@@ -328,21 +418,35 @@ export default function AppShell({
     if (typeof window !== "undefined") {
       window.sessionStorage.removeItem("quincaillerie_authenticated");
       window.sessionStorage.removeItem("quincaillerie_session_user");
-    }
-    if (typeof window !== "undefined") {
       window.history.replaceState(null, "", "/");
     }
     router.replace("/");
   }
 
   return (
-    <div className={styles.shell} aria-busy={sessionQuery.isPending || isNavigating ? "true" : undefined}>
-      {isNavigating && <output className={styles.navigationLoading} aria-label="Chargement de la page"><span /></output>}
+    <div
+      className={styles.shell}
+      aria-busy={sessionQuery.isPending || isNavigating ? "true" : undefined}
+    >
+      {isNavigating && (
+        <output className={styles.navigationLoading} aria-label="Chargement de la page">
+          <span />
+        </output>
+      )}
+
       {!shouldHideSidebar && (
         <aside className={styles.sidebar}>
           <div className={styles.sidebarTop}>
-            <button type="button" className={`${styles.backButton} ${styles.backButtonPrimary}`} onClick={handleBack} aria-label="Retour" title="Retour">
-              <span className={styles.backIcon} aria-hidden="true"><ArrowLeft size={15} strokeWidth={2.2} /></span>
+            <button
+              type="button"
+              className={`${styles.backButton} ${styles.backButtonPrimary}`}
+              onClick={handleBack}
+              aria-label="Retour"
+              title="Retour"
+            >
+              <span className={styles.backIcon} aria-hidden="true">
+                <ArrowLeft size={15} strokeWidth={2.2} />
+              </span>
               <span className={styles.backLabel}>Retour</span>
             </button>
 
@@ -358,18 +462,34 @@ export default function AppShell({
             </button>
           </div>
 
-          <nav className={menuOpen ? styles.sidebarNavOpen : styles.sidebarNav} aria-label="Navigation">
-            
+          <nav
+            className={menuOpen ? styles.sidebarNavOpen : styles.sidebarNav}
+            aria-label="Navigation"
+          >
             {visibleSidebar.map((item) => (
               <Link
                 key={`${item.href}-${item.label}`}
                 href={item.href}
-                onClick={() => { setMenuOpen(false); startNavigation(item.href); }}
+                onClick={() => {
+                  setMenuOpen(false);
+                  startNavigation(item.href);
+                }}
                 onMouseEnter={() => prefetchRoute(item.href)}
                 onFocus={() => prefetchRoute(item.href)}
                 className={pathname === item.href ? styles.navActive : styles.navItem}
               >
-                {item.image ? <img src={item.image} alt="" className={styles.navImage} onError={(event) => { event.currentTarget.style.display = "none"; }} /> : <item.icon size={17} strokeWidth={1.8} aria-hidden="true" />}
+                {item.image ? (
+                  <img
+                    src={item.image}
+                    alt=""
+                    className={styles.navImage}
+                    onError={(event) => {
+                      event.currentTarget.style.display = "none";
+                    }}
+                  />
+                ) : (
+                  <item.icon size={17} strokeWidth={1.8} aria-hidden="true" />
+                )}
                 {item.label}
               </Link>
             ))}
@@ -397,6 +517,7 @@ export default function AppShell({
         {hideTopbar && showBreadcrumbWhenHidden && (
           <BreadcrumbTrail items={visibleBreadcrumbs} className={styles.breadcrumbOverlay} />
         )}
+
         {!hideTopbar && (
           <header className={styles.topbar}>
             <div className={styles.topbarLeft}>
@@ -407,24 +528,40 @@ export default function AppShell({
                   onClick={() => setIsSidebarCollapsed((value) => !value)}
                   aria-label={isSidebarCollapsed ? "Afficher le menu" : "Masquer le menu"}
                 >
-                  {isSidebarCollapsed ? <PanelLeftOpen size={14} /> : <PanelLeftClose size={14} />}
+                  {isSidebarCollapsed ? (
+                    <PanelLeftOpen size={14} />
+                  ) : (
+                    <PanelLeftClose size={14} />
+                  )}
                   <span>{isSidebarCollapsed ? "Menu" : "Masquer"}</span>
                 </button>
               )}
 
-              <BreadcrumbTrail items={visibleBreadcrumbs} className={styles.breadcrumb} compact={false} />
+              <BreadcrumbTrail
+                items={visibleBreadcrumbs}
+                className={styles.breadcrumb}
+                compact={false}
+              />
             </div>
 
             <div className={styles.topbarActions}>
-              <button type="button" className={styles.notificationBtn} aria-label="Notifications">
-                <Bell size={14} />
+              <button
+                type="button"
+                className={styles.notificationBtn}
+                aria-label="Notifications"
+              >
+                <Bell size={15} />
                 <span className={styles.notificationDot} />
               </button>
 
               <div className={styles.userMenuWrap}>
                 <span className={styles.company}>
                   {organization?.logo ? (
-                    <img src={organization.logo} alt="Logo de l'entreprise" className={styles.companyLogo} />
+                    <img
+                      src={organization.logo}
+                      alt="Logo de l'entreprise"
+                      className={styles.companyLogo}
+                    />
                   ) : null}
                   {organization?.name ?? "Ma société"}
                 </span>
@@ -440,7 +577,11 @@ export default function AppShell({
                 </button>
 
                 {isUserMenuOpen && (
-                  <div className={styles.userDropdown} role="menu" aria-label="Menu utilisateur">
+                  <div
+                    className={styles.userDropdown}
+                    role="menu"
+                    aria-label="Menu utilisateur"
+                  >
                     <div className={styles.userDropdownHeader}>
                       <span className={styles.userDropdownAvatar}>{userInitial}</span>
                       <div>
@@ -449,15 +590,23 @@ export default function AppShell({
                       </div>
                     </div>
 
-                    <button type="button" className={styles.userDropdownAction} onClick={() => {
-                      setIsUserMenuOpen(false);
-                      router.push("/profile");
-                    }}>
+                    <button
+                      type="button"
+                      className={styles.userDropdownAction}
+                      onClick={() => {
+                        setIsUserMenuOpen(false);
+                        router.push("/profile");
+                      }}
+                    >
                       <UserRound size={15} />
                       <span>Mon profil</span>
                     </button>
 
-                    <button type="button" className={styles.userDropdownAction} onClick={handleLogout}>
+                    <button
+                      type="button"
+                      className={styles.userDropdownAction}
+                      onClick={handleLogout}
+                    >
                       <LogOut size={15} />
                       <span>Se déconnecter</span>
                     </button>
@@ -467,7 +616,10 @@ export default function AppShell({
             </div>
           </header>
         )}
-        <div className={hideContentPadding ? styles.contentFullBleed : styles.content}>{children}</div>
+
+        <div className={hideContentPadding ? styles.contentFullBleed : styles.content}>
+          {children}
+        </div>
       </main>
     </div>
   );

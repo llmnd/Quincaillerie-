@@ -1,133 +1,262 @@
+/* =========================================================
+   STOCK & INVENTAIRE
+   Palette dashboard · surfaces cohérentes · zéro glow
+========================================================= */
+
+/* -------------------------------------------------------------------------
+   Tokens
+   ------------------------------------------------------------------------- */
 .page {
+  /* Surfaces */
+  --bg-1: #11151c;
+  --bg-2: #161a22;
+  --bg-3: #1b2029;
+  --bg-input: #0d1016;
+
+  /* Traits */
+  --line-1: rgba(255, 255, 255, 0.05);
+  --line-2: rgba(255, 255, 255, 0.08);
+  --line-3: rgba(255, 255, 255, 0.14);
+
+  /* Texte */
+  --ink-1: #f1f4f8;
+  --ink-2: #d6dce5;
+  --ink-3: #9aa4b2;
+  --ink-4: #6f7a8a;
+  --ink-5: #4f5866;
+
+  /* Accent prune */
+  --accent: #a46aa3;
+  --accent-hi: #c497c2;
+  --accent-soft: rgba(164, 106, 163, 0.1);
+  --accent-line: rgba(164, 106, 163, 0.35);
+
+  /* Sémantique */
+  --good: #64eeae;
+  --good-soft: rgba(100, 238, 174, 0.09);
+  --good-line: rgba(100, 238, 174, 0.22);
+  --danger: #ff6b6b;
+  --danger-soft: rgba(255, 107, 107, 0.09);
+  --danger-line: rgba(255, 107, 107, 0.22);
+
+  /* Rayons */
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 8px;
+  --r-full: 999px;
+
+  /* Ombres neutres */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+
+  /* Courbe */
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+
   width: 100%;
   max-width: 1480px;
   margin: 0 auto;
-  padding: 24px 24px 44px;
-  color: #f4f6fa;
+  padding: 28px 30px 48px;
+  color: var(--ink-2);
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Inter,
+    Roboto,
+    sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  letter-spacing: -0.006em;
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
+.page :is(button, input, select, a):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-xs);
+}
+
+/* ==========================================================================
+   HEADER
+   ========================================================================== */
 .header {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: 24px;
-  padding-bottom: 18px;
-  margin-bottom: 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  padding-bottom: 22px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--line-1);
+  position: relative;
+}
+
+.header::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 52px;
+  height: 1px;
+  background: var(--accent);
+  opacity: 0.75;
 }
 
 .header h1 {
   margin: 0;
-  color: #f5f7fa;
-  font-size: clamp(1.7rem, 2vw, 1.9rem);
-  font-weight: 700;
-  letter-spacing: -0.035em;
-  line-height: 1.1;
+  color: var(--ink-1);
+  font-size: clamp(1.5rem, 2.4vw, 1.9rem);
+  font-weight: 500;
+  letter-spacing: -0.038em;
+  line-height: 1.08;
 }
 
 .header p:last-child {
   margin: 6px 0 0;
-  color: #ebedef !important;
-  font-size: 0.9rem;
-  line-height: 1.45;
+  color: var(--ink-4);
+  font-size: 0.82rem;
+  line-height: 1.5;
 }
 
 .eyebrow {
-  margin: 0 0 7px;
-  color: #a46aa3 !important;
-  font-size: 0.8rem;
-  font-weight: 650;
-  letter-spacing: 0.16em;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  color: var(--accent);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
 }
 
-.countBadge {
-  padding: 7px 10px;
-  border: 1px solid rgba(164, 106, 163, 0.35);
-  border-radius: 5px;
-  background: rgba(164, 106, 163, 0.08);
-  color: #f0d5ed !important;
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  white-space: nowrap;
+.eyebrow::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex: 0 0 auto;
 }
 
+.countBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 14px;
+  border: 1px solid var(--accent-line);
+  border-radius: var(--r-full);
+  background: var(--accent-soft);
+  color: var(--accent-hi);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ==========================================================================
+   TOOLBAR
+   ========================================================================== */
 .toolbar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
+  gap: 12px;
+  margin-bottom: 14px;
 }
 
 .toolbar input {
   flex: 1;
   min-width: 0;
-  padding: 10px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: 5px;
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
   outline: none;
-  background: rgba(17, 21, 29, 0.82);
-  color: #edf0f5;
+  background: var(--bg-1);
+  color: var(--ink-1);
   font: inherit;
-  font-size: 16px;
-}
-
-.toolbar input:focus {
-  border-color: rgba(164, 106, 163, 0.7);
-  box-shadow: 0 0 0 2px rgba(164, 106, 163, 0.12);
+  font-size: 0.85rem;
+  transition:
+    border-color 180ms var(--ease),
+    background 180ms var(--ease);
 }
 
 .toolbar input::placeholder {
-  color: #7c8796;
+  color: var(--ink-5);
+}
+
+.toolbar input:hover {
+  border-color: var(--line-3);
+}
+
+.toolbar input:focus {
+  border-color: var(--accent);
+  background: var(--bg-2);
 }
 
 .toolbar > span {
-  color: #c4cfdd !important;
-  font-size: 0.68rem;
+  color: var(--ink-3);
+  font-size: 0.74rem;
+  font-weight: 500;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
+/* ==========================================================================
+   EMPTY
+   ========================================================================== */
 .empty {
-  padding: 40px 24px;
-  border: 1px dashed rgba(255, 255, 255, 0.14);
-  background: rgba(17, 21, 29, 0.65);
-  color: #f5f7f9 !important;
-  font-size: 0.76rem;
+  padding: 44px 24px;
+  border: 1px dashed var(--line-2);
+  border-radius: var(--r-md);
+  background: var(--bg-1);
+  color: var(--ink-4);
+  font-size: 0.82rem;
   text-align: center;
 }
 
+/* ==========================================================================
+   INVENTORY TABLE
+   ========================================================================== */
 .inventory {
   overflow-x: auto;
-  border: 1px solid rgba(255, 255, 255, 0.055);
-  background: rgba(17, 21, 29, 0.78);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  background: var(--bg-1);
+  box-shadow: var(--shadow-sm);
 }
 
 .tableHead,
 .productRow {
   display: grid;
-  grid-template-columns: minmax(220px, 1.65fr) minmax(110px, 0.8fr) 0.55fr 0.55fr 0.55fr 0.75fr;
+  grid-template-columns:
+    minmax(220px, 1.65fr)
+    minmax(110px, 0.8fr)
+    0.55fr
+    0.55fr
+    0.55fr
+    0.75fr;
   align-items: center;
   gap: 14px;
   min-width: 880px;
 }
 
 .tableHead {
-  padding: 12px 15px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.055);
-  background: rgba(255, 255, 255, 0.025);
-  color: #aeb9c8 !important;
-  font-size: 0.9rem;
-  font-weight: 650;
-  letter-spacing: 0.1em;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line-2);
+  background: var(--bg-2);
+  color: var(--ink-4);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
 .productRow {
-  padding: 13px 15px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.045);
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line-1);
   background: transparent;
-  transition: background 160ms ease, border-color 160ms ease;
+  transition: background 140ms var(--ease);
 }
 
 .productRow:last-child {
@@ -135,10 +264,12 @@
 }
 
 .productRow:hover {
-  border-color: rgba(164, 106, 163, 0.22);
-  background: rgba(164, 106, 163, 0.045);
+  background: var(--bg-2);
 }
 
+/* ==========================================================================
+   PRODUCT CELL
+   ========================================================================== */
 .productInfo {
   min-width: 0;
 }
@@ -150,90 +281,120 @@
 }
 
 .productInfo strong {
+  display: flex;
+  align-items: center;
+  gap: 0;
   overflow: hidden;
-  color: #fdfeff !important;
-  font-size: 0.9rem;
-  font-weight: 500;
+  color: var(--ink-1);
+  font-size: 0.86rem;
+  font-weight: 550;
+  letter-spacing: -0.008em;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .productInfo span {
-  margin-top: 4px;
-  color: #fcfcfd !important;
-  font-size: 0.8rem;
+  margin-top: 5px;
+  color: var(--ink-4);
+  font-size: 0.72rem;
+  font-weight: 500;
 }
 
 .productInfo small {
   margin-top: 3px;
-  color: #fcfdff !important;
-  font-size: 0.9rem;
+  color: var(--ink-5);
+  font-size: 0.68rem;
 }
 
 .productThumb {
-  width: 30px;
-  height: 30px;
-  margin-right: 8px;
-  border-radius: 4px;
+  width: 34px;
+  height: 34px;
+  margin-right: 10px;
+  border-radius: var(--r-sm);
   object-fit: cover;
   vertical-align: middle;
+  border: 1px solid var(--line-2);
+  flex: 0 0 auto;
 }
 
+/* ==========================================================================
+   NUMERIC CELLS
+   ========================================================================== */
 .price {
   overflow: hidden;
-  color: #d2a9cf !important;
-  font-size: 0.9rem;
-  font-weight: 700;
+  color: var(--accent-hi);
+  font-size: 0.84rem;
+  font-weight: 600;
+  letter-spacing: -0.005em;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
-.number,
-.sold,
-.remaining {
-  color: #feffff !important;
-  font-size: 1rem;
+.number {
+  color: var(--ink-2);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .sold {
-  color: #edabc0 !important;
+  color: var(--ink-3);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .remaining {
-  color: #76d8c9 !important;
-  font-weight: 650;
+  color: var(--good);
+  font-size: 0.86rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
+/* ==========================================================================
+   STATUS BADGES
+   ========================================================================== */
 .available,
 .out,
 .sale,
 .purchase {
   justify-self: start;
-  padding: 5px 8px;
-  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: var(--r-full);
   font-size: 0.64rem;
   font-style: normal;
-  font-weight: 650;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   white-space: nowrap;
 }
 
 .available,
 .purchase {
-  background: rgba(76, 175, 137, 0.1);
-  color: #b8f0c9 !important;
+  border: 1px solid var(--good-line);
+  background: var(--good-soft);
+  color: var(--good);
 }
 
 .out,
 .sale {
-  background: rgba(224, 92, 114, 0.1);
-  color: #ffd0d8 !important;
+  border: 1px solid var(--danger-line);
+  background: var(--danger-soft);
+  color: var(--danger);
 }
 
+/* ==========================================================================
+   MOVEMENTS PANEL
+   ========================================================================== */
 .movementPanel {
-  margin-top: 12px;
-  padding: 0 15px 8px;
-  border: 1px solid rgba(255, 255, 255, 0.055);
-  background: rgba(17, 21, 29, 0.78);
+  margin-top: 14px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  background: var(--bg-1);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
 }
 
 .panelHeader {
@@ -241,35 +402,44 @@
   align-items: flex-end;
   justify-content: space-between;
   gap: 14px;
-  padding: 14px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.055);
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--line-2);
+  background: var(--bg-2);
 }
 
 .panelHeader h2 {
   margin: 5px 0 0;
-  color: #e9edf2;
-  font-size: 1.06rem;
+  color: var(--ink-1);
+  font-size: 1.02rem;
   font-weight: 550;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.018em;
 }
 
 .panelHeader > span {
-  color: #aeb9c8 !important;
-  font-size: 0.68rem;
+  color: var(--ink-4);
+  font-size: 0.7rem;
+  font-weight: 500;
 }
 
 .movementList {
   display: flex;
   flex-direction: column;
+  padding: 0 20px;
 }
 
 .movementRow {
   display: grid;
-  grid-template-columns: 0.35fr 1fr 0.55fr 0.55fr 1fr 0.65fr;
+  grid-template-columns:
+    0.35fr
+    1fr
+    0.55fr
+    0.55fr
+    1fr
+    0.65fr;
   align-items: center;
   gap: 12px;
-  padding: 10px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.045);
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line-1);
 }
 
 .movementRow:last-child {
@@ -279,49 +449,102 @@
 .movementRow > span,
 .movementRow > strong,
 .movementRow > small,
-.movementRow > time {
+.movementRow > time,
+.movementRow > b {
   overflow: hidden;
-  color: #aeb9c8 !important;
-  font-size: 0.9rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.movementRow > span {
+  color: var(--ink-5);
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
 .movementRow strong {
-  color: #d9dee6 !important;
-  font-weight: 500;
+  color: var(--ink-1);
+  font-size: 0.82rem;
+  font-weight: 550;
+  letter-spacing: -0.005em;
+}
+
+.movementRow > b {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 9px;
+  border-radius: var(--r-full);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.movementRow > small {
+  color: var(--ink-4);
+  font-size: 0.72rem;
 }
 
 .movementRow time {
-  color: #697585 !important;
+  color: var(--ink-5);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* Réutilise les badges de statut dans les mouvements */
+.movementRow .sale {
+  border: 1px solid var(--danger-line);
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.movementRow .purchase {
+  border: 1px solid var(--good-line);
+  background: var(--good-soft);
+  color: var(--good);
 }
 
 .muted {
-  padding: 20px 0;
-  color: #aeb9c8 !important;
-  font-size: 0.76rem;
+  padding: 26px 20px;
+  color: var(--ink-4);
+  font-size: 0.8rem;
+  text-align: center;
 }
 
+/* ==========================================================================
+   RESPONSIVE
+   ========================================================================== */
 @media (max-width: 1000px) {
   .page {
     max-width: 100%;
+  }
+
+  .tableHead,
+  .productRow {
+    min-width: 820px;
   }
 }
 
 @media (max-width: 760px) {
   .page {
-    padding: 18px 16px 36px;
+    padding: 20px 16px 36px;
   }
 
   .header {
     align-items: flex-start;
     flex-direction: column;
-    gap: 14px;
+    gap: 16px;
+    padding-bottom: 18px;
+    margin-bottom: 16px;
   }
 
   .toolbar {
     align-items: stretch;
     flex-direction: column;
+    gap: 8px;
   }
 
   .toolbar > span {
@@ -329,37 +552,115 @@
   }
 
   .movementPanel {
-    padding: 0 13px 8px;
+    margin-top: 12px;
   }
 
   .panelHeader {
     align-items: flex-start;
     flex-direction: column;
-    gap: 5px;
+    gap: 6px;
+    padding: 16px 16px;
+  }
+
+  .movementList {
+    padding: 0 16px;
   }
 
   .movementRow {
     grid-template-columns: 0.4fr 1fr 0.6fr 0.6fr;
     gap: 8px;
+    row-gap: 4px;
   }
 
-  .movementRow small,
-  .movementRow time {
-    grid-column: auto;
+  .movementRow > small,
+  .movementRow > time {
+    grid-column: 1 / -1;
+    text-align: left;
+    font-size: 0.68rem;
   }
 }
 
 @media (max-width: 440px) {
   .page {
-    padding-inline: 11px;
+    padding-inline: 12px;
   }
 
   .header h1 {
     font-size: 1.35rem;
   }
 
+  .countBadge {
+    padding: 6px 12px;
+    font-size: 0.68rem;
+  }
+
   .tableHead,
   .productRow {
-    min-width: 820px;
+    min-width: 780px;
   }
+
+  .tableHead,
+  .productRow {
+    padding-inline: 14px;
+  }
+}
+
+/* ==========================================================================
+   MOTION & CONTRAST & PRINT
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .page *,
+  .page *::before,
+  .page *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .page {
+    --line-1: rgba(255, 255, 255, 0.16);
+    --line-2: rgba(255, 255, 255, 0.26);
+    --line-3: rgba(255, 255, 255, 0.4);
+    --ink-3: #b8c0cd;
+    --ink-4: #98a2af;
+    --ink-5: #737e8b;
+  }
+}
+
+@media print {
+  .page {
+    max-width: 100%;
+    padding: 0;
+    color: #000;
+    background: #fff;
+  }
+
+  .toolbar { display: none !important; }
+
+  .inventory,
+  .movementPanel,
+  .tableHead,
+  .productRow,
+  .movementRow {
+    border-color: #ccc;
+    background: #fff;
+    box-shadow: none;
+  }
+
+  .header h1,
+  .productInfo strong,
+  .movementRow strong,
+  .price,
+  .number,
+  .sold,
+  .remaining { color: #000; }
+
+  .productInfo span,
+  .productInfo small,
+  .movementRow > span,
+  .movementRow > small,
+  .movementRow time,
+  .tableHead { color: #555; }
 }

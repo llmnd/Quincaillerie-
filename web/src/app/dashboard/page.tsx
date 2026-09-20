@@ -1,7 +1,21 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Activity, AlertCircle, Archive, Bird, Boxes, CheckCircle2, Clock3, Grid, Package, RefreshCw, ShoppingCart, Users, WalletCards } from "lucide-react";
+import {
+  Activity,
+  AlertCircle,
+  Archive,
+  Bird,
+  Boxes,
+  CheckCircle2,
+  Clock3,
+  Grid,
+  Package,
+  RefreshCw,
+  ShoppingCart,
+  Users,
+  WalletCards,
+} from "lucide-react";
 import AppShell from "../../components/AppShell";
 import { authHeaders } from "../../lib/auth";
 import styles from "./page.module.css";
@@ -21,8 +35,17 @@ type ChartPeriod = "7d" | "30d" | "12m";
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 const formatMoney = (value: number) => `${value.toLocaleString("fr-FR")} FCFA`;
-const formatDate = (value: string) => new Date(value).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
-const isToday = (value: string) => new Date(value).toDateString() === new Date().toDateString();
+const formatDate = (value: string) =>
+  new Date(value).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
+const isToday = (value: string) =>
+  new Date(value).toDateString() === new Date().toDateString();
+const isYesterday = (value: string) => {
+  const d = new Date(value);
+  const y = new Date();
+  y.setDate(y.getDate() - 1);
+  return d.toDateString() === y.toDateString();
+};
+
 const chartPeriodLength: Record<ChartPeriod, number> = { "7d": 7, "30d": 30, "12m": 12 };
 const chartPeriodLabels: Record<ChartPeriod, string> = { "7d": "7 jours", "30d": "30 jours", "12m": "12 mois" };
 
@@ -44,6 +67,7 @@ export default function DashboardPage() {
       setUser(null);
     }
   }, []);
+
   const [sales, setSales] = useState<Sale[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [movements, setMovements] = useState<StockMovement[]>([]);
@@ -57,11 +81,15 @@ export default function DashboardPage() {
   const [organization, setOrganization] = useState<OrganizationProfile | null>(null);
   const [archivedActivityIds, setArchivedActivityIds] = useState<string[]>([]);
   const [chartPeriod, setChartPeriod] = useState<ChartPeriod>("7d");
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
 
   async function fetchJson<T>(path: string): Promise<T | null> {
     try {
-      const response = await fetch(`${API_URL}${path}`, { headers: authHeaders(), credentials: "include" });
-      return response.ok ? await response.json() as T : null;
+      const response = await fetch(`${API_URL}${path}`, {
+        headers: authHeaders(),
+        credentials: "include",
+      });
+      return response.ok ? ((await response.json()) as T) : null;
     } catch {
       return null;
     }
@@ -85,7 +113,10 @@ export default function DashboardPage() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
-      window.localStorage.setItem("quincaillerie_archived_activities", JSON.stringify(archivedActivityIds));
+      window.localStorage.setItem(
+        "quincaillerie_archived_activities",
+        JSON.stringify(archivedActivityIds)
+      );
     } catch (error) {
       console.error("Erreur de sauvegarde des activités archivées", error);
     }
@@ -98,7 +129,17 @@ export default function DashboardPage() {
       setIsLoading(true);
 
       try {
-        const [saleData, productData, movementData, sessionData, batchData, healthData, eggData, customerData, organizationData] = await Promise.all([
+        const [
+          saleData,
+          productData,
+          movementData,
+          sessionData,
+          batchData,
+          healthData,
+          eggData,
+          customerData,
+          organizationData,
+        ] = await Promise.all([
           fetchJson<Sale[]>("/api/v1/sales"),
           fetchJson<Product[]>("/api/v1/products"),
           fetchJson<StockMovement[]>("/api/v1/stock-movements"),
@@ -137,31 +178,88 @@ export default function DashboardPage() {
   }, []);
 
   const firstName = user?.full_name ? user.full_name.split(" ")[0] : "";
+
   const todaySales = sales.filter((sale) => isToday(sale.sale_date));
   const todayRevenue = todaySales.reduce((total, sale) => total + sale.total_amount, 0);
+
+  const yesterdayRevenue = sales
+    .filter((sale) => isYesterday(sale.sale_date))
+    .reduce((total, sale) => total + sale.total_amount, 0);
+
+  const salesDelta =
+    yesterdayRevenue > 0
+      ? ((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 100
+      : null;
+
   const openSession = sessions.find((session) => session.status === "open");
   const lowStockProducts = products.filter((product) => product.remaining_stock <= 5);
   const activeBatches = batches.filter((batch) => batch.status === "active");
-  const recentActivities: ActivityItem[] = [
-    ...sales.slice(0, 8).map((sale) => ({ id: `sale-${sale.id}`, label: "Vente enregistrée", detail: formatMoney(sale.total_amount), time: sale.sale_date, kind: "sale" as const })),
-    ...movements.slice(0, 8).map((movement) => ({ id: `stock-${movement.id}`, label: movement.movement_type === "sale" ? "Sortie de stock" : "Mouvement de stock", detail: `${movement.quantity} unité${movement.quantity > 1 ? "s" : ""}`, time: movement.created_at, kind: "stock" as const })),
-    ...sessions.slice(0, 4).map((session) => ({ id: `cash-${session.id}`, label: session.status === "open" ? "Caisse ouverte" : "Session clôturée", detail: `Caisse #${session.register_id}`, time: session.opened_at, kind: "cash" as const })),
-    ...batches.slice(0, 4).map((batch) => ({ id: `batch-${batch.id}`, label: "Bande créée", detail: `${batch.reference} · ${batch.current_count} sujets`, time: batch.created_at, kind: "farm" as const })),
-    ...healthEvents.slice(0, 4).map((event) => ({ id: `health-${event.id}`, label: event.title, detail: event.mortality_count ? `${event.mortality_count} perte${event.mortality_count > 1 ? "s" : ""}` : "Suivi sanitaire", time: event.event_date, kind: "farm" as const })),
-    ...eggProductions.slice(0, 8).map((production) => ({ id: `egg-${production.id}`, label: "Récolte d'œufs", detail: `${production.quantity} œuf${production.quantity > 1 ? "s" : ""} · ${production.damaged_quantity} cassé${production.damaged_quantity > 1 ? "s" : ""}`, time: production.created_at, kind: "farm" as const })),
-  ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 16);
 
-  const visibleRecentActivities = recentActivities.filter((activity) => !archivedActivityIds.includes(activity.id));
+  const recentActivities: ActivityItem[] = [
+    ...sales.slice(0, 8).map((sale) => ({
+      id: `sale-${sale.id}`,
+      label: "Vente enregistrée",
+      detail: formatMoney(sale.total_amount),
+      time: sale.sale_date,
+      kind: "sale" as const,
+    })),
+    ...movements.slice(0, 8).map((movement) => ({
+      id: `stock-${movement.id}`,
+      label: movement.movement_type === "sale" ? "Sortie de stock" : "Mouvement de stock",
+      detail: `${movement.quantity} unité${movement.quantity > 1 ? "s" : ""}`,
+      time: movement.created_at,
+      kind: "stock" as const,
+    })),
+    ...sessions.slice(0, 4).map((session) => ({
+      id: `cash-${session.id}`,
+      label: session.status === "open" ? "Caisse ouverte" : "Session clôturée",
+      detail: `Caisse #${session.register_id}`,
+      time: session.opened_at,
+      kind: "cash" as const,
+    })),
+    ...batches.slice(0, 4).map((batch) => ({
+      id: `batch-${batch.id}`,
+      label: "Bande créée",
+      detail: `${batch.reference} · ${batch.current_count} sujets`,
+      time: batch.created_at,
+      kind: "farm" as const,
+    })),
+    ...healthEvents.slice(0, 4).map((event) => ({
+      id: `health-${event.id}`,
+      label: event.title,
+      detail: event.mortality_count
+        ? `${event.mortality_count} perte${event.mortality_count > 1 ? "s" : ""}`
+        : "Suivi sanitaire",
+      time: event.event_date,
+      kind: "farm" as const,
+    })),
+    ...eggProductions.slice(0, 8).map((production) => ({
+      id: `egg-${production.id}`,
+      label: "Récolte d'œufs",
+      detail: `${production.quantity} œuf${production.quantity > 1 ? "s" : ""} · ${production.damaged_quantity} cassé${production.damaged_quantity > 1 ? "s" : ""}`,
+      time: production.created_at,
+      kind: "farm" as const,
+    })),
+  ]
+    .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
+    .slice(0, 16);
+
+  const visibleRecentActivities = recentActivities.filter(
+    (activity) => !archivedActivityIds.includes(activity.id)
+  );
+
   const toggleArchiveActivity = (id: string) => {
     setArchivedActivityIds((current) =>
       current.includes(id) ? current.filter((entry) => entry !== id) : [...current, id]
     );
   };
+
   const archiveCount = archivedActivityIds.length;
 
   const salesTrend = useMemo(() => {
     const periodLength = chartPeriodLength[chartPeriod];
     const periodUnit = chartPeriod === "12m" ? "month" : "day";
+
     const days = Array.from({ length: periodLength }, (_, index) => {
       const date = new Date();
       date.setHours(0, 0, 0, 0);
@@ -172,8 +270,14 @@ export default function DashboardPage() {
         date.setDate(date.getDate() - (periodLength - 1 - index));
       }
       return {
-        key: periodUnit === "month" ? date.toISOString().slice(0, 7) : date.toISOString().slice(0, 10),
-        label: periodUnit === "month" ? date.toLocaleDateString("fr-FR", { month: "short" }).replace(".", "") : date.toLocaleDateString("fr-FR", { weekday: "short" }).replace(".", ""),
+        key:
+          periodUnit === "month"
+            ? date.toISOString().slice(0, 7)
+            : date.toISOString().slice(0, 10),
+        label:
+          periodUnit === "month"
+            ? date.toLocaleDateString("fr-FR", { month: "short" }).replace(".", "")
+            : date.toLocaleDateString("fr-FR", { weekday: "short" }).replace(".", ""),
         revenue: 0,
         count: 0,
       };
@@ -181,7 +285,10 @@ export default function DashboardPage() {
 
     for (const sale of sales) {
       const saleDate = new Date(sale.sale_date);
-      const key = periodUnit === "month" ? saleDate.toISOString().slice(0, 7) : saleDate.toISOString().slice(0, 10);
+      const key =
+        periodUnit === "month"
+          ? saleDate.toISOString().slice(0, 7)
+          : saleDate.toISOString().slice(0, 10);
       const day = days.find((entry) => entry.key === key);
       if (day) {
         day.revenue += sale.total_amount;
@@ -190,23 +297,34 @@ export default function DashboardPage() {
     }
 
     const currentTotal = days.reduce((total, day) => total + day.revenue, 0);
+
     const previousStart = new Date(days[0].key);
     if (periodUnit === "month") previousStart.setMonth(previousStart.getMonth() - periodLength);
     else previousStart.setDate(previousStart.getDate() - periodLength);
+
     const previousTotal = sales.reduce((total, sale) => {
       const saleDate = new Date(sale.sale_date);
       const periodEnd = new Date(days[0].key);
-      return saleDate >= previousStart && saleDate < periodEnd ? total + sale.total_amount : total;
+      return saleDate >= previousStart && saleDate < periodEnd
+        ? total + sale.total_amount
+        : total;
     }, 0);
+
     const maxRevenue = Math.max(...days.map((day) => day.revenue), 1);
     const maxCount = Math.max(...days.map((day) => day.count), 1);
+
+    /* --- Points avec padding horizontal : x de 4 % à 96 % --- */
     const points = days.map((day, index) => ({
-      x: (index / (days.length - 1)) * 100,
+      x: 4 + (index / (days.length - 1)) * 92,
       revenueY: 92 - (day.revenue / maxRevenue) * 68,
       countY: 92 - (day.count / maxCount) * 48,
     }));
 
-    const bestDay = days.reduce((best, day) => day.revenue > best.revenue ? day : best, days[0]);
+    const bestDay = days.reduce(
+      (best, day) => (day.revenue > best.revenue ? day : best),
+      days[0]
+    );
+
     return {
       days,
       points,
@@ -217,11 +335,34 @@ export default function DashboardPage() {
       bestDay,
       bestDayLabel: bestDay.revenue ? formatMoney(bestDay.revenue) : "—",
       periodLabel: chartPeriodLabels[chartPeriod],
-      changePercent: previousTotal > 0 ? ((currentTotal - previousTotal) / previousTotal) * 100 : null,
-      changeLabel: previousTotal > 0 ? `${currentTotal >= previousTotal ? "+" : ""}${Math.round(((currentTotal - previousTotal) / previousTotal) * 100)} %` : "—",
-      changeTone: previousTotal > 0 && currentTotal >= previousTotal ? "good" : "warning",
+      changePercent:
+        previousTotal > 0
+          ? ((currentTotal - previousTotal) / previousTotal) * 100
+          : null,
+      changeLabel:
+        previousTotal > 0
+          ? `${currentTotal >= previousTotal ? "+" : ""}${Math.round(
+              ((currentTotal - previousTotal) / previousTotal) * 100
+            )} %`
+          : "—",
+      changeTone:
+        previousTotal > 0 && currentTotal >= previousTotal ? "good" : "warning",
     };
   }, [chartPeriod, sales]);
+
+  const handleChartHover = (event: React.MouseEvent<HTMLDivElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = ((event.clientX - rect.left) / rect.width) * 100;
+    const count = salesTrend.points.length;
+    const idx = Math.max(0, Math.min(count - 1, Math.round((x / 100) * (count - 1))));
+    setHoverIndex(idx);
+  };
+
+  /* Clamp horizontal du tooltip pour éviter qu'il sorte du panneau */
+  const rawTooltipX =
+    hoverIndex !== null ? salesTrend.points[hoverIndex].x : null;
+  const clampedTooltipX =
+    rawTooltipX !== null ? Math.max(15, Math.min(85, rawTooltipX)) : null;
 
   const activityIcon = { sale: ShoppingCart, stock: Package, cash: WalletCards, farm: Bird };
 
@@ -242,79 +383,255 @@ export default function DashboardPage() {
           <div className={styles.headerMeta}>
             {organization && (
               <div className={styles.organizationIdentity}>
-                {organization.logo ? <img src={organization.logo} alt="" className={styles.organizationLogo} /> : <span className={styles.organizationFallback}>{organization.name.slice(0, 1).toUpperCase()}</span>}
+                {organization.logo ? (
+                  <img src={organization.logo} alt="" className={styles.organizationLogo} />
+                ) : (
+                  <span className={styles.organizationFallback}>
+                    {organization.name.slice(0, 1).toUpperCase()}
+                  </span>
+                )}
                 <strong>{organization.name}</strong>
               </div>
             )}
-            <span>{new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}</span>
-            <button type="button" className={styles.refreshButton} onClick={() => {
-              setIsLoading(true);
-              void (async () => {
-                const [saleData, productData, movementData, sessionData, batchData, healthData, eggData, customerData] = await Promise.all([
-                  fetchJson<Sale[]>("/api/v1/sales"),
-                  fetchJson<Product[]>("/api/v1/products"),
-                  fetchJson<StockMovement[]>("/api/v1/stock-movements"),
-                  fetchJson<CashSession[]>("/api/v1/cash/sessions"),
-                  fetchJson<Batch[]>("/api/v1/farming/batches"),
-                  fetchJson<HealthEvent[]>("/api/v1/farming/health-events"),
-                  fetchJson<EggProduction[]>("/api/v1/farming/egg-productions"),
-                  fetchJson<{ id: number }[]>("/api/v1/customers"),
-                ]);
+            <span>
+              {new Date().toLocaleDateString("fr-FR", {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+              })}
+            </span>
+            <button
+              type="button"
+              className={styles.refreshButton}
+              onClick={() => {
+                setIsLoading(true);
+                void (async () => {
+                  const [
+                    saleData,
+                    productData,
+                    movementData,
+                    sessionData,
+                    batchData,
+                    healthData,
+                    eggData,
+                    customerData,
+                  ] = await Promise.all([
+                    fetchJson<Sale[]>("/api/v1/sales"),
+                    fetchJson<Product[]>("/api/v1/products"),
+                    fetchJson<StockMovement[]>("/api/v1/stock-movements"),
+                    fetchJson<CashSession[]>("/api/v1/cash/sessions"),
+                    fetchJson<Batch[]>("/api/v1/farming/batches"),
+                    fetchJson<HealthEvent[]>("/api/v1/farming/health-events"),
+                    fetchJson<EggProduction[]>("/api/v1/farming/egg-productions"),
+                    fetchJson<{ id: number }[]>("/api/v1/customers"),
+                  ]);
 
-                if (saleData) setSales(saleData);
-                if (productData) setProducts(productData);
-                if (movementData) setMovements(movementData);
-                if (sessionData) setSessions(sessionData);
-                if (batchData) setBatches(batchData);
-                if (healthData) setHealthEvents(healthData);
-                if (eggData) setEggProductions(eggData);
-                if (customerData) setCustomerCount(customerData.length);
-                setLastUpdated(new Date());
-                setIsLoading(false);
-              })();
-            }} aria-label="Actualiser l’activité" title="Actualiser"><RefreshCw size={15} className={isLoading ? styles.spinning : ""} /></button>
+                  if (saleData) setSales(saleData);
+                  if (productData) setProducts(productData);
+                  if (movementData) setMovements(movementData);
+                  if (sessionData) setSessions(sessionData);
+                  if (batchData) setBatches(batchData);
+                  if (healthData) setHealthEvents(healthData);
+                  if (eggData) setEggProductions(eggData);
+                  if (customerData) setCustomerCount(customerData.length);
+                  setLastUpdated(new Date());
+                  setIsLoading(false);
+                })();
+              }}
+              aria-label="Actualiser l'activité"
+              title="Actualiser"
+            >
+              <RefreshCw size={15} className={isLoading ? styles.spinning : ""} />
+            </button>
           </div>
         </header>
 
         <section className={styles.metricGrid} aria-label="Indicateurs de l'organisation">
-          <article className={`${styles.metricCard} ${styles.metricAccent}`}><span>Ventes du jour</span><strong className={!isLoading && todayRevenue === 0 ? styles.zeroValue : undefined}>{isLoading ? "—" : formatMoney(todayRevenue)}</strong><small><ShoppingCart size={13} /> {todaySales.length} vente{todaySales.length > 1 ? "s" : ""}</small></article>
-          <article className={styles.metricCard}><span>État de la caisse</span><strong>{openSession ? "ACTIVE" : "FERMÉE"}</strong><small className={openSession ? styles.good : styles.muted}><WalletCards size={13} /> {openSession ? `Caisse #${openSession.register_id}` : "Aucune session ouverte"}</small></article>
-          <article className={styles.metricCard}><span>Stock à surveiller</span><strong className={lowStockProducts.length === 0 ? styles.zeroValue : undefined}>{lowStockProducts.length}</strong><small className={lowStockProducts.length ? styles.warning : styles.good}><Boxes size={13} /> référence{lowStockProducts.length > 1 ? "s" : ""} concernée{lowStockProducts.length > 1 ? "s" : ""}</small></article>
-          <article className={styles.metricCard}><span>Équipe & relations</span><strong className={customerCount === 0 ? styles.zeroValue : undefined}>{customerCount}</strong><small><Users size={13} /> clients enregistrés · {activeBatches.length} bande{activeBatches.length > 1 ? "s" : ""} active{activeBatches.length > 1 ? "s" : ""}</small></article>
+          <article className={`${styles.metricCard} ${styles.metricAccent}`}>
+            <span>Ventes du jour</span>
+            <div className={styles.metricValue}>
+              <strong className={!isLoading && todayRevenue === 0 ? styles.zeroValue : undefined}>
+                {isLoading ? "—" : formatMoney(todayRevenue)}
+              </strong>
+              {salesDelta !== null && !isLoading ? (
+                <span
+                  className={`${styles.delta} ${
+                    salesDelta >= 0 ? styles.deltaUp : styles.deltaDown
+                  }`}
+                  title={`Hier : ${formatMoney(yesterdayRevenue)}`}
+                >
+                  {salesDelta >= 0 ? "▲" : "▼"} {Math.abs(Math.round(salesDelta))}%
+                </span>
+              ) : (
+                <span className={`${styles.delta} ${styles.deltaHidden}`} aria-hidden="true">
+                  0%
+                </span>
+              )}
+            </div>
+            <small>
+              <ShoppingCart size={13} /> {todaySales.length} vente
+              {todaySales.length > 1 ? "s" : ""}
+              {salesDelta !== null ? " · vs hier" : ""}
+            </small>
+          </article>
+
+          <article className={styles.metricCard}>
+            <span>État de la caisse</span>
+            <strong>{openSession ? "ACTIVE" : "FERMÉE"}</strong>
+            <small className={openSession ? styles.good : styles.muted}>
+              <WalletCards size={13} />{" "}
+              {openSession ? `Caisse #${openSession.register_id}` : "Aucune session ouverte"}
+            </small>
+          </article>
+
+          <article className={styles.metricCard}>
+            <span>Stock à surveiller</span>
+            <strong className={lowStockProducts.length === 0 ? styles.zeroValue : undefined}>
+              {lowStockProducts.length}
+            </strong>
+            <small className={lowStockProducts.length ? styles.warning : styles.good}>
+              <Boxes size={13} /> référence{lowStockProducts.length > 1 ? "s" : ""} concernée
+              {lowStockProducts.length > 1 ? "s" : ""}
+            </small>
+          </article>
+
+          <article className={styles.metricCard}>
+            <span>Équipe &amp; relations</span>
+            <strong className={customerCount === 0 ? styles.zeroValue : undefined}>
+              {customerCount}
+            </strong>
+            <small>
+              <Users size={13} /> clients enregistrés · {activeBatches.length} bande
+              {activeBatches.length > 1 ? "s" : ""} active
+              {activeBatches.length > 1 ? "s" : ""}
+            </small>
+          </article>
         </section>
 
         <section className={styles.salesTrendPanel} aria-labelledby="sales-trend-title">
           <div className={styles.sectionHeader}>
             <div>
-              <span className={styles.sectionKicker}><Activity size={13} /> Ventes</span>
+              <span className={styles.sectionKicker}>
+                <Activity size={13} /> Ventes
+              </span>
               <h2 id="sales-trend-title">Évolution des ventes</h2>
             </div>
             <div className={styles.chartLegend}>
-              <span><i className={styles.revenueDot} /> Chiffre d&apos;affaires</span>
-              <span><i className={styles.countDot} /> Volume</span>
+              <span>
+                <i className={styles.revenueDot} /> Chiffre d&apos;affaires
+              </span>
+              <span>
+                <i className={styles.countDot} /> Volume
+              </span>
             </div>
           </div>
+
           <div className={styles.chartPeriods} aria-label="Période du graphique des ventes">
-            {(["7d", "30d", "12m"] as const).map((period) => <button key={period} type="button" className={chartPeriod === period ? styles.chartPeriodActive : styles.chartPeriod} onClick={() => setChartPeriod(period)}>{chartPeriodLabels[period]}</button>)}
+            {(["7d", "30d", "12m"] as const).map((period) => (
+              <button
+                key={period}
+                type="button"
+                className={chartPeriod === period ? styles.chartPeriodActive : styles.chartPeriod}
+                onClick={() => setChartPeriod(period)}
+              >
+                {chartPeriodLabels[period]}
+              </button>
+            ))}
           </div>
+
           <div className={styles.chartSummary}>
-            <span><small>{salesTrend.periodLabel}</small><strong>{formatMoney(salesTrend.totalRevenue)}</strong></span>
-            <span><small>Transactions</small><strong>{salesTrend.totalCount}</strong></span>
-            <span><small>Meilleur jour</small><strong>{salesTrend.bestDayLabel}</strong></span>
-            <span><small>Évolution</small><strong className={styles[salesTrend.changeTone]}>{salesTrend.changeLabel}</strong></span>
+            <span>
+              <small>{salesTrend.periodLabel}</small>
+              <strong>{formatMoney(salesTrend.totalRevenue)}</strong>
+            </span>
+            <span>
+              <small>Transactions</small>
+              <strong>{salesTrend.totalCount}</strong>
+            </span>
+            <span>
+              <small>Meilleur jour</small>
+              <strong>{salesTrend.bestDayLabel}</strong>
+            </span>
+            <span>
+              <small>Évolution</small>
+              <strong className={styles[salesTrend.changeTone]}>
+                {salesTrend.changeLabel}
+              </strong>
+            </span>
           </div>
+
           <div className={styles.salesChart}>
-            <svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Évolution du chiffre d'affaires et du volume des ventes sur les sept derniers jours">
-              <line x1="0" y1="24" x2="100" y2="24" className={styles.chartGridLine} />
-              <line x1="0" y1="58" x2="100" y2="58" className={styles.chartGridLine} />
-              <line x1="0" y1="92" x2="100" y2="92" className={styles.chartGridLine} />
-              <polygon points={`0,92 ${salesTrend.revenuePath} 100,92`} className={styles.revenueArea} />
-              <polyline points={salesTrend.revenuePath} className={styles.revenueLine} vectorEffect="non-scaling-stroke" />
-              <polyline points={salesTrend.countPath} className={styles.countLine} vectorEffect="non-scaling-stroke" />
-              {salesTrend.points.map((point) => <circle key={`${point.x}-${point.revenueY}`} cx={point.x} cy={point.revenueY} r="1.4" className={styles.revenuePoint} vectorEffect="non-scaling-stroke" />)}
-            </svg>
+            <div
+              className={styles.chartWrap}
+              onMouseMove={handleChartHover}
+              onMouseLeave={() => setHoverIndex(null)}
+            >
+              <svg
+                viewBox="0 0 100 100"
+                preserveAspectRatio="none"
+                role="img"
+                aria-label="Évolution du chiffre d'affaires et du volume des ventes"
+              >
+                <line x1="0" y1="24" x2="100" y2="24" className={styles.chartGridLine} />
+                <line x1="0" y1="58" x2="100" y2="58" className={styles.chartGridLine} />
+                <line x1="0" y1="92" x2="100" y2="92" className={styles.chartGridLine} />
+                <polygon
+                  points={`4,92 ${salesTrend.revenuePath} 96,92`}
+                  className={styles.revenueArea}
+                />
+                <polyline
+                  points={salesTrend.revenuePath}
+                  className={styles.revenueLine}
+                  vectorEffect="non-scaling-stroke"
+                />
+                <polyline
+                  points={salesTrend.countPath}
+                  className={styles.countLine}
+                  vectorEffect="non-scaling-stroke"
+                />
+                {salesTrend.points.map((point, i) => (
+                  <circle
+                    key={`${point.x}-${point.revenueY}`}
+                    cx={point.x}
+                    cy={point.revenueY}
+                    r={hoverIndex === i ? 2.2 : 1.4}
+                    className={`${styles.revenuePoint} ${
+                      hoverIndex === i ? styles.revenuePointActive : ""
+                    }`}
+                    vectorEffect="non-scaling-stroke"
+                  />
+                ))}
+              </svg>
+
+              {hoverIndex !== null && clampedTooltipX !== null && (
+                <>
+                  <span
+                    className={styles.crosshair}
+                    style={{ left: `${salesTrend.points[hoverIndex].x}%` }}
+                    aria-hidden
+                  />
+                  <div
+                    className={styles.chartTooltip}
+                    style={{ left: `${clampedTooltipX}%` }}
+                    role="tooltip"
+                  >
+                    <span className={styles.tooltipDay}>
+                      {salesTrend.days[hoverIndex].label}
+                    </span>
+                    <strong>{formatMoney(salesTrend.days[hoverIndex].revenue)}</strong>
+                    <small>
+                      {salesTrend.days[hoverIndex].count} vente
+                      {salesTrend.days[hoverIndex].count > 1 ? "s" : ""}
+                    </small>
+                  </div>
+                </>
+              )}
+            </div>
+
             <div className={styles.chartLabels}>
-              {salesTrend.days.map((day) => <span key={day.key}>{day.label}</span>)}
+              {salesTrend.days.map((day) => (
+                <span key={day.key}>{day.label}</span>
+              ))}
             </div>
           </div>
         </section>
@@ -323,28 +640,53 @@ export default function DashboardPage() {
           <section className={styles.activityPanel} aria-labelledby="activity-title">
             <div className={styles.sectionHeader}>
               <div>
-                <span className={styles.sectionKicker}><Activity size={13} /> Traçabilité</span>
+                <span className={styles.sectionKicker}>
+                  <Activity size={13} /> Traçabilité
+                </span>
                 <h2 id="activity-title">Activité récente</h2>
               </div>
               <div className={styles.sectionMeta}>
-                <span className={styles.updatedAt}>{lastUpdated ? `Mis à jour à ${lastUpdated.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}` : "Chargement…"}</span>
+                <span className={styles.updatedAt}>
+                  {lastUpdated
+                    ? `Mis à jour à ${lastUpdated.toLocaleTimeString("fr-FR", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}`
+                    : "Chargement…"}
+                </span>
                 {archiveCount > 0 && (
-                  <button type="button" className={styles.restoreButton} onClick={() => setArchivedActivityIds([])}>
+                  <button
+                    type="button"
+                    className={styles.restoreButton}
+                    onClick={() => setArchivedActivityIds([])}
+                  >
                     Rétablir ({archiveCount})
                   </button>
                 )}
               </div>
             </div>
+
             {visibleRecentActivities.length ? (
               <div className={styles.activityList}>
                 {visibleRecentActivities.map((item) => {
                   const Icon = activityIcon[item.kind];
                   return (
                     <div className={styles.activityRow} key={item.id}>
-                      <span className={`${styles.activityIcon} ${styles[item.kind]}`}><Icon size={16} /></span>
-                      <div className={styles.activityCopy}><strong>{item.label}</strong><small>{item.detail}</small></div>
+                      <span className={`${styles.activityIcon} ${styles[item.kind]}`}>
+                        <Icon size={16} />
+                      </span>
+                      <div className={styles.activityCopy}>
+                        <strong>{item.label}</strong>
+                        <small>{item.detail}</small>
+                      </div>
                       <time>{formatDate(item.time)}</time>
-                      <button type="button" className={styles.archiveButton} onClick={() => toggleArchiveActivity(item.id)} aria-label={`Archiver ${item.label}`} title="Archiver cette activité">
+                      <button
+                        type="button"
+                        className={styles.archiveButton}
+                        onClick={() => toggleArchiveActivity(item.id)}
+                        aria-label={`Archiver ${item.label}`}
+                        title="Archiver cette activité"
+                      >
                         <Archive size={14} />
                       </button>
                     </div>
@@ -352,17 +694,73 @@ export default function DashboardPage() {
                 })}
               </div>
             ) : (
-              <div className={styles.emptyState}><Clock3 size={20} /><p>{archiveCount > 0 ? "Aucune activité visible dans le flux courant." : (isLoading ? "Lecture des opérations…" : "Aucune activité enregistrée pour le moment.")}</p></div>
+              <div className={styles.emptyState}>
+                <Clock3 size={20} />
+                <p>
+                  {archiveCount > 0
+                    ? "Aucune activité visible dans le flux courant."
+                    : isLoading
+                    ? "Lecture des opérations…"
+                    : "Aucune activité enregistrée pour le moment."}
+                </p>
+              </div>
             )}
           </section>
 
           <aside className={styles.alertPanel} aria-labelledby="attention-title">
-            <div className={styles.sectionHeader}><div><span className={styles.sectionKicker}><AlertCircle size={13} /> À surveiller</span><h2 id="attention-title">Points d’attention</h2></div></div>
+            <div className={styles.sectionHeader}>
+              <div>
+                <span className={styles.sectionKicker}>
+                  <AlertCircle size={13} /> À surveiller
+                </span>
+                <h2 id="attention-title">Points d&apos;attention</h2>
+              </div>
+            </div>
             <div className={styles.alertList}>
-              {!openSession && <div className={styles.alertRow}><span className={styles.alertIcon}><WalletCards size={15} /></span><div><strong>Caisse fermée</strong><small>Une session doit être ouverte pour vendre.</small></div></div>}
-              {lowStockProducts.slice(0, 3).map((product) => <div className={styles.alertRow} key={product.id}><span className={styles.alertIcon}><Package size={15} /></span><div><strong>{product.name}</strong><small>Stock restant : {product.remaining_stock}</small></div></div>)}
-              {healthEvents.some((event) => event.mortality_count > 0) && <div className={styles.alertRow}><span className={styles.alertIcon}><Bird size={15} /></span><div><strong>Suivi sanitaire requis</strong><small>Une perte a été signalée dans l’élevage.</small></div></div>}
-              {openSession && !lowStockProducts.length && !healthEvents.some((event) => event.mortality_count > 0) && <div className={styles.clearState}><CheckCircle2 size={18} /><span>Tout est sous contrôle.</span></div>}
+              {!openSession && (
+                <div className={styles.alertRow}>
+                  <span className={styles.alertIcon}>
+                    <WalletCards size={15} />
+                  </span>
+                  <div>
+                    <strong>Caisse fermée</strong>
+                    <small>Une session doit être ouverte pour vendre.</small>
+                  </div>
+                </div>
+              )}
+
+              {lowStockProducts.slice(0, 3).map((product) => (
+                <div className={styles.alertRow} key={product.id}>
+                  <span className={styles.alertIcon}>
+                    <Package size={15} />
+                  </span>
+                  <div>
+                    <strong>{product.name}</strong>
+                    <small>Stock restant : {product.remaining_stock}</small>
+                  </div>
+                </div>
+              ))}
+
+              {healthEvents.some((event) => event.mortality_count > 0) && (
+                <div className={styles.alertRow}>
+                  <span className={styles.alertIcon}>
+                    <Bird size={15} />
+                  </span>
+                  <div>
+                    <strong>Suivi sanitaire requis</strong>
+                    <small>Une perte a été signalée dans l&apos;élevage.</small>
+                  </div>
+                </div>
+              )}
+
+              {openSession &&
+                !lowStockProducts.length &&
+                !healthEvents.some((event) => event.mortality_count > 0) && (
+                  <div className={styles.clearState}>
+                    <CheckCircle2 size={18} />
+                    <span>Tout est sous contrôle.</span>
+                  </div>
+                )}
             </div>
           </aside>
         </div>

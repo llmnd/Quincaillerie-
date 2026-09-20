@@ -1,122 +1,226 @@
-/* --- ESTHÉTIQUE ZARA / MINIMALISTE AVEC COULEURS APPSHELL --- */
+/* =========================================================
+   ADMINISTRATION — Centre d'administration
+   Palette dashboard · accent céladon (cohérent AppShell)
+========================================================= */
 
+/* -------------------------------------------------------------------------
+   Tokens
+   ------------------------------------------------------------------------- */
 .page {
+  /* Surfaces — identiques au dashboard */
+  --bg-1: #11151c;
+  --bg-2: #161a22;
+  --bg-3: #1b2029;
+  --bg-input: #0d1016;
+
+  /* Traits */
+  --line-1: rgba(255, 255, 255, 0.05);
+  --line-2: rgba(255, 255, 255, 0.08);
+  --line-3: rgba(255, 255, 255, 0.14);
+
+  /* Texte */
+  --ink-1: #f1f4f8;
+  --ink-2: #d6dce5;
+  --ink-3: #9aa4b2;
+  --ink-4: #6f7a8a;
+  --ink-5: #4f5866;
+
+  /* Accent céladon — cohérent avec l'AppShell nav */
+  --accent: #82c8bc;
+  --accent-hi: #9ce0d3;
+  --accent-soft: rgba(130, 200, 188, 0.1);
+  --accent-soft-2: rgba(130, 200, 188, 0.16);
+  --accent-line: rgba(130, 200, 188, 0.35);
+
+  /* Rayons */
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 8px;
+  --r-lg: 12px;
+  --r-full: 999px;
+
+  /* Ombres neutres uniquement */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 8px 24px -12px rgba(0, 0, 0, 0.7);
+
+  /* Courbe */
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+
   width: 100%;
   max-width: 1280px;
   margin: 0 auto;
-  padding: 40px 24px 80px;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  color: #e6e9ef;
+  padding: 32px 28px 64px;
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Inter,
+    Roboto,
+    sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  letter-spacing: -0.006em;
+  color: var(--ink-2);
   background-color: transparent;
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Header Zara Minimaliste */
+.page :is(button, input, select, textarea, a):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-xs);
+}
+
+/* ==========================================================================
+   HEADER
+   ========================================================================== */
 .header {
-  margin-bottom: 40px;
+  margin-bottom: 32px;
   padding-bottom: 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--line-1);
+  position: relative;
+}
+
+.header::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 52px;
+  height: 1px;
+  background: var(--accent);
+  opacity: 0.75;
 }
 
 .eyebrow {
-  margin: 0 0 8px;
-  color: #7c8a9d;
-  font-size: 0.65rem;
-  font-weight: 500;
-  letter-spacing: 0.25em;
+  margin: 0 0 10px;
+  color: var(--accent);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
 }
 
-.header h1 {
+.header h1,
+.header h2 {
   margin: 0;
-  color: #ffffff;
-  font-size: clamp(2rem, 5vw, 3.5rem);
-  font-weight: 300;
-  letter-spacing: -0.04em;
-  line-height: 1;
-  text-transform: uppercase;
+  color: var(--ink-1);
+  font-size: clamp(1.5rem, 2.6vw, 2rem);
+  font-weight: 500;
+  letter-spacing: -0.038em;
+  line-height: 1.08;
+  text-transform: none;
 }
 
 .header p:last-child {
-  margin: 16px 0 0;
-  color: #9aa7b9;
-  font-size: 0.85rem;
-  font-weight: 300;
-  letter-spacing: 0.02em;
+  margin: 10px 0 0;
+  color: var(--ink-4);
+  font-size: 0.82rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.55;
 }
 
-/* CONTAINER DES TABS */
+/* ==========================================================================
+   TABS
+   ========================================================================== */
 .tabs {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 36px;
-  padding: 6px;
-  background: #171a24;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  align-items: stretch;
+  gap: 6px;
+  margin-bottom: 28px;
+  padding: 5px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  background: var(--bg-1);
   overflow-x: auto;
-  scrollbar-width: none; /* Firefox */
+  scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
+  box-shadow: var(--shadow-sm);
 }
 
 .tabs::-webkit-scrollbar {
-  display: none; /* Chrome / Safari */
+  display: none;
 }
 
-/* TAB NON SÉLECTIONNÉ - Couleur Blanc Pur (#ffffff) et haute visibilité */
+/* Tab inactif */
 .tab {
-  flex: 1 0 auto;
-  padding: 14px 22px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  background: rgba(255, 255, 255, 0.04);
-  color: #ffffff;
-  font-size: 0.75rem;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 11px 20px;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--ink-3);
+  font-family: inherit;
+  font-size: 0.74rem;
   font-weight: 600;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   white-space: nowrap;
   text-align: center;
   cursor: pointer;
-  transition: all 180ms ease;
+  transition:
+    background 180ms var(--ease),
+    border-color 180ms var(--ease),
+    color 180ms var(--ease);
 }
 
 .tab:hover {
-  background: rgba(255, 255, 255, 0.09);
-  border-color: rgba(255, 255, 255, 0.3);
-  color: #ffffff;
-  transform: translateY(-1px);
+  background: var(--bg-2);
+  border-color: var(--line-2);
+  color: var(--ink-1);
 }
 
-/* TAB SÉLECTIONNÉ - Vert Céladon (#82c8bc) & Style AppShell NavActive */
+/* Tab actif — accent céladon */
 .tabActive {
-  flex: 1 0 auto;
-  padding: 14px 22px;
-  border: 1px solid #82c8bc;
-  border-bottom: 3px solid #82c8bc;
-  background: rgba(130, 200, 188, 0.12);
-  color: #82c8bc;
-  font-size: 0.75rem;
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 11px 20px;
+  border: 1px solid var(--accent-line);
+  border-radius: var(--r-sm);
+  background: var(--accent-soft);
+  color: var(--accent-hi);
+  font-family: inherit;
+  font-size: 0.74rem;
   font-weight: 700;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   white-space: nowrap;
   text-align: center;
   cursor: pointer;
-  box-shadow: 0 4px 20px rgba(130, 200, 188, 0.15);
-  transition: all 180ms ease;
+  position: relative;
+  transition:
+    background 180ms var(--ease),
+    border-color 180ms var(--ease),
+    color 180ms var(--ease);
 }
 
-/* Conteneur principal */
+.tabActive:hover {
+  background: var(--accent-soft-2);
+  border-color: var(--accent);
+}
+
+/* ==========================================================================
+   PANELS
+   ========================================================================== */
 .panel {
-  padding: 28px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: #171a24;
+  padding: 26px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  background: var(--bg-1);
+  box-shadow: var(--shadow-sm);
 }
 
 .panelTabFull {
   width: 100%;
   padding: 0;
   border: 0;
+  border-radius: 0;
   background: transparent;
+  box-shadow: none;
 }
 
 .panelHeader {
@@ -124,187 +228,437 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 22px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line-1);
 }
 
 .panelHeader h2 {
   margin: 0;
-  color: #ffffff;
-  font-size: 1.15rem;
-  font-weight: 400;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  color: var(--ink-1);
+  font-size: 1.02rem;
+  font-weight: 550;
+  letter-spacing: -0.018em;
+  text-transform: none;
 }
 
 .badge {
   display: inline-flex;
   align-items: center;
-  padding: 0.35rem 0.75rem;
-  border: 1px solid rgba(130, 200, 188, 0.3);
-  background: rgba(130, 200, 188, 0.08);
-  color: #82c8bc;
-  font-size: 0.68rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
+  gap: 6px;
+  padding: 5px 12px;
+  border: 1px solid var(--accent-line);
+  border-radius: var(--r-full);
+  background: var(--accent-soft);
+  color: var(--accent-hi);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
-/* Tableaux & rangées */
+/* ==========================================================================
+   TABLE / ROWS
+   ========================================================================== */
 .table {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .row {
+  position: relative;
   display: grid;
   grid-template-columns: 2fr 1fr auto;
   align-items: center;
   gap: 16px;
-  padding: 18px 20px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(255, 255, 255, 0.02);
-  transition: all 180ms ease;
+  padding: 16px 18px;
+  border: 1px solid var(--line-1);
+  border-radius: var(--r-sm);
+  background: var(--bg-2);
+  overflow: hidden;
+  transition:
+    background 160ms var(--ease),
+    border-color 160ms var(--ease);
+}
+
+.row::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 2px;
+  height: 100%;
+  background: var(--accent);
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform 220ms var(--ease);
 }
 
 .row:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(130, 200, 188, 0.25);
+  background: var(--bg-3);
+  border-color: var(--line-3);
+}
+
+.row:hover::before {
+  transform: scaleY(1);
 }
 
 .row strong {
   display: block;
-  color: #ffffff;
-  font-size: 0.9rem;
-  font-weight: 500;
+  color: var(--ink-1);
+  font-size: 0.86rem;
+  font-weight: 550;
+  letter-spacing: -0.008em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .row small {
   display: block;
   margin-top: 4px;
-  color: #7c8a9d;
+  color: var(--ink-4);
   font-size: 0.72rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* Statuts / Rôles */
+/* ==========================================================================
+   STATUS / RÔLES
+   ========================================================================== */
 .role,
 .active,
 .inactive {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.35rem 0.8rem;
-  font-size: 0.65rem;
-  font-weight: 600;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: var(--r-full);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.role {
+  border: 1px solid var(--line-2);
+  background: var(--bg-3);
+  color: var(--ink-2);
+}
+
+.active {
+  border: 1px solid var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--accent-hi);
+}
+
+.active::before,
+.inactive::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: 0 0 auto;
+}
+
+.inactive {
+  border: 1px solid var(--line-1);
+  background: transparent;
+  color: var(--ink-4);
+}
+
+/* ==========================================================================
+   KPI GRID
+   ========================================================================== */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.kpiGrid article {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 22px;
+  padding: 20px 22px;
+  min-height: 116px;
+  border: 1px solid var(--line-1);
+  border-radius: var(--r-md);
+  background: var(--bg-1);
+  overflow: hidden;
+  transition:
+    border-color 200ms var(--ease),
+    background 200ms var(--ease);
+}
+
+.kpiGrid article::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: 22px;
+  right: 22px;
+  height: 1px;
+  background: var(--line-2);
+}
+
+.kpiGrid article:first-child::before {
+  background: var(--accent);
+  opacity: 0.85;
+}
+
+.kpiGrid article:hover {
+  border-color: var(--line-2);
+  background: var(--bg-2);
+}
+
+.kpiGrid span {
+  color: var(--ink-4);
+  font-size: 0.66rem;
+  font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
-.role {
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: transparent;
-  color: #ffffff;
-}
-
-.active {
-  background: rgba(130, 200, 188, 0.15);
-  border: 1px solid #82c8bc;
-  color: #82c8bc;
-}
-
-.inactive {
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: transparent;
-  color: #7c8a9d;
-}
-
-/* KPI Cards Grid */
-.kpiGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 14px;
-}
-
-.kpiGrid article {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 24px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.kpiGrid span {
-  color: #7c8a9d;
-  font-size: 0.65rem;
-  font-weight: 500;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-}
-
 .kpiGrid strong {
-  color: #ffffff;
-  font-size: clamp(1.8rem, 3vw, 2.6rem);
-  font-weight: 300;
-  letter-spacing: -0.03em;
+  color: var(--ink-1);
+  font-size: clamp(1.6rem, 2.6vw, 2.1rem);
+  font-weight: 350;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
-/* Zone neutre */
+/* ==========================================================================
+   STATE (vide / erreur)
+   ========================================================================== */
 .state {
-  padding: 60px 20px;
-  border: 1px dashed rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.01);
+  padding: 48px 24px;
+  border: 1px dashed var(--line-2);
+  border-radius: var(--r-md);
+  background: var(--bg-1);
   text-align: center;
-  color: #7c8a9d;
-  font-size: 0.75rem;
-  letter-spacing: 0.15em;
+  color: var(--ink-4);
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
-/* --- ADAPTATION MOBILE ENHANCED --- */
+/* ==========================================================================
+   RESPONSIVE — TABLETTE
+   ========================================================================== */
+@media (max-width: 1000px) {
+  .page {
+    max-width: 100%;
+  }
+
+  .panel {
+    padding: 22px;
+  }
+}
+
+/* ==========================================================================
+   RESPONSIVE — MOBILE
+   ========================================================================== */
 @media (max-width: 760px) {
   .page {
-    padding: 20px 12px 40px;
+    padding: 22px 16px 40px;
   }
 
   .header {
     margin-bottom: 24px;
-    padding-bottom: 16px;
+    padding-bottom: 18px;
   }
 
+  .header h1,
+  .header h2 {
+    font-size: 1.45rem;
+  }
+
+  .header p:last-child {
+    font-size: 0.78rem;
+    margin-top: 8px;
+  }
+
+  /* Tabs : scrollables en ligne */
   .tabs {
-    gap: 8px;
-    padding: 4px;
+    gap: 5px;
+    padding: 5px;
     margin-bottom: 20px;
+    border-radius: var(--r-sm);
   }
 
   .tab,
   .tabActive {
     flex: 0 0 auto;
-    padding: 12px 18px;
-    font-size: 0.72rem;
+    min-width: auto;
+    padding: 10px 16px;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
   }
 
   .panel {
-    padding: 16px;
+    padding: 18px 16px;
+    border-radius: var(--r-sm);
   }
 
+  .panelHeader {
+    margin-bottom: 18px;
+    padding-bottom: 14px;
+  }
+
+  .panelHeader h2 {
+    font-size: 0.94rem;
+  }
+
+  /* Rows : grid simplifié */
   .row {
     grid-template-columns: 1fr;
     gap: 12px;
-    padding: 16px;
+    padding: 14px 16px;
   }
 
   .row > div:last-child {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
     align-self: flex-start;
   }
 
+  .row strong {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  .row small {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
+
   .kpiGrid {
     grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .kpiGrid article {
+    padding: 18px 18px;
+    min-height: 100px;
+  }
+
+  .kpiGrid strong {
+    font-size: 1.7rem;
+  }
+
+  .state {
+    padding: 40px 20px;
+    font-size: 0.72rem;
+  }
+}
+
+/* ==========================================================================
+   RESPONSIVE — TRÈS PETITS ÉCRANS
+   ========================================================================== */
+@media (max-width: 440px) {
+  .page {
+    padding: 18px 12px 32px;
+  }
+
+  .header h1,
+  .header h2 {
+    font-size: 1.3rem;
+  }
+
+  .tab,
+  .tabActive {
+    padding: 9px 13px;
+    font-size: 0.64rem;
+  }
+
+  .panel {
+    padding: 16px 14px;
+  }
+
+  .kpiGrid article {
+    padding: 16px 16px;
+  }
+
+  .kpiGrid strong {
+    font-size: 1.5rem;
+  }
+}
+
+/* ==========================================================================
+   MOTION & CONTRAST & PRINT
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .page *,
+  .page *::before,
+  .page *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  .row:hover::before {
+    transform: scaleY(1);
+  }
+}
+
+@media (prefers-contrast: more) {
+  .page {
+    --line-1: rgba(255, 255, 255, 0.16);
+    --line-2: rgba(255, 255, 255, 0.26);
+    --line-3: rgba(255, 255, 255, 0.4);
+    --ink-3: #b8c0cd;
+    --ink-4: #98a2af;
+    --ink-5: #737e8b;
+  }
+}
+
+@media print {
+  .page {
+    max-width: 100%;
+    padding: 0;
+    color: #000;
+    background: #fff;
+  }
+
+  .tabs,
+  .tab,
+  .tabActive {
+    display: none !important;
+  }
+
+  .panel,
+  .panelHeader,
+  .row,
+  .kpiGrid article {
+    border-color: #ccc;
+    background: #fff;
+    box-shadow: none;
+  }
+
+  .header h1,
+  .header h2,
+  .row strong,
+  .kpiGrid strong {
+    color: #000;
+  }
+
+  .eyebrow,
+  .header p:last-child,
+  .row small,
+  .kpiGrid span {
+    color: #555;
   }
 }

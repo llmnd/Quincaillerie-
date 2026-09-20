@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
+  ArrowLeft,
   Bird,
   Boxes,
   CalendarDays,
-  ArrowLeft,
   LayoutDashboard,
   LogOut,
   Package,
@@ -23,70 +23,15 @@ import { authHeaders, clearStoredAuth, getStoredUser } from "../../lib/auth";
 import styles from "./page.module.css";
 
 const modules = [
-  {
-    name: "Tableau de bord",
-    href: "/dashboard",
-    icon: LayoutDashboard,
-    image:
-      "https://i.pinimg.com/736x/6c/da/36/6cda36aa648c1e4b2dbfb443bc55ead2.jpg",
-  },
-  {
-    name: "Ventes",
-    href: "/sales",
-    icon: ShoppingCart,
-    image:
-      "https://i.pinimg.com/1200x/cf/f9/34/cff9349aa326663fdbff5b863c4c3a72.jpg",
-  },
-  {
-    name: "Caisse",
-    href: "/cash",
-    icon: WalletCards,
-    image:
-      "https://i.pinimg.com/736x/8c/33/e3/8c33e3983e190056f12c75841a8ecdd0.jpg",
-  },
-  {
-    name: "Produits",
-    href: "/products",
-    icon: Package,
-    image:
-      "https://i.pinimg.com/1200x/06/a0/80/06a080194e88100b55e25cdfdf51d7f4.jpg",
-  },
-  {
-    name: "Clients",
-    href: "/clients",
-    icon: Users,
-    image:
-      "https://i.pinimg.com/736x/24/93/ec/2493ec2ab1a2f4dab8989b1ad23762db.jpg",
-  },
-  {
-    name: "Stock",
-    href: "/stock",
-    icon: Boxes,
-    image:
-      "https://i.pinimg.com/736x/71/16/ba/7116bafcb4ae414d6fd8c74a8cd2a46b.jpg",
-  },
-  {
-    name: "Élevage",
-    href: "/farming",
-    icon: Bird,
-    image:
-      "https://i.pinimg.com/originals/6e/cd/13/6ecd136e249649f0ba8452d13613bcfd.gif",
-  },
-  {
-    name: "Calendrier",
-    href: "/calendar",
-    icon: CalendarDays,
-    image:
-      "https://i.pinimg.com/1200x/98/ed/1c/98ed1c73a25c35145917f361dd010358.jpg",
-  },
-  {
-    name: "Admin",
-    href: "/admin",
-    icon: Settings,
-    image:
-      "https://i.pinimg.com/736x/ca/2a/0b/ca2a0bd781025c7a6e7ab6073847ea41.jpg",
-    adminOnly: true,
-  },
+  { name: "Tableau de bord", href: "/dashboard", icon: LayoutDashboard, image: "https://i.pinimg.com/736x/6c/da/36/6cda36aa648c1e4b2dbfb443bc55ead2.jpg" },
+  { name: "Ventes", href: "/sales", icon: ShoppingCart, image: "https://i.pinimg.com/1200x/cf/f9/34/cff9349aa326663fdbff5b863c4c3a72.jpg" },
+  { name: "Caisse", href: "/cash", icon: WalletCards, image: "https://i.pinimg.com/736x/8c/33/e3/8c33e3983e190056f12c75841a8ecdd0.jpg" },
+  { name: "Produits", href: "/products", icon: Package, image: "https://i.pinimg.com/1200x/06/a0/80/06a080194e88100b55e25cdfdf51d7f4.jpg" },
+  { name: "Clients", href: "/clients", icon: Users, image: "https://i.pinimg.com/736x/24/93/ec/2493ec2ab1a2f4dab8989b1ad23762db.jpg" },
+  { name: "Stock", href: "/stock", icon: Boxes, image: "https://i.pinimg.com/736x/71/16/ba/7116bafcb4ae414d6fd8c74a8cd2a46b.jpg" },
+  { name: "Élevage", href: "/farming", icon: Bird, image: "https://i.pinimg.com/originals/6e/cd/13/6ecd136e249649f0ba8452d13613bcfd.gif" },
+  { name: "Calendrier", href: "/calendar", icon: CalendarDays, image: "https://i.pinimg.com/1200x/98/ed/1c/98ed1c73a25c35145917f361dd010358.jpg" },
+  { name: "Admin", href: "/admin", icon: Settings, image: "https://i.pinimg.com/736x/ca/2a/0b/ca2a0bd781025c7a6e7ab6073847ea41.jpg", adminOnly: true },
 ];
 
 type User = {
@@ -102,19 +47,24 @@ type OrganizationProfile = {
 
 export default function WorkspacePage() {
   const router = useRouter();
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const [user, setUser] = useState<User | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+
   const organizationQuery = useQuery<OrganizationProfile | null>({
     queryKey: ["organization", "profile"],
     queryFn: async () => {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/organization/profile`, {
-        credentials: "include",
-        headers: authHeaders(),
-      });
-      return response.ok ? (await response.json() as OrganizationProfile) : null;
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/organization/profile`,
+        {
+          credentials: "include",
+          headers: authHeaders(),
+        }
+      );
+      return response.ok ? ((await response.json()) as OrganizationProfile) : null;
     },
   });
-  const [menuOpen, setMenuOpen] = useState(false);
 
   const organization = organizationQuery.data ?? null;
 
@@ -122,33 +72,37 @@ export default function WorkspacePage() {
     setUser((getStoredUser() as User | null) ?? null);
   }, []);
 
+  /* Fermeture du menu : clic extérieur + touche Échap */
   useEffect(() => {
     if (!menuOpen) return;
 
     function handlePointerDown(event: MouseEvent) {
-      const target = event.target as Node;
-      const menuWrapper = document.querySelector(
-        `.${styles.userMenuWrap}`
-      );
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
 
-      if (menuWrapper && !menuWrapper.contains(target)) {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
         setMenuOpen(false);
       }
     }
 
     document.addEventListener("mousedown", handlePointerDown);
-
+    document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
     };
   }, [menuOpen]);
 
   const displayName = user?.full_name ?? "Utilisateur";
-  const userInitial =
-    displayName.trim().charAt(0).toUpperCase() || "U";
+  const userInitial = displayName.trim().charAt(0).toUpperCase() || "U";
+
   const visibleModules = modules.filter(
     (module) => !module.adminOnly || user?.role === "admin"
   );
+
   const moduleRows = [
     visibleModules.slice(0, 6),
     visibleModules.slice(6),
@@ -157,9 +111,7 @@ export default function WorkspacePage() {
   async function handleLogout() {
     try {
       await fetch(
-        `${
-          process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"
-        }/api/v1/auth/logout`,
+        `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/auth/logout`,
         {
           method: "POST",
           credentials: "include",
@@ -167,7 +119,7 @@ export default function WorkspacePage() {
         }
       );
     } catch {
-      // Ignore API error and continue logout locally.
+      // Erreur API ignorée — on continue la déconnexion locale.
     }
 
     clearStoredAuth();
@@ -181,15 +133,22 @@ export default function WorkspacePage() {
       router.back();
       return;
     }
-
     router.push("/");
   }
 
   return (
     <AppShell hideSidebar hideTopbar hideContentPadding showBreadcrumbWhenHidden>
       <div className={styles.workspacePage}>
-        <button type="button" className={styles.workspaceBackButton} onClick={handleBack} aria-label="Retour" title="Retour">
-          <span className={styles.workspaceBackIcon} aria-hidden="true"><ArrowLeft size={15} strokeWidth={2.2} /></span>
+        <button
+          type="button"
+          className={styles.workspaceBackButton}
+          onClick={handleBack}
+          aria-label="Retour"
+          title="Retour"
+        >
+          <span className={styles.workspaceBackIcon} aria-hidden="true">
+            <ArrowLeft size={15} strokeWidth={2.2} />
+          </span>
           <span className={styles.workspaceBackLabel}>Retour</span>
         </button>
 
@@ -202,20 +161,19 @@ export default function WorkspacePage() {
                 className={styles.companyLogo}
               />
             ) : null}
-
             <span>{organization?.name ?? "My Company"}</span>
           </div>
 
-          <div className={styles.userMenuWrap}>
+          <div className={styles.userMenuWrap} ref={menuRef}>
             <button
               type="button"
               className={styles.userTrigger}
               aria-label="Ouvrir le menu utilisateur"
+              aria-expanded={menuOpen}
+              aria-haspopup="menu"
               onClick={() => setMenuOpen((open) => !open)}
             >
-              <span className={styles.userAvatar}>
-                {userInitial}
-              </span>
+              <span className={styles.userAvatar}>{userInitial}</span>
             </button>
 
             {menuOpen && (
@@ -225,15 +183,10 @@ export default function WorkspacePage() {
                 aria-label="Menu utilisateur"
               >
                 <div className={styles.userDropdownHeader}>
-                  <span className={styles.userDropdownAvatar}>
-                    {userInitial}
-                  </span>
-
+                  <span className={styles.userDropdownAvatar}>{userInitial}</span>
                   <div>
                     <strong>{displayName}</strong>
-                    <small>
-                      {user?.email ?? "Aucun email"}
-                    </small>
+                    <small>{user?.email ?? "Aucun email"}</small>
                   </div>
                 </div>
 
