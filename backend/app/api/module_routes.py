@@ -15,6 +15,9 @@ organization_router = APIRouter(prefix="/organization", tags=["organization"])
 class OrganizationProfileUpdate(BaseModel):
     name: str = Field(min_length=2, max_length=255)
     logo: str | None = Field(default=None, max_length=2_000_000)
+    email: str | None = Field(default=None, max_length=255)
+    phone: str | None = Field(default=None, max_length=255)
+    address: str | None = Field(default=None, max_length=500)
 
 
 @organization_router.get("/profile")
@@ -24,6 +27,9 @@ def organization_profile(current_user: User = Depends(require_roles("admin", "se
         "id": current_user.organization.id,
         "name": current_user.organization.name,
         "logo": settings.get("logo"),
+        "email": settings.get("email"),
+        "phone": settings.get("phone"),
+        "address": settings.get("address"),
     }
 
 
@@ -35,7 +41,13 @@ def update_organization_profile(
 ) -> dict[str, object]:
     organization = current_user.organization
     organization.name = payload.name.strip()
-    organization.settings = {**(organization.settings or {}), "logo": payload.logo}
+    organization.settings = {
+        **(organization.settings or {}),
+        "logo": payload.logo,
+        "email": payload.email.strip() if payload.email else None,
+        "phone": payload.phone.strip() if payload.phone else None,
+        "address": payload.address.strip() if payload.address else None,
+    }
     db.commit()
     db.refresh(organization)
     record_audit(
@@ -48,7 +60,14 @@ def update_organization_profile(
         after_data=f"name={organization.name}",
     )
     db.commit()
-    return {"id": organization.id, "name": organization.name, "logo": organization.settings.get("logo")}
+    return {
+        "id": organization.id,
+        "name": organization.name,
+        "logo": organization.settings.get("logo"),
+        "email": organization.settings.get("email"),
+        "phone": organization.settings.get("phone"),
+        "address": organization.settings.get("address"),
+    }
 
 
 def serialize_module(module: OrganizationModule) -> dict[str, object]:

@@ -50,6 +50,28 @@ class AccountCreate(BaseModel):
     account_class: str = Field(min_length=1, max_length=2)
 
 
+class ExpenseCreate(BaseModel):
+    description: str = Field(min_length=2, max_length=255)
+    amount: float = Field(gt=0)
+    account_code: str = Field(min_length=2, max_length=20)
+    payment_method: str = Field(default="cash")
+    supplier_name: str | None = None
+    issue_date: datetime | None = None
+
+
+class ExpenseRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    description: str
+    amount: float
+    account_code: str
+    account_name: str
+    payment_method: str
+    journal: str
+    issue_date: datetime
+
+
 class AccountRead(AccountCreate):
     model_config = ConfigDict(from_attributes=True)
 

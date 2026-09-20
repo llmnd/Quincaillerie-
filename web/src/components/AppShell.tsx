@@ -51,6 +51,8 @@ const breadcrumbLabels: Record<string, string> = {
   "/farming": "Élevage",
   "/calendar": "Calendrier",
   "/admin": "Administration",
+  "/erp": "Finances",
+  "/erp/factures": "Factures",
   "/accounting": "Comptabilité",
   "/reports": "Rapports",
   "/profile": "Mon profil",
@@ -148,6 +150,7 @@ function BreadcrumbTrail({
 const applications: Application[] = [
   { label: "Ventes", description: "Devis et commandes", href: "/sales", icon: ShoppingCart, roles: ["admin", "seller"], moduleKey: "sales" },
   { label: "Caisse", description: "Sessions et clôtures", href: "/cash", icon: WalletCards, roles: ["admin", "seller"], moduleKey: "cash" },
+  { label: "Finances", description: "Dépenses, créances, fournisseurs et PDF", href: "/erp", icon: Calculator, roles: ["admin"], moduleKey: "accounting" },
   { label: "Comptabilité", description: "Taxes, factures et journaux", href: "/accounting", icon: Calculator, roles: ["admin"], moduleKey: "accounting" },
   { label: "Produits", description: "Catalogue et tarifs", href: "/products", icon: Package, roles: ["admin", "seller"], moduleKey: "products" },
   { label: "Clients", description: "Contacts et comptes", href: "/clients", icon: Users, roles: ["admin", "seller"], moduleKey: "customers" },
@@ -161,6 +164,7 @@ const sidebarItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, image: "https://i.pinimg.com/1200x/a8/13/3f/a8133f8bcfac2c7f80958f5aeb31c574.jpg" },
   { label: "Ventes", href: "/sales", icon: ShoppingCart, image: "https://i.pinimg.com/1200x/cf/f9/34/cff9349aa326663fdbff5b863c4c3a72.jpg", moduleKey: "sales" },
   { label: "Caisse", href: "/cash", icon: WalletCards, image: "https://i.pinimg.com/736x/8c/33/e3/8c33e3983e190056f12c75841a8ecdd0.jpg", moduleKey: "cash" },
+  { label: "Finances", href: "/erp", icon: Calculator, image: "https://i.pinimg.com/1200x/98/ed/1c/98ed1c73a25c35145917f361dd010358.jpg", roles: ["admin"], moduleKey: "accounting" },
   { label: "Produits", href: "/products", icon: Package, image: "https://i.pinimg.com/1200x/06/a0/80/06a080194e88100b55e25cdfdf51d7f4.jpg", moduleKey: "products" },
   { label: "Clients", href: "/clients", icon: Users, image: "https://i.pinimg.com/1200x/6d/6e/98/6d6e98e8fd33d1b657418c65eb5600d0.jpg", moduleKey: "customers" },
   { label: "Stock", href: "/stock", icon: Boxes, image: "https://i.pinimg.com/736x/71/16/ba/7116bafcb4ae414d6fd8c74a8cd2a46b.jpg", roles: ["admin"], moduleKey: "stock" },
@@ -217,7 +221,18 @@ export default function AppShell({
     role: undefined as "admin" | "seller" | undefined,
   };
   const role: "admin" | "seller" | undefined = effectiveUser.role;
-  const adminOnlyRoutes = ["/admin", "/accounting", "/reports", "/settings/users"];
+  const adminOnlyRoutes = [
+    "/admin",
+    "/accounting",
+    "/reports",
+    "/settings/users",
+    "/erp",
+    "/erp/depenses",
+    "/erp/creances",
+    "/erp/fournisseurs",
+    "/erp/factures",
+    "/erp/rapports",
+  ];
   const isAdminOnlyRoute = adminOnlyRoutes.some(
     (route) => pathname === route || pathname.startsWith(`${route}/`)
   );

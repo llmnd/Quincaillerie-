@@ -173,6 +173,151 @@ def test_supplier_customer_and_sale_flow():
     assert any(item["id"] == customer_id for item in customer_list.json())
 
 
+def test_expense_creation_reaches_journal():
+    payload = {
+        "organization_name": f"Depense Org {uuid.uuid4().hex[:8]}",
+        "full_name": "Depense Admin",
+        "email": f"expense-{uuid.uuid4().hex[:8]}@demo.test",
+        "password": "StrongPass123",
+    }
+    register_response = client.post("/api/v1/auth/register", json=payload)
+    assert register_response.status_code == 201
+
+    expense_response = client.post(
+        "/api/v1/accounting/expenses",
+        json={
+            "description": "Achat de visserie",
+            "amount": 1250.0,
+            "account_code": "601",
+            "payment_method": "credit",
+        },
+    )
+    assert expense_response.status_code == 201
+    body = expense_response.json()
+    assert body["description"] == "Achat de visserie"
+    assert body["journal"] == "ACHAT"
+
+    journal_response = client.get("/api/v1/accounting/journal")
+    assert journal_response.status_code == 200
+    assert any(entry["description"] == "Achat de visserie" for entry in journal_response.json())
+
+
+def test_expense_update_and_delete_are_supported():
+    payload = {
+        "organization_name": f"Expense CRUD Org {uuid.uuid4().hex[:8]}",
+        "full_name": "Expense CRUD Admin",
+        "email": f"crud-expense-{uuid.uuid4().hex[:8]}@demo.test",
+        "password": "StrongPass123",
+    }
+    register_response = client.post("/api/v1/auth/register", json=payload)
+    assert register_response.status_code == 201
+
+    create_response = client.post(
+        "/api/v1/accounting/expenses",
+        json={
+            "description": "Dépense initiale",
+            "amount": 500.0,
+            "account_code": "601",
+            "payment_method": "cash",
+        },
+    )
+    assert create_response.status_code == 201
+    expense_id = create_response.json()["id"]
+
+    list_response = client.get("/api/v1/accounting/expenses")
+    assert list_response.status_code == 200
+    assert any(item["id"] == expense_id for item in list_response.json())
+
+    update_response = client.put(
+        f"/api/v1/accounting/expenses/{expense_id}",
+        json={
+            "description": "Dépense modifiée",
+            "amount": 750.0,
+            "account_code": "601",
+            "payment_method": "cash",
+        },
+    )
+    assert update_response.status_code == 200
+    assert update_response.json()["description"] == "Dépense modifiée"
+    assert update_response.json()["amount"] == 750.0
+
+    delete_response = client.delete(f"/api/v1/accounting/expenses/{expense_id}")
+    assert delete_response.status_code == 200
+
+    final_list_response = client.get("/api/v1/accounting/expenses")
+    assert final_list_response.status_code == 200
+    assert all(item["id"] != expense_id for item in final_list_response.json())
+
+
+def test_invoice_update_and_delete_are_supported():
+    payload = {
+        "organization_name": f"Invoice CRUD Org {uuid.uuid4().hex[:8]}",
+        "full_name": "Invoice CRUD Admin",
+        "email": f"crud-invoice-{uuid.uuid4().hex[:8]}@demo.test",
+        "password": "StrongPass123",
+    }
+    register_response = client.post("/api/v1/auth/register", json=payload)
+    assert register_response.status_code == 201
+
+    customer_response = client.post(
+        "/api/v1/customers",
+        json={
+            "name": "Client facture",
+            "email": "client-facture@test.com",
+            "phone": "0600000000",
+            "address": "3 rue de test",
+        },
+    )
+    assert customer_response.status_code == 201
+    customer_id = customer_response.json()["id"]
+
+    product_response = client.post(
+        "/api/v1/products",
+        json={
+            "sku": f"INV-{uuid.uuid4().hex[:8].upper()}",
+            "name": "Produit facture",
+            "description": "Produit test invoice",
+            "category": "Vente",
+            "unit_price": 35.0,
+            "stock_quantity": 15,
+        },
+    )
+    assert product_response.status_code == 201
+    product_id = product_response.json()["id"]
+
+    sale_response = client.post(
+        "/api/v1/sales",
+        json={
+            "customer_id": customer_id,
+            "status": "paid",
+            "notes": "Vente pour facture",
+            "items": [
+                {"product_id": product_id, "quantity": 2, "unit_price": 35.0},
+            ],
+        },
+    )
+    assert sale_response.status_code == 201
+    sale_id = sale_response.json()["id"]
+
+    invoice_response = client.post(f"/api/v1/accounting/invoices/from-sale/{sale_id}")
+    assert invoice_response.status_code == 201
+    invoice_id = invoice_response.json()["id"]
+
+    update_response = client.put(
+        f"/api/v1/accounting/invoices/{invoice_id}",
+        json={"sale_id": sale_id, "tax_id": None},
+    )
+    assert update_response.status_code == 200
+    assert update_response.json()["id"] == invoice_id
+
+    delete_response = client.delete(f"/api/v1/accounting/invoices/{invoice_id}")
+    assert delete_response.status_code == 200
+
+    final_list_response = client.get("/api/v1/accounting/invoices")
+    assert final_list_response.status_code == 200
+    assert all(item["id"] != invoice_id for item in final_list_response.json())
+
+
 def test_stock_movement_and_sale_inventory_adjustments():
     product_response = client.post(
         "/api/v1/products",

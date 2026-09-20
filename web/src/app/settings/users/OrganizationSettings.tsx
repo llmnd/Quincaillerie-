@@ -5,14 +5,20 @@ import { Check, ImagePlus } from "lucide-react";
 import { authHeaders } from "../../../lib/auth";
 import styles from "./page.module.css";
 
-type OrganizationProfile = { name: string; logo?: string | null };
+type OrganizationProfile = {
+  name: string;
+  logo?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+};
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
 const CLOUDINARY_UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 
 export default function OrganizationSettings() {
-  const [profile, setProfile] = useState<OrganizationProfile>({ name: "", logo: "" });
+  const [profile, setProfile] = useState<OrganizationProfile>({ name: "", logo: "", email: "", phone: "", address: "" });
   const [preview, setPreview] = useState("");
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [message, setMessage] = useState("");
@@ -90,7 +96,13 @@ export default function OrganizationSettings() {
         method: "PUT",
         headers: { "Content-Type": "application/json", ...authHeaders() },
         credentials: "include",
-        body: JSON.stringify({ name: profile.name.trim(), logo }),
+        body: JSON.stringify({
+          name: profile.name.trim(),
+          logo,
+          email: profile.email?.trim() || null,
+          phone: profile.phone?.trim() || null,
+          address: profile.address?.trim() || null,
+        }),
       });
       if (!response.ok) throw new Error("La sauvegarde de l’identité a échoué.");
       const updated = await response.json() as OrganizationProfile;
@@ -129,6 +141,9 @@ export default function OrganizationSettings() {
       ) : (
         <form className={styles.organizationForm} onSubmit={saveProfile}>
           <label>Nom de l’entreprise<input required minLength={2} value={profile.name} onChange={(event) => setProfile({ ...profile, name: event.target.value })} /></label>
+          <label>Email<input type="email" value={profile.email ?? ""} onChange={(event) => setProfile({ ...profile, email: event.target.value })} /></label>
+          <label>Téléphone<input value={profile.phone ?? ""} onChange={(event) => setProfile({ ...profile, phone: event.target.value })} /></label>
+          <label>Adresse<input value={profile.address ?? ""} onChange={(event) => setProfile({ ...profile, address: event.target.value })} /></label>
           <label>Logo de l’entreprise<input type="file" accept="image/*" onChange={selectLogo} /></label>
           {preview ? <img src={preview} alt="Aperçu du logo" className={styles.organizationPreview} /> : <div className={styles.organizationEmpty}>Aucun logo</div>}
           <div className={styles.organizationActions}>

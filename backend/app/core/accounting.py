@@ -5,9 +5,13 @@ from app.models.accounting import Account, JournalEntry, JournalLine
 
 
 DEFAULT_ACCOUNTS = (
+    ("401", "Fournisseurs", "4"),
     ("411", "Clients", "4"),
     ("4431", "TVA facturée", "4"),
+    ("4456", "TVA déductible", "4"),
+    ("521", "Banque", "5"),
     ("571", "Caisse", "5"),
+    ("601", "Achats de marchandises", "6"),
     ("701", "Ventes de marchandises", "7"),
 )
 
