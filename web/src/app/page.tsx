@@ -121,7 +121,24 @@ export default function Home() {
   }
 
   const primaryHref = user ? "/workspace" : "/login";
-  const primaryLabel = user ? "Ouvrir le workspace" : "Commencer";
+  const primaryLabel = user ? "Accéder au workspace" : "Commencer";
+  const connectedUserName = user?.full_name ?? user?.email ?? "Utilisateur";
+
+  const portalModules = [
+    { name: "Tableau de bord", href: "/dashboard", image: "https://i.pinimg.com/1200x/a8/13/3f/a8133f8bcfac2c7f80958f5aeb31c574.jpg" },
+    { name: "Ventes", href: "/sales", image: "https://i.pinimg.com/1200x/cf/f9/34/cff9349aa326663fdbff5b863c4c3a72.jpg" },
+    { name: "Caisse", href: "/cash", image: "https://i.pinimg.com/736x/8c/33/e3/8c33e3983e190056f12c75841a8ecdd0.jpg" },
+    { name: "Finances", href: "/erp", image: "https://i.pinimg.com/1200x/98/ed/1c/98ed1c73a25c35145917f361dd010358.jpg", adminOnly: true },
+    { name: "Produits", href: "/products", image: "https://i.pinimg.com/1200x/06/a0/80/06a080194e88100b55e25cdfdf51d7f4.jpg" },
+    { name: "Clients", href: "/clients", image: "https://i.pinimg.com/1200x/6d/6e/98/6d6e98e8fd33d1b657418c65eb5600d0.jpg" },
+    { name: "Stock", href: "/stock", image: "https://i.pinimg.com/736x/71/16/ba/7116bafcb4ae414d6fd8c74a8cd2a46b.jpg" },
+    { name: "Élevage", href: "/farming", image: "https://i.pinimg.com/originals/6e/cd/13/6ecd136e249649f0ba8452d13613bcfd.gif" },
+    { name: "Admin", href: "/admin", image: "https://i.pinimg.com/1200x/8b/a4/80/8ba4808a95e33280a92660249a971bbd.jpg", adminOnly: true },
+  ];
+
+  const visiblePortalModules = portalModules.filter(
+    (module) => !module.adminOnly || user?.role === "admin"
+  );
 
   return (
     <main className={styles.landingPage}>
@@ -216,20 +233,44 @@ export default function Home() {
       {/* =====================================================================
           HERO
       ===================================================================== */}
-      <section className={styles.hero}>
+      <section className={`${styles.hero} ${user ? styles.heroConnected : ""}`}>
         <div className={styles.heroContent}>
-          <p className={styles.eyebrow}>ERP modulaire et multi-entreprises</p>
+          {user ? (
+            <div className={styles.connectedPanel}>
+              <span className={styles.connectedBadge}>Connecté</span>
+              <p className={styles.eyebrow}>Bienvenue dans votre espace</p>
 
-          <h1 className={styles.heroText}>Gérez votre activité.</h1>
+              <h1 className={styles.heroText}>Bonjour, {connectedUserName}</h1>
 
-          <div className={styles.heroActions}>
-            <Link href={primaryHref} className={styles.primaryButton}>
-              {primaryLabel}
-            </Link>
-            <a href="#solution" className={styles.textButton}>
-              Découvrir <span aria-hidden="true">↓</span>
-            </a>
-          </div>
+              <p className={styles.connectedSubtitle}>
+                Votre plateforme est prête. Cliquez sur un module pour reprendre votre activité.
+              </p>
+
+              <div className={styles.heroActions}>
+                <Link href={primaryHref} className={styles.primaryButton}>
+                  {primaryLabel}
+                </Link>
+                <a href="#modules" className={styles.textButton}>
+                  Voir les modules <span aria-hidden="true">↓</span>
+                </a>
+              </div>
+              
+            </div>
+          ) : (
+            <>
+              <p className={styles.eyebrow}>ERP modulaire et multi-entreprises</p>
+              <h1 className={styles.heroText}>Gérez votre activité.</h1>
+
+              <div className={styles.heroActions}>
+                <Link href={primaryHref} className={styles.primaryButton}>
+                  {primaryLabel}
+                </Link>
+                <a href="#solution" className={styles.textButton}>
+                  Découvrir <span aria-hidden="true">↓</span>
+                </a>
+              </div>
+            </>
+          )}
 
           {!user && (
             <section
@@ -259,66 +300,29 @@ export default function Home() {
               </div>
             </section>
           )}
-        </div>
 
-        {/* ---------- Mockup téléphone ---------- */}
-        <div className={styles.heroArtwork} aria-hidden="true">
-          <div className={styles.phone}>
-            <div className={styles.phoneNotch} />
-            <div className={styles.phoneScreen}>
-              <div className={styles.appHeader}>
-                <span className={styles.appEyebrow}>Votre activité</span>
-                <h3 className={styles.appTitle}>Bonjour, Lamine</h3>
-                <p className={styles.appSubtitle}>Une vue simple de votre journée.</p>
+          {user && (
+            <section id="modules" className={styles.connectedModules} aria-label="Modules rapides">
+              <div className={styles.connectedModulesHeader}>
+                <p className={styles.eyebrow}>Accès rapide</p>
+                <h2>Modules de travail</h2>
               </div>
 
-              <div className={styles.dashboardGrid}>
-                <div className={`${styles.dashCard} ${styles.highlightCard}`}>
-                  <span className={styles.cardLabel}>Ventes du jour</span>
-                  <div className={styles.metricRow}>
-                    <span className={styles.metricIcon}><ShoppingCart size={11} /></span>
-                    <strong className={styles.cardValue}>5</strong>
-                  </div>
-                </div>
-
-                <div className={styles.dashCard}>
-                  <span className={styles.cardLabel}>Caisse</span>
-                  <div className={styles.metricRow}>
-                    <span className={styles.metricIcon}><WalletCards size={11} /></span>
-                    <strong className={`${styles.cardValue} ${styles.greenText}`}>Active</strong>
-                  </div>
-                </div>
-
-                <div className={styles.dashCard}>
-                  <span className={styles.cardLabel}>Alertes</span>
-                  <div className={styles.metricRow}>
-                    <span className={styles.metricIconRed}><AlertTriangle size={11} /></span>
-                    <strong className={`${styles.cardValue} ${styles.redValue}`}>2</strong>
-                  </div>
-                </div>
-
-                <div className={styles.dashCard}>
-                  <span className={styles.cardLabel}>Stock à surveiller</span>
-                  <div className={styles.metricRow}>
-                    <span className={styles.metricIconRed}><AlertTriangle size={11} /></span>
-                    <strong className={`${styles.cardValue} ${styles.redValue}`}>4</strong>
-                  </div>
-                </div>
+              <div className={styles.quickAccessGrid}>
+                {visiblePortalModules.map((item) => (
+                  <Link key={item.name} href={item.href} className={styles.quickAccessCard}>
+                    <span className={styles.quickAccessImageWrap}>
+                      <img src={item.image} alt="" className={styles.quickAccessImage} />
+                    </span>
+                    <span className={styles.quickAccessMeta}>
+                      <span className={styles.quickAccessLabel}>{item.name}</span>
+                      <strong>Ouvrir</strong>
+                    </span>
+                  </Link>
+                ))}
               </div>
-
-              <div className={styles.tracabilityCard}>
-                <div className={styles.tracabilityHeader}>
-                  <span className={styles.tracabilityTitle}>Activité récente</span>
-                </div>
-                <div className={styles.activityList}>
-                  <div className={styles.activityRow}>
-                    <span>Fatou a vendu une perceuse</span>
-                    <strong>35 000 FCFA</strong>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+            </section>
+          )}
         </div>
       </section>
 

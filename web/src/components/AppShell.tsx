@@ -55,6 +55,7 @@ const breadcrumbLabels: Record<string, string> = {
   "/erp/factures": "Factures",
   "/accounting": "Comptabilité",
   "/reports": "Rapports",
+  "/notifications": "Notifications",
   "/profile": "Mon profil",
   "/settings/modules": "Modules",
   "/settings/support": "Support",
@@ -589,6 +590,8 @@ export default function AppShell({
                 type="button"
                 className={styles.notificationBtn}
                 aria-label="Notifications"
+                title="Notifications"
+                onClick={() => router.push("/notifications")}
               >
                 <Bell size={15} />
                 <span className={styles.notificationDot} />
