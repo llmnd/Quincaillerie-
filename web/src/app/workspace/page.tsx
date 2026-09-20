@@ -23,11 +23,11 @@ import { authHeaders, clearStoredAuth, getStoredUser } from "../../lib/auth";
 import styles from "./page.module.css";
 
 const modules = [
-  { name: "Tableau de bord", href: "/dashboard", icon: LayoutDashboard, image: "https://i.pinimg.com/736x/6c/da/36/6cda36aa648c1e4b2dbfb443bc55ead2.jpg" },
+  { name: "Tableau de bord", href: "/dashboard", icon: LayoutDashboard, image: "https://i.pinimg.com/1200x/a8/13/3f/a8133f8bcfac2c7f80958f5aeb31c574.jpg" },
   { name: "Ventes", href: "/sales", icon: ShoppingCart, image: "https://i.pinimg.com/1200x/cf/f9/34/cff9349aa326663fdbff5b863c4c3a72.jpg" },
   { name: "Caisse", href: "/cash", icon: WalletCards, image: "https://i.pinimg.com/736x/8c/33/e3/8c33e3983e190056f12c75841a8ecdd0.jpg" },
   { name: "Produits", href: "/products", icon: Package, image: "https://i.pinimg.com/1200x/06/a0/80/06a080194e88100b55e25cdfdf51d7f4.jpg" },
-  { name: "Clients", href: "/clients", icon: Users, image: "https://i.pinimg.com/736x/24/93/ec/2493ec2ab1a2f4dab8989b1ad23762db.jpg" },
+  { name: "Clients", href: "/clients", icon: Users, image: "https://i.pinimg.com/1200x/6d/6e/98/6d6e98e8fd33d1b657418c65eb5600d0.jpg" },
   { name: "Stock", href: "/stock", icon: Boxes, image: "https://i.pinimg.com/736x/71/16/ba/7116bafcb4ae414d6fd8c74a8cd2a46b.jpg" },
   { name: "Élevage", href: "/farming", icon: Bird, image: "https://i.pinimg.com/originals/6e/cd/13/6ecd136e249649f0ba8452d13613bcfd.gif" },
   { name: "Calendrier", href: "/calendar", icon: CalendarDays, image: "https://i.pinimg.com/1200x/98/ed/1c/98ed1c73a25c35145917f361dd010358.jpg" },
