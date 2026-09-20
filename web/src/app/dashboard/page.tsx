@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Activity, AlertCircle, Archive, Bird, Boxes, CheckCircle2, Clock3, Grid, Package, RefreshCw, ShoppingCart, Users, WalletCards } from "lucide-react";
 import AppShell from "../../components/AppShell";
 import { authHeaders } from "../../lib/auth";
@@ -16,12 +16,15 @@ type HealthEvent = { id: number; title: string; event_type: string; mortality_co
 type EggProduction = { id: number; batch_id: number; production_date: string; quantity: number; damaged_quantity: number; created_at: string };
 type ActivityItem = { id: string; label: string; detail: string; time: string; kind: "sale" | "stock" | "cash" | "farm" };
 type OrganizationProfile = { name: string; logo?: string | null };
+type ChartPeriod = "7d" | "30d" | "12m";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 const formatMoney = (value: number) => `${value.toLocaleString("fr-FR")} FCFA`;
 const formatDate = (value: string) => new Date(value).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
 const isToday = (value: string) => new Date(value).toDateString() === new Date().toDateString();
+const chartPeriodLength: Record<ChartPeriod, number> = { "7d": 7, "30d": 30, "12m": 12 };
+const chartPeriodLabels: Record<ChartPeriod, string> = { "7d": "7 jours", "30d": "30 jours", "12m": "12 mois" };
 
 export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
@@ -53,6 +56,7 @@ export default function DashboardPage() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [organization, setOrganization] = useState<OrganizationProfile | null>(null);
   const [archivedActivityIds, setArchivedActivityIds] = useState<string[]>([]);
+  const [chartPeriod, setChartPeriod] = useState<ChartPeriod>("7d");
 
   async function fetchJson<T>(path: string): Promise<T | null> {
     try {
@@ -155,6 +159,70 @@ export default function DashboardPage() {
   };
   const archiveCount = archivedActivityIds.length;
 
+  const salesTrend = useMemo(() => {
+    const periodLength = chartPeriodLength[chartPeriod];
+    const periodUnit = chartPeriod === "12m" ? "month" : "day";
+    const days = Array.from({ length: periodLength }, (_, index) => {
+      const date = new Date();
+      date.setHours(0, 0, 0, 0);
+      if (periodUnit === "month") {
+        date.setDate(1);
+        date.setMonth(date.getMonth() - (periodLength - 1 - index));
+      } else {
+        date.setDate(date.getDate() - (periodLength - 1 - index));
+      }
+      return {
+        key: periodUnit === "month" ? date.toISOString().slice(0, 7) : date.toISOString().slice(0, 10),
+        label: periodUnit === "month" ? date.toLocaleDateString("fr-FR", { month: "short" }).replace(".", "") : date.toLocaleDateString("fr-FR", { weekday: "short" }).replace(".", ""),
+        revenue: 0,
+        count: 0,
+      };
+    });
+
+    for (const sale of sales) {
+      const saleDate = new Date(sale.sale_date);
+      const key = periodUnit === "month" ? saleDate.toISOString().slice(0, 7) : saleDate.toISOString().slice(0, 10);
+      const day = days.find((entry) => entry.key === key);
+      if (day) {
+        day.revenue += sale.total_amount;
+        day.count += 1;
+      }
+    }
+
+    const currentTotal = days.reduce((total, day) => total + day.revenue, 0);
+    const previousStart = new Date(days[0].key);
+    if (periodUnit === "month") previousStart.setMonth(previousStart.getMonth() - periodLength);
+    else previousStart.setDate(previousStart.getDate() - periodLength);
+    const previousTotal = sales.reduce((total, sale) => {
+      const saleDate = new Date(sale.sale_date);
+      const periodEnd = new Date(days[0].key);
+      return saleDate >= previousStart && saleDate < periodEnd ? total + sale.total_amount : total;
+    }, 0);
+    const maxRevenue = Math.max(...days.map((day) => day.revenue), 1);
+    const maxCount = Math.max(...days.map((day) => day.count), 1);
+    const points = days.map((day, index) => ({
+      x: (index / (days.length - 1)) * 100,
+      revenueY: 92 - (day.revenue / maxRevenue) * 68,
+      countY: 92 - (day.count / maxCount) * 48,
+    }));
+
+    const bestDay = days.reduce((best, day) => day.revenue > best.revenue ? day : best, days[0]);
+    return {
+      days,
+      points,
+      revenuePath: points.map((point) => `${point.x},${point.revenueY}`).join(" "),
+      countPath: points.map((point) => `${point.x},${point.countY}`).join(" "),
+      totalRevenue: days.reduce((total, day) => total + day.revenue, 0),
+      totalCount: days.reduce((total, day) => total + day.count, 0),
+      bestDay,
+      bestDayLabel: bestDay.revenue ? formatMoney(bestDay.revenue) : "—",
+      periodLabel: chartPeriodLabels[chartPeriod],
+      changePercent: previousTotal > 0 ? ((currentTotal - previousTotal) / previousTotal) * 100 : null,
+      changeLabel: previousTotal > 0 ? `${currentTotal >= previousTotal ? "+" : ""}${Math.round(((currentTotal - previousTotal) / previousTotal) * 100)} %` : "—",
+      changeTone: previousTotal > 0 && currentTotal >= previousTotal ? "good" : "warning",
+    };
+  }, [chartPeriod, sales]);
+
   const activityIcon = { sale: ShoppingCart, stock: Package, cash: WalletCards, farm: Bird };
 
   return (
@@ -213,6 +281,42 @@ export default function DashboardPage() {
           <article className={styles.metricCard}><span>État de la caisse</span><strong>{openSession ? "ACTIVE" : "FERMÉE"}</strong><small className={openSession ? styles.good : styles.muted}><WalletCards size={13} /> {openSession ? `Caisse #${openSession.register_id}` : "Aucune session ouverte"}</small></article>
           <article className={styles.metricCard}><span>Stock à surveiller</span><strong className={lowStockProducts.length === 0 ? styles.zeroValue : undefined}>{lowStockProducts.length}</strong><small className={lowStockProducts.length ? styles.warning : styles.good}><Boxes size={13} /> référence{lowStockProducts.length > 1 ? "s" : ""} concernée{lowStockProducts.length > 1 ? "s" : ""}</small></article>
           <article className={styles.metricCard}><span>Équipe & relations</span><strong className={customerCount === 0 ? styles.zeroValue : undefined}>{customerCount}</strong><small><Users size={13} /> clients enregistrés · {activeBatches.length} bande{activeBatches.length > 1 ? "s" : ""} active{activeBatches.length > 1 ? "s" : ""}</small></article>
+        </section>
+
+        <section className={styles.salesTrendPanel} aria-labelledby="sales-trend-title">
+          <div className={styles.sectionHeader}>
+            <div>
+              <span className={styles.sectionKicker}><Activity size={13} /> Ventes</span>
+              <h2 id="sales-trend-title">Évolution des ventes</h2>
+            </div>
+            <div className={styles.chartLegend}>
+              <span><i className={styles.revenueDot} /> Chiffre d&apos;affaires</span>
+              <span><i className={styles.countDot} /> Volume</span>
+            </div>
+          </div>
+          <div className={styles.chartPeriods} aria-label="Période du graphique des ventes">
+            {(["7d", "30d", "12m"] as const).map((period) => <button key={period} type="button" className={chartPeriod === period ? styles.chartPeriodActive : styles.chartPeriod} onClick={() => setChartPeriod(period)}>{chartPeriodLabels[period]}</button>)}
+          </div>
+          <div className={styles.chartSummary}>
+            <span><small>{salesTrend.periodLabel}</small><strong>{formatMoney(salesTrend.totalRevenue)}</strong></span>
+            <span><small>Transactions</small><strong>{salesTrend.totalCount}</strong></span>
+            <span><small>Meilleur jour</small><strong>{salesTrend.bestDayLabel}</strong></span>
+            <span><small>Évolution</small><strong className={styles[salesTrend.changeTone]}>{salesTrend.changeLabel}</strong></span>
+          </div>
+          <div className={styles.salesChart}>
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Évolution du chiffre d'affaires et du volume des ventes sur les sept derniers jours">
+              <line x1="0" y1="24" x2="100" y2="24" className={styles.chartGridLine} />
+              <line x1="0" y1="58" x2="100" y2="58" className={styles.chartGridLine} />
+              <line x1="0" y1="92" x2="100" y2="92" className={styles.chartGridLine} />
+              <polygon points={`0,92 ${salesTrend.revenuePath} 100,92`} className={styles.revenueArea} />
+              <polyline points={salesTrend.revenuePath} className={styles.revenueLine} vectorEffect="non-scaling-stroke" />
+              <polyline points={salesTrend.countPath} className={styles.countLine} vectorEffect="non-scaling-stroke" />
+              {salesTrend.points.map((point) => <circle key={`${point.x}-${point.revenueY}`} cx={point.x} cy={point.revenueY} r="1.4" className={styles.revenuePoint} vectorEffect="non-scaling-stroke" />)}
+            </svg>
+            <div className={styles.chartLabels}>
+              {salesTrend.days.map((day) => <span key={day.key}>{day.label}</span>)}
+            </div>
+          </div>
         </section>
 
         <div className={styles.dashboardGrid}>

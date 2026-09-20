@@ -4,7 +4,7 @@
 
 .container {
   width: 100%;
-  max-width: 1240px;
+  max-width: 1480px;
   margin: 0 auto;
   padding: 24px 24px 44px;
   color: #f4f6fa;
@@ -56,7 +56,7 @@
 .title {
   margin: 0;
   color: #f5f7fa;
-  font-size: clamp(1.25rem, 2vw, 1.7rem);
+  font-size: clamp(1.35rem, 2vw, 1.9rem);
   letter-spacing: -0.035em;
   line-height: 1.1;
   font-weight: 500;
@@ -81,7 +81,7 @@
   gap: 10px;
   min-width: 0;
   color: #737e8d;
-  font-size: 0.66rem;
+  font-size: 0.72rem;
   white-space: nowrap;
 }
 
@@ -92,7 +92,7 @@
   max-width: 210px;
   min-width: 0;
   color: #d8dde5;
-  font-size: 0.64rem;
+  font-size: 0.72rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -174,7 +174,7 @@
   gap: 6px;
   min-height: 28px;
   color: #7d8795;
-  font-size: 0.88rem;
+  font-size: 1.04rem;
   font-weight: 500;
   line-height: 1.35;
 }
@@ -184,7 +184,7 @@
   margin: 8px 0 5px;
   overflow: hidden;
   color: #f4f6f9;
-  font-size: clamp(1.15rem, 2vw, 1.45rem);
+  font-size: clamp(1.4rem, 2vw, 1.85rem);
   font-weight: 450;
   letter-spacing: -0.04em;
   text-overflow: ellipsis;
@@ -197,7 +197,7 @@
   gap: 5px;
   overflow: hidden;
   color: #687484;
-  font-size: 0.62rem;
+  font-size: 0.76rem;
   line-height: 1.35;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -205,6 +205,149 @@
 
 .metricAccent {
   border-top-color: #a46aa3;
+}
+
+.salesTrendPanel {
+  min-width: 0;
+  margin-bottom: 12px;
+  background: rgba(17, 21, 29, 0.78);
+}
+
+.salesTrendPanel .sectionHeader {
+  border-bottom: 0;
+}
+
+.chartLegend {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #c4cedb;
+  font-size: 0.64rem;
+}
+
+.chartLegend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.chartPeriods {
+  display: flex;
+  gap: 4px;
+  padding: 10px 15px 0;
+}
+
+.chartPeriod,
+.chartPeriodActive {
+  min-height: 30px;
+  padding: 5px 10px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #ffffff;
+  font-size: 0.64rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chartPeriodActive {
+  background: rgba(130, 200, 188, 0.12);
+  color: #ffffff;
+}
+
+.chartPeriod:focus-visible,
+.chartPeriodActive:focus-visible {
+  outline: 2px solid #82c8bc;
+  outline-offset: 2px;
+}
+
+.chartSummary {
+  display: flex;
+  gap: 24px;
+  padding: 0 15px 4px;
+}
+
+.chartSummary span {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.chartSummary small {
+  color: #aeb9c8;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.chartSummary strong {
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.revenueDot,
+.countDot {
+  display: inline-block;
+  width: 7px;
+  height: 2px;
+  background: #52c41a;
+}
+
+.countDot {
+  background: #ff4d4f;
+}
+
+.salesChart {
+  height: 150px;
+  padding: 14px 15px 10px;
+}
+
+.salesChart svg {
+  display: block;
+  width: 100%;
+  height: 112px;
+  overflow: visible;
+}
+
+.chartGridLine {
+  stroke: rgba(255, 255, 255, 0.06);
+  stroke-width: 0.6;
+}
+
+.revenueLine,
+.countLine {
+  fill: none;
+  stroke: #52c41a;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+.countLine {
+  stroke: #ff4d4f;
+  stroke-dasharray: 3 3;
+  stroke-width: 1.8;
+}
+
+.revenueArea {
+  fill: rgba(82, 196, 26, 0.08);
+  stroke: none;
+}
+
+.revenuePoint {
+  fill: #52c41a;
+  stroke: #10151d;
+  stroke-width: 1.4;
+}
+
+.chartLabels {
+  display: flex;
+  justify-content: space-between;
+  color: #d8e0ea;
+  font-size: 0.64rem;
+  font-weight: 500;
+  text-transform: capitalize;
 }
 
 .good {
@@ -265,7 +408,7 @@
   align-items: center;
   gap: 6px;
   color: #a46aa3;
-  font-size: 0.58rem;
+  font-size: 0.66rem;
   font-weight: 650;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -274,14 +417,14 @@
 .sectionHeader h2 {
   margin: 5px 0 0;
   color: #e9edf2;
-  font-size: 0.86rem;
+  font-size: 1.06rem;
   font-weight: 550;
   letter-spacing: -0.01em;
 }
 
 .updatedAt {
   color: #606b7a;
-  font-size: 0.61rem;
+  font-size: 0.68rem;
   white-space: nowrap;
 }
 
@@ -353,7 +496,7 @@
   display: block;
   overflow: hidden;
   color: #d9dee6;
-  font-size: 0.71rem;
+  font-size: 0.9rem;
   font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -365,14 +508,14 @@
   margin-top: 3px;
   overflow: hidden;
   color: #697585;
-  font-size: 0.61rem;
+  font-size: 0.78rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .activityRow time {
   color: #606b7a;
-  font-size: 0.59rem;
+  font-size: 0.68rem;
   white-space: nowrap;
 }
 
@@ -700,6 +843,21 @@
     padding: 13px;
   }
 
+  .chartLegend {
+    gap: 8px;
+    font-size: 0.55rem;
+  }
+
+  .chartPeriods {
+    padding-inline: 13px;
+  }
+
+  .chartSummary {
+    gap: 14px;
+    padding-inline: 13px;
+    flex-wrap: wrap;
+  }
+
   .activityList,
   .alertList {
     padding-inline: 13px;
@@ -757,6 +915,64 @@
 
   .moduleLinks {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 1500px) {
+  .container {
+    max-width: 1680px;
+    padding-inline: 36px;
+  }
+
+  .metricGrid {
+    gap: 10px;
+  }
+
+  .metricCard {
+    min-height: 132px;
+    padding: 20px;
+  }
+
+  .metricCard > span {
+    font-size: 1.05rem;
+  }
+
+  .metricCard > strong {
+    font-size: 1.9rem;
+  }
+
+  .metricCard > small {
+    font-size: 0.78rem;
+  }
+
+  .sectionHeader {
+    padding: 18px 20px;
+  }
+
+  .sectionHeader h2 {
+    font-size: 1.12rem;
+  }
+
+  .activityList,
+  .alertList {
+    padding-inline: 20px;
+  }
+
+  .activityRow,
+  .alertRow {
+    gap: 14px;
+    padding: 14px 0;
+  }
+
+  .activityCopy strong,
+  .alertRow strong {
+    font-size: 0.92rem;
+  }
+
+  .activityCopy small,
+  .alertRow small,
+  .activityRow time {
+    font-size: 0.78rem;
   }
 }
 

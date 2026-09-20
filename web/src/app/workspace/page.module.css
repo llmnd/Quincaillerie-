@@ -335,8 +335,8 @@
 }
 
 .moduleIcon {
-  width: 82px;
-  height: 82px;
+  width: 96px;
+  height: 96px;
 
   border-radius: 8px;
 
@@ -362,15 +362,28 @@
 }
 
 .moduleLabel {
-  font-size: 0.88rem;
+  font-size: 1rem;
 
-  font-weight: 400;
+  font-weight: 600;
 
   text-align: center;
 
   line-height: 1.2;
 
   color: rgba(255, 255, 255, 0.9);
+}
+
+@media (min-width: 1200px) {
+  .moduleIcon {
+    width: 122px;
+    height: 122px;
+    border-radius: 10px;
+  }
+
+  .moduleLabel {
+    font-size: 1.08rem;
+    font-weight: 650;
+  }
 }
 
 

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Bell, Bird, Boxes, Calculator, LogOut, Package, PanelLeftClose, PanelLeftOpen, Settings, ShoppingCart, UserRound, Users, WalletCards } from "lucide-react";
+import { ArrowLeft, Bell, Bird, Boxes, Calculator, LayoutDashboard, LayoutGrid, LogOut, Package, PanelLeftClose, PanelLeftOpen, Settings, ShoppingCart, UserRound, Users, WalletCards } from "lucide-react";
 import { authHeaders, clearStoredAuth, getStoredUser, restoreAuthSession } from "../lib/auth";
 import styles from "./AppShell.module.css";
 
@@ -25,15 +25,16 @@ const applications: Application[] = [
 ];
 
 const sidebarItems = [
-  { label: "Apps", href: "/workspace" },
-  { label: "Dashboard", href: "/dashboard" },
-  { label: "Ventes", href: "/sales", moduleKey: "sales" },
-  { label: "Caisse", href: "/cash", moduleKey: "cash" },
-  { label: "Produits", href: "/products", moduleKey: "products" },
-  { label: "Clients", href: "/clients", moduleKey: "customers" },
-  { label: "Stock", href: "/stock", roles: ["admin"], moduleKey: "stock" },
-  { label: "Élevage", href: "/farming", moduleKey: "farming" },
-  { label: "Administration", href: "/admin", roles: ["admin"], moduleKey: "users" },
+  { label: "Apps", href: "/workspace", icon: LayoutGrid, image: "https://i.pinimg.com/1200x/98/ed/1c/98ed1c73a25c35145917f361dd010358.jpg" },
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, image: "https://i.pinimg.com/736x/6c/da/36/6cda36aa648c1e4b2dbfb443bc55ead2.jpg" },
+  { label: "Ventes", href: "/sales", icon: ShoppingCart, image: "https://i.pinimg.com/1200x/cf/f9/34/cff9349aa326663fdbff5b863c4c3a72.jpg", moduleKey: "sales" },
+  { label: "Caisse", href: "/cash", icon: WalletCards, image: "https://i.pinimg.com/736x/8c/33/e3/8c33e3983e190056f12c75841a8ecdd0.jpg", moduleKey: "cash" },
+  { label: "Produits", href: "/products", icon: Package, image: "https://i.pinimg.com/1200x/06/a0/80/06a080194e88100b55e25cdfdf51d7f4.jpg", moduleKey: "products" },
+  { label: "Clients", href: "/clients", icon: Users, image: "https://i.pinimg.com/736x/24/93/ec/2493ec2ab1a2f4dab8989b1ad23762db.jpg", moduleKey: "customers" },
+  { label: "Stock", href: "/stock", icon: Boxes, image: "https://i.pinimg.com/736x/71/16/ba/7116bafcb4ae414d6fd8c74a8cd2a46b.jpg", roles: ["admin"], moduleKey: "stock" },
+  { label: "Comptabilité", href: "/accounting", icon: Calculator, image: "https://i.pinimg.com/736x/ca/2a/0b/ca2a0bd781025c7a6e7ab6073847ea41.jpg", roles: ["admin"], moduleKey: "accounting" },
+  { label: "Élevage", href: "/farming", icon: Bird, image: "https://i.pinimg.com/originals/6e/cd/13/6ecd136e249649f0ba8452d13613bcfd.gif", moduleKey: "farming" },
+  { label: "Administration", href: "/admin", icon: Settings, image: "https://i.pinimg.com/736x/ca/2a/0b/ca2a0bd781025c7a6e7ab6073847ea41.jpg", roles: ["admin"], moduleKey: "users" },
 ];
 
 export default function AppShell({
@@ -228,6 +229,7 @@ export default function AppShell({
                 onFocus={() => prefetchRoute(item.href)}
                 className={pathname === item.href ? styles.navActive : styles.navItem}
               >
+                {item.image ? <img src={item.image} alt="" className={styles.navImage} onError={(event) => { event.currentTarget.style.display = "none"; }} /> : <item.icon size={17} strokeWidth={1.8} aria-hidden="true" />}
                 {item.label}
               </Link>
             ))}

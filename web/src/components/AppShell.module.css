@@ -22,11 +22,29 @@
 	display: flex;
 	width: 240px;
 	height: var(--app-height, 100vh);
+	overflow-y: auto;
+	overflow-x: hidden;
 	flex-direction: column;
 	padding: 24px 16px;
 	background: #171a24;
 	border-right: 1px solid rgba(255, 255, 255, 0.05);
 	color: #ffffff;
+	overscroll-behavior: contain;
+	scrollbar-color: rgba(130, 200, 188, 0.42) transparent;
+	scrollbar-width: thin;
+}
+
+.sidebar::-webkit-scrollbar {
+	width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+	border-radius: 999px;
+	background: rgba(130, 200, 188, 0.42);
 }
 
 .sidebarTop {
@@ -369,7 +387,7 @@
 .navLabel {
 	margin: 0 8px 16px;
 	color: #f9fafc;
-	font-size: 0.58rem;
+	font-size: 0.98rem;
 	letter-spacing: 0.25em;
 	text-transform: uppercase;
 	font-weight: 400;
@@ -379,10 +397,12 @@
 .navActive {
 	display: flex;
 	align-items: center;
-	min-height: 38px;
+	gap: 12px;
+	min-height: 46px;
 	padding: 0 12px;
 	border-radius: 0;
-	font-size: 0.75rem;
+	font-size: 0.82rem;
+	font-weight: 600;
 	letter-spacing: 0.12em;
 	text-transform: uppercase;
 	text-decoration: none;
@@ -402,7 +422,7 @@
 .navActive {
 	background: rgba(130, 200, 188, 0.08);
 	color: #82c8bc;
-	font-weight: 500;
+	font-weight: 700;
 	border-left: 2px solid #82c8bc;
 }
 
@@ -485,6 +505,7 @@
 		position: relative;
 		width: 100%;
 		height: auto;
+		overflow: visible;
 		min-height: 58px;
 		padding: 14px 20px;
 		border-right: none;
@@ -583,20 +604,6 @@
 	}
 
 	.userCard {
-		position: absolute;
-		top: 12px;
-		left: 20px;
-		padding: 0;
-		border: none;
-	}
-
-	.avatarButton {
-		width: 36px;
-		height: 36px;
-		font-size: 0.85rem;
-	}
-
-	.userCard > div {
 		display: none;
 	}
 
@@ -847,4 +854,41 @@
 
 .backButtonPrimary:hover .backIcon {
 	transform: translateX(-1px);
+}
+
+.navItem svg,
+.navActive svg {
+	width: 17px;
+	height: 17px;
+	flex: 0 0 auto;
+	color: #8d99aa;
+}
+
+.navImage {
+	width: 28px;
+	height: 28px;
+	flex: 0 0 auto;
+	border-radius: 6px;
+	object-fit: cover;
+	background: #10151d;
+	box-shadow: 0 2px 7px rgba(0, 0, 0, 0.28);
+}
+
+.navActive svg {
+	color: #82c8bc;
+}
+
+@media (min-width: 1200px) {
+	.navItem,
+	.navActive {
+		gap: 14px;
+		min-height: 52px;
+		font-size: 0.88rem;
+	}
+
+	.navImage {
+		width: 34px;
+		height: 34px;
+		border-radius: 7px;
+	}
 }

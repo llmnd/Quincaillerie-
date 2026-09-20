@@ -77,7 +77,7 @@ const modules = [
     href: "/calendar",
     icon: CalendarDays,
     image:
-      "https://i.pinimg.com/736x/40/fb/de/40fbdea1fa846b0a4b9b18a66bdce9d8.jpg",
+      "https://i.pinimg.com/1200x/98/ed/1c/98ed1c73a25c35145917f361dd010358.jpg",
   },
   {
     name: "Admin",
