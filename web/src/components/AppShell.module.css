@@ -913,7 +913,8 @@
     position: relative;
   }
 
-  .breadcrumb { display: none; }
+  .breadcrumb,
+  .breadcrumbOverlay { display: none; }
 
   .menuButton {
     position: absolute;
@@ -1013,23 +1014,9 @@
     width: 100%;
   }
 
-  .backButton {
-    min-width: 38px;
-    min-height: 38px;
-    padding: 7px;
-    justify-content: center;
-    position: relative;
-    z-index: 1;
+  .topbar .backButton {
+    display: none !important;
   }
-
-  .backButton + .backButton {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-  }
-
-  .backButton span { display: none; }
-  .backButton .backIcon { display: inline-grid; }
 
   .topbarActions { gap: 10px; }
 

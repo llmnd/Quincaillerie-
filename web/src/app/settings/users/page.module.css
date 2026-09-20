@@ -1,44 +1,130 @@
-.permissionsField{margin:14px 0;padding:14px;border:1px solid rgba(148,163,184,.16);background:rgba(255,255,255,.02)}.permissionsField legend{padding:0 6px;color:#c07bbc;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase}.permissionsGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:6px}.permissionOption{display:flex;align-items:center;gap:8px;padding:9px;border:1px solid rgba(148,163,184,.12);color:#e2e8f0;font-size:.76rem}.permissionOption input{accent-color:#c07bbc}@media(max-width:700px){.permissionsGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 /* ==========================================================================
-   DESIGN ODOO - FORMULAIRES ET LISTES
+   UTILISATEURS — Design system aligné dashboard
+   Palette prune · surfaces cohérentes · zéro glow
    ========================================================================== */
 
+/* -------------------------------------------------------------------------
+   Tokens — hérités par toutes les sections
+   ------------------------------------------------------------------------- */
+.header,
+.permissionsField,
+.createForm,
+.table,
+.state {
+  /* Surfaces */
+  --bg-1: #11151c;
+  --bg-2: #161a22;
+  --bg-3: #1b2029;
+  --bg-input: #0d1016;
+
+  /* Traits */
+  --line-1: rgba(255, 255, 255, 0.05);
+  --line-2: rgba(255, 255, 255, 0.08);
+  --line-3: rgba(255, 255, 255, 0.14);
+
+  /* Texte */
+  --ink-1: #f1f4f8;
+  --ink-2: #d6dce5;
+  --ink-3: #9aa4b2;
+  --ink-4: #6f7a8a;
+  --ink-5: #4f5866;
+
+  /* Accent prune (dashboard) */
+  --accent: #a46aa3;
+  --accent-hi: #c497c2;
+  --accent-soft: rgba(164, 106, 163, 0.1);
+  --accent-line: rgba(164, 106, 163, 0.35);
+  --accent-ink: #2a1629;
+
+  /* Sémantique */
+  --good: #64eeae;
+  --good-soft: rgba(100, 238, 174, 0.09);
+  --good-line: rgba(100, 238, 174, 0.22);
+  --danger: #ff6b6b;
+  --danger-soft: rgba(255, 107, 107, 0.09);
+  --danger-line: rgba(255, 107, 107, 0.22);
+
+  /* Rayons */
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 8px;
+  --r-lg: 12px;
+  --r-full: 999px;
+
+  /* Ombres neutres */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 8px 24px -12px rgba(0, 0, 0, 0.7);
+
+  /* Courbe */
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ==========================================================================
+   HEADER
+   ========================================================================== */
 .header {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
   gap: 28px;
-  margin-bottom: 20px;
-  padding-bottom: 18px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 24px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--line-1);
+  position: relative;
+}
+
+.header::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 52px;
+  height: 1px;
+  background: var(--accent);
+  opacity: 0.75;
 }
 
 .eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   margin: 0 0 10px;
-  color: #8a93a4;
-  font-size: 0.68rem;
-  font-weight: 600;
+  color: var(--accent);
+  font-size: 0.62rem;
+  font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
+}
+
+.eyebrow::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex: 0 0 auto;
 }
 
 .header h1,
 .header h2 {
   margin: 0;
-  color: #f4f7fb;
-  font-size: clamp(2rem, 3.5vw, 3rem);
-  font-weight: 300;
+  color: var(--ink-1);
+  font-size: clamp(1.5rem, 2.6vw, 1.9rem);
+  font-weight: 500;
+  letter-spacing: -0.038em;
   line-height: 1.08;
-  letter-spacing: -0.04em;
 }
 
 .header p:last-child {
   margin: 10px 0 0;
-  color: #9aa4b4;
-  font-size: 0.86rem;
-  line-height: 1.5;
+  color: var(--ink-4);
+  font-size: 0.82rem;
+  line-height: 1.55;
 }
 
+/* ==========================================================================
+   BOUTONS
+   ========================================================================== */
 .primaryButton,
 .secondaryButton,
 .secondaryAction {
@@ -46,53 +132,71 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  height: 40px;
-  padding: 0 18px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 5px;
+  height: 38px;
+  padding: 0 16px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  font-family: inherit;
   font-size: 0.74rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
+  font-weight: 700;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: all 180ms ease;
   white-space: nowrap;
+  transition:
+    background 180ms var(--ease),
+    border-color 180ms var(--ease),
+    color 180ms var(--ease),
+    transform 180ms var(--ease);
 }
 
 .primaryButton {
-  background: linear-gradient(180deg, #a15298 0%, #7d3a7d 100%);
-  border-color: rgba(174, 116, 170, 0.8);
-  color: #ffffff !important;
-  box-shadow: 0 8px 18px rgba(125, 58, 125, 0.22);
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink) !important;
 }
 
-.primaryButton:hover {
-  background: linear-gradient(180deg, #b55ca4 0%, #8a456d 100%);
-  transform: translateY(-1px);
+.primaryButton:hover:not(:disabled) {
+  background: var(--accent-hi);
+  border-color: var(--accent-hi);
+}
+
+.primaryButton:active:not(:disabled) {
+  transform: translateY(1px);
 }
 
 .primaryButton:disabled {
-  opacity: 0.5;
+  opacity: 0.42;
   cursor: not-allowed;
   transform: none;
 }
 
 .secondaryButton,
 .secondaryAction {
-  background: rgba(255, 255, 255, 0.02);
-  color: #edf4ff !important;
+  background: transparent;
+  color: var(--ink-2) !important;
 }
 
-.secondaryButton:hover,
-.secondaryAction:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.22);
+.secondaryButton:hover:not(:disabled),
+.secondaryAction:hover:not(:disabled) {
+  background: var(--bg-2);
+  border-color: var(--line-3);
+  color: var(--ink-1) !important;
 }
 
+.secondaryAction {
+  height: 34px;
+  padding: 0 14px;
+  font-size: 0.7rem;
+}
+
+/* ==========================================================================
+   FORMULAIRE
+   ========================================================================== */
 .createForm {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px 24px;
+  gap: 20px 24px;
   margin-top: 10px;
 }
 
@@ -100,97 +204,209 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-width: 0;
 }
 
 .formField label {
-  color: rgba(255, 255, 255, 0.84);
-  font-size: 0.86rem;
-  font-weight: 500;
+  color: var(--ink-3);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 .createForm input,
 .createForm select {
   width: 100%;
-  height: 44px;
+  height: 40px;
   padding: 0 14px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
-  background: rgba(9, 14, 20, 0.8);
-  color: #f6f9ff;
-  font-size: 0.9rem;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  background: var(--bg-2);
+  color: var(--ink-1);
+  font-family: inherit;
+  font-size: 0.84rem;
   outline: none;
-  transition: border-color 180ms ease, box-shadow 180ms ease;
+  box-sizing: border-box;
+  transition:
+    border-color 180ms var(--ease),
+    background 180ms var(--ease);
 }
 
 .createForm input::placeholder {
-  color: #687686;
+  color: var(--ink-5);
+}
+
+.createForm input:hover,
+.createForm select:hover {
+  border-color: var(--line-3);
 }
 
 .createForm input:focus,
 .createForm select:focus {
-  border-color: rgba(165, 116, 180, 0.7);
-  box-shadow: 0 0 0 2px rgba(165, 116, 180, 0.12);
+  border-color: var(--accent);
+  background: var(--bg-1);
+}
+
+.createForm select {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236f7a8a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
 }
 
 .createForm select option {
-  background: #111821;
-  color: #edf4ff;
+  background: var(--bg-1);
+  color: var(--ink-1);
 }
 
-.state {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 86px;
-  margin-top: 16px;
-  border: 1px dashed rgba(255, 255, 255, 0.12);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.01);
-  color: #a4acb8;
-  font-size: 0.7rem;
-  font-weight: 600;
+/* ==========================================================================
+   PERMISSIONS — Fieldset
+   ========================================================================== */
+.permissionsField {
+  grid-column: 1 / -1;
+  margin: 6px 0;
+  padding: 18px 18px 16px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  background: var(--bg-2);
+  min-width: 0;
+}
+
+.permissionsField legend {
+  padding: 0 10px;
+  color: var(--accent);
+  font-size: 0.62rem;
+  font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
+.permissionsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.permissionOption {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line-1);
+  border-radius: var(--r-sm);
+  background: var(--bg-1);
+  color: var(--ink-2);
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    border-color 160ms var(--ease),
+    background 160ms var(--ease);
+}
+
+.permissionOption:hover {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+}
+
+.permissionOption input {
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.permissionOption:has(input:checked) {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--ink-1);
+}
+
+/* ==========================================================================
+   ÉTAT (chargement, erreur, vide)
+   ========================================================================== */
+.state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 96px;
+  margin-top: 16px;
+  padding: 24px;
+  border: 1px dashed var(--line-2);
+  border-radius: var(--r-md);
+  background: var(--bg-1);
+  color: var(--ink-4);
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+/* ==========================================================================
+   TABLE
+   ========================================================================== */
 .table {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-top: 22px;
+  gap: 8px;
+  margin-top: 20px;
 }
 
 .row {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr auto;
+  grid-template-columns: minmax(0, 2fr) 1fr 1fr auto;
   align-items: center;
-  gap: 14px;
-  padding: 18px 20px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 8px;
-  background: rgba(15, 20, 28, 0.93);
-  transition: border-color 180ms ease, background 180ms ease;
+  gap: 16px;
+  padding: 16px 20px;
+  border: 1px solid var(--line-1);
+  border-radius: var(--r-md);
+  background: var(--bg-1);
+  box-shadow: var(--shadow-sm);
+  transition:
+    border-color 180ms var(--ease),
+    background 180ms var(--ease);
 }
 
 .row:hover {
-  border-color: rgba(255, 255, 255, 0.14);
-  background: rgba(19, 25, 33, 0.96);
+  border-color: var(--line-3);
+  background: var(--bg-2);
+}
+
+.row > div:first-child {
+  min-width: 0;
 }
 
 .row strong {
   display: block;
-  color: #edf4ff;
-  font-size: 0.94rem;
-  font-weight: 500;
+  color: var(--ink-1);
+  font-size: 0.88rem;
+  font-weight: 550;
+  letter-spacing: -0.008em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .row small {
   display: block;
-  margin-top: 5px;
-  color: #8794a5;
+  margin-top: 4px;
+  color: var(--ink-4);
   font-size: 0.72rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
+/* ==========================================================================
+   BADGES
+   ========================================================================== */
 .role,
 .active,
 .inactive {
@@ -198,64 +414,58 @@
   align-items: center;
   justify-content: center;
   width: fit-content;
-  min-height: 28px;
-  padding: 0 10px;
-  border-radius: 999px;
-  font-size: 0.64rem;
+  min-height: 26px;
+  padding: 0 12px;
+  border-radius: var(--r-full);
+  font-size: 0.62rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .role {
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.03);
-  color: #edf4ff;
+  border: 1px solid var(--line-2);
+  background: var(--bg-3);
+  color: var(--ink-2);
 }
 
 .active {
-  border: 1px solid rgba(88, 195, 156, 0.34);
-  background: rgba(88, 195, 156, 0.12);
-  color: #74dfbc;
+  border: 1px solid var(--good-line);
+  background: var(--good-soft);
+  color: var(--good);
+}
+
+.active::before,
+.inactive::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  margin-right: 6px;
+  flex: 0 0 auto;
 }
 
 .inactive {
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.02);
-  color: #99a5b6;
+  border: 1px solid var(--line-1);
+  background: transparent;
+  color: var(--ink-4);
 }
 
-@media (max-width: 700px) {
-  .header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .createForm {
-    grid-template-columns: 1fr;
-  }
-
-  .createForm button {
-    grid-column: auto;
-    justify-self: stretch;
-    width: 100%;
-  }
-
-  .row {
-    grid-template-columns: 1fr;
-    align-items: flex-start;
-  }
-}
-
+/* ==========================================================================
+   ORGANISATION (bloc hérité)
+   ========================================================================== */
 .organizationMark {
   display: grid;
   width: 40px;
   height: 40px;
   flex-shrink: 0;
   place-items: center;
-  border: 1px solid rgba(130, 200, 188, 0.3);
-  color: #82c8bc;
-  background: rgba(130, 200, 188, 0.05);
+  border: 1px solid var(--accent-line);
+  border-radius: var(--r-sm);
+  background: var(--accent-soft);
+  color: var(--accent-hi);
 }
 
 .organizationSummary {
@@ -280,8 +490,9 @@
   height: 48px;
   flex-shrink: 0;
   object-fit: cover;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: #11131a;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  background: var(--bg-2);
   display: grid;
   place-items: center;
   color: #ffffff;
@@ -290,22 +501,24 @@
 
 .organizationSummaryLabel {
   margin: 0;
-  color: #7c8a9d;
-  font-size: 0.65rem;
-  letter-spacing: 0.2em;
+  color: var(--ink-4);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
 .organizationSummaryInfo strong {
   display: block;
   margin-top: 2px;
-  color: #ffffff;
-  font-size: 1.05rem;
-  font-weight: 400;
+  color: var(--ink-1);
+  font-size: 1.02rem;
+  font-weight: 500;
+  letter-spacing: -0.015em;
   word-break: break-word;
 }
 
-/* FORMULAIRE - RESTRUCTURATION EN FLEX/GRID SÉCURISÉE */
+/* Formulaire organisation */
 .organizationForm {
   display: flex;
   flex-direction: column;
@@ -326,9 +539,10 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  color: #7c8a9d;
-  font-size: 0.65rem;
-  letter-spacing: 0.15em;
+  color: var(--ink-3);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   width: 100%;
 }
@@ -336,24 +550,41 @@
 .organizationForm input[type="text"],
 .organizationForm input:not([type]) {
   width: 100%;
-  height: 46px;
-  padding: 0 16px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: #11131a;
-  color: #ffffff;
-  font-size: 0.85rem;
+  height: 42px;
+  padding: 0 14px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  background: var(--bg-2);
+  color: var(--ink-1);
+  font-family: inherit;
+  font-size: 0.84rem;
+  outline: none;
   box-sizing: border-box;
+  transition: border-color 180ms var(--ease), background 180ms var(--ease);
+}
+
+.organizationForm input[type="text"]:hover,
+.organizationForm input:not([type]):hover {
+  border-color: var(--line-3);
+}
+
+.organizationForm input[type="text"]:focus,
+.organizationForm input:not([type]):focus {
+  border-color: var(--accent);
+  background: var(--bg-1);
 }
 
 .organizationForm input[type="file"] {
   width: 100%;
-  height: 46px;
+  height: 42px;
   padding: 8px 12px;
-  border: 1px dashed rgba(255, 255, 255, 0.18);
-  background: #11131a;
-  color: #7c8a9d;
-  font-size: 0.8rem;
+  border: 1px dashed var(--line-3);
+  border-radius: var(--r-sm);
+  background: var(--bg-2);
+  color: var(--ink-4);
+  font-size: 0.78rem;
   box-sizing: border-box;
+  cursor: pointer;
 }
 
 .organizationPreviewContainer {
@@ -368,14 +599,15 @@
   height: 46px;
   flex-shrink: 0;
   object-fit: cover;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: #11131a;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  background: var(--bg-2);
 }
 
 .organizationEmpty {
   display: grid;
   place-items: center;
-  color: #5d6979;
+  color: var(--ink-5);
   font-size: 0.55rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -386,17 +618,26 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 12px;
+  gap: 10px;
   margin-top: 8px;
   width: 100%;
 }
 
-/* RESPONSIVE MOBILE */
+/* ==========================================================================
+   RESPONSIVE
+   ========================================================================== */
+@media (max-width: 900px) {
+  .permissionsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 768px) {
   .header {
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
+    padding-bottom: 18px;
   }
 
   .header button {
@@ -405,11 +646,11 @@
 
   .createForm {
     grid-template-columns: 1fr;
-    padding: 18px;
+    gap: 18px;
   }
 
   .createForm button {
-    grid-column: span 1;
+    grid-column: auto;
     width: 100%;
   }
 
@@ -419,12 +660,18 @@
     padding: 16px;
   }
 
-  .organizationCard {
-    padding: 18px;
+  .row > div:first-child {
+    margin-bottom: 4px;
   }
 
-  .organizationCardHeader {
-    flex-direction: column;
+  .role,
+  .active,
+  .inactive {
+    justify-self: flex-start;
+  }
+
+  .secondaryAction {
+    width: 100%;
   }
 
   .organizationSummary {
@@ -444,4 +691,100 @@
   .organizationActions button {
     width: 100%;
   }
+}
+
+@media (max-width: 600px) {
+  .permissionsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .permissionsField {
+    padding: 16px 14px 14px;
+  }
+
+  .permissionOption {
+    padding: 11px 12px;
+    font-size: 0.76rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .header h1,
+  .header h2 {
+    font-size: 1.35rem;
+  }
+
+  .header p:last-child {
+    font-size: 0.78rem;
+  }
+
+  .createForm input,
+  .createForm select {
+    height: 42px;
+  }
+
+  .row {
+    padding: 14px;
+  }
+
+  .row strong {
+    font-size: 0.84rem;
+  }
+}
+
+/* ==========================================================================
+   MOTION & CONTRAST & PRINT
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .header *,
+  .primaryButton,
+  .secondaryButton,
+  .secondaryAction,
+  .createForm input,
+  .createForm select,
+  .permissionOption,
+  .row {
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .header,
+  .permissionsField,
+  .createForm,
+  .table {
+    --line-1: rgba(255, 255, 255, 0.16);
+    --line-2: rgba(255, 255, 255, 0.26);
+    --line-3: rgba(255, 255, 255, 0.4);
+    --ink-3: #b8c0cd;
+    --ink-4: #98a2af;
+    --ink-5: #737e8b;
+  }
+}
+
+@media print {
+  .header::after,
+  .primaryButton,
+  .secondaryButton,
+  .secondaryAction,
+  .permissionsField { display: none !important; }
+
+  .row,
+  .state,
+  .createForm input,
+  .createForm select {
+    border-color: #ccc;
+    background: #fff;
+    color: #000;
+    box-shadow: none;
+  }
+
+  .header h1,
+  .header h2,
+  .row strong { color: #000; }
+
+  .eyebrow,
+  .header p:last-child,
+  .row small { color: #555; }
 }

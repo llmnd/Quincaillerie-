@@ -196,6 +196,7 @@ export default function AppShell({
   ]);
   const [breadcrumbsReady, setBreadcrumbsReady] = useState(false);
   const navigationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setIsHydrated(true);
@@ -352,6 +353,30 @@ export default function AppShell({
       router.replace("/workspace");
     }
   }, [isAdminOnlyRoute, role, router, user]);
+
+  useEffect(() => {
+    if (!isUserMenuOpen) return;
+
+    function handlePointerDown(event: MouseEvent) {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsUserMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isUserMenuOpen]);
 
   const shouldHideSidebar = hideSidebar || isSidebarCollapsed;
   const enabledModuleKeys = new Set(
@@ -554,7 +579,7 @@ export default function AppShell({
                 <span className={styles.notificationDot} />
               </button>
 
-              <div className={styles.userMenuWrap}>
+              <div className={styles.userMenuWrap} ref={userMenuRef}>
                 <span className={styles.company}>
                   {organization?.logo ? (
                     <img

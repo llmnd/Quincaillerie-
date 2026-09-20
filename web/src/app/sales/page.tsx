@@ -14,6 +14,9 @@ type CartLine = Product & { quantity: number };
 type Handoff = { theoretical_balance: number; sales_total: number; cash_collected: number; withdrawals: number; previous_seller?: string | null; handoff_at: string; last_operation?: { type: string; amount: number } | null; requires_acknowledgement: boolean };
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
+/* Nombre de lignes fantômes pendant le chargement — cale la hauteur */
+const SKELETON_ROWS = 5;
+
 export default function SalesPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [cart, setCart] = useState<CartLine[]>([]);
@@ -179,6 +182,7 @@ export default function SalesPage() {
   }
 
   const requiresHandoff = userRole === "seller" && handoff?.requires_acknowledgement;
+  const showSkeleton = isLoading || productsQuery.isPending;
 
   useEffect(() => {
     if (!requiresHandoff) return;
@@ -213,26 +217,70 @@ export default function SalesPage() {
             />
           </div>
 
-          {(isLoading || productsQuery.isPending) && <div className={styles.state}>Chargement…</div>}
-          {!isLoading && !productsQuery.isPending && products.length === 0 && <div className={styles.state}>Aucun produit disponible.</div>}
-
+          {/* La liste garde TOUJOURS sa hauteur. Le contenu change à l'intérieur. */}
           <div className={styles.productList}>
-            {filteredProducts.map((product) => (
-              <button
-                type="button"
-                className={styles.productRow}
-                key={product.id}
-                onClick={() => addProduct(product)}
-                disabled={product.stock_quantity < 1 || Boolean(requiresHandoff)}
-              >
-                <span>
-                  <strong>{product.image_url ? <img src={product.image_url} alt="" className={styles.productThumb} /> : null}{product.name}</strong>
-                  <small>{product.sku} · {product.stock_quantity} en stock</small>
-                </span>
-                <b>{product.unit_price.toLocaleString("fr-FR")} FCFA</b>
-                <i><Plus size={16} aria-hidden="true" /></i>
-              </button>
-            ))}
+            {showSkeleton ? (
+              /* ---------- Squelette calé sur .productRow ---------- */
+              Array.from({ length: SKELETON_ROWS }).map((_, index) => (
+                <div
+                  key={`skeleton-${index}`}
+                  className={styles.productRowSkeleton}
+                  aria-hidden="true"
+                >
+                  <div className={styles.productRowSkeletonText}>
+                    <span className={styles.skeletonLine} style={{ width: "62%" }} />
+                    <span
+                      className={styles.skeletonLine}
+                      style={{ width: "38%", height: 8 }}
+                    />
+                  </div>
+                  <span className={styles.skeletonPrice} />
+                  <span className={styles.skeletonAction} />
+                </div>
+              ))
+            ) : products.length === 0 ? (
+              /* ---------- Aucun produit dans le catalogue ---------- */
+              <div className={styles.productListEmpty}>
+                <span className={styles.cartIcon}>+</span>
+                <p>Aucun produit disponible.</p>
+              </div>
+            ) : filteredProducts.length === 0 ? (
+              /* ---------- Aucun résultat pour la recherche ---------- */
+              <div className={styles.productListEmpty}>
+                <p>Aucun produit ne correspond à « {search} ».</p>
+              </div>
+            ) : (
+              /* ---------- Vrais produits ---------- */
+              filteredProducts.map((product) => (
+                <button
+                  type="button"
+                  className={styles.productRow}
+                  key={product.id}
+                  onClick={() => addProduct(product)}
+                  disabled={product.stock_quantity < 1 || Boolean(requiresHandoff)}
+                >
+                  <span>
+                    <strong>
+                      {product.image_url ? (
+                        <img
+                          src={product.image_url}
+                          alt=""
+                          className={styles.productThumb}
+                        />
+                      ) : null}
+                      {product.name}
+                    </strong>
+                    <small>
+                      {product.sku} · {product.stock_quantity} en stock
+                    </small>
+                  </span>
+                  <b>{product.unit_price.toLocaleString("fr-FR")} FCFA</b>
+                  <i>
+                    <Plus size={16} aria-hidden="true" />
+                  </i>
+                </button>
+              ))
+            )}
           </div>
         </section>
 
@@ -245,7 +293,39 @@ export default function SalesPage() {
             <span>{cart.length} ligne{cart.length > 1 ? "s" : ""}</span>
           </div>
 
-          {isPaymentStep && <div className={styles.paymentStep}><p className={styles.stepEyebrow}>Étape 2 sur 2</p><h3>Choisir le paiement</h3><div className={styles.saleOptions}><label htmlFor="payment">Paiement<select id="payment" value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value)}><option value="cash">Espèces</option><option value="wave">Wave</option><option value="orange_money">Orange Money</option><option value="mobile_money">Mobile Money</option><option value="card">Carte</option><option value="other">Autre</option></select></label><label htmlFor="discount">Remise FCFA<input id="discount" type="number" min="0" value={discount} onChange={(event) => setDiscount(event.target.value)} /></label></div></div>}
+          {isPaymentStep && (
+            <div className={styles.paymentStep}>
+              <p className={styles.stepEyebrow}>Étape 2 sur 2</p>
+              <h3>Choisir le paiement</h3>
+              <div className={styles.saleOptions}>
+                <label htmlFor="payment">
+                  Paiement
+                  <select
+                    id="payment"
+                    value={paymentMethod}
+                    onChange={(event) => setPaymentMethod(event.target.value)}
+                  >
+                    <option value="cash">Espèces</option>
+                    <option value="wave">Wave</option>
+                    <option value="orange_money">Orange Money</option>
+                    <option value="mobile_money">Mobile Money</option>
+                    <option value="card">Carte</option>
+                    <option value="other">Autre</option>
+                  </select>
+                </label>
+                <label htmlFor="discount">
+                  Remise FCFA
+                  <input
+                    id="discount"
+                    type="number"
+                    min="0"
+                    value={discount}
+                    onChange={(event) => setDiscount(event.target.value)}
+                  />
+                </label>
+              </div>
+            </div>
+          )}
 
           <div className={styles.cartLines}>
             {cart.length === 0 ? (
@@ -257,20 +337,42 @@ export default function SalesPage() {
               cart.map((line) => (
                 <div className={styles.cartLine} key={line.id}>
                   <div>
-                    <strong>{line.image_url ? <img src={line.image_url} alt="" className={styles.cartThumb} /> : null}{line.name}</strong>
+                    <strong>
+                      {line.image_url ? (
+                        <img
+                          src={line.image_url}
+                          alt=""
+                          className={styles.cartThumb}
+                        />
+                      ) : null}
+                      {line.name}
+                    </strong>
                     <small>{line.unit_price.toLocaleString("fr-FR")} FCFA par unité</small>
                   </div>
                   <div className={styles.quantity}>
-                    <button type="button" onClick={() => updateQuantity(line.id, line.quantity - 1)}>
+                    <button
+                      type="button"
+                      onClick={() => updateQuantity(line.id, line.quantity - 1)}
+                      aria-label="Diminuer la quantité"
+                    >
                       <Minus size={14} aria-hidden="true" />
                     </button>
                     <span>{line.quantity}</span>
-                    <button type="button" onClick={() => updateQuantity(line.id, line.quantity + 1)}>
+                    <button
+                      type="button"
+                      onClick={() => updateQuantity(line.id, line.quantity + 1)}
+                      aria-label="Augmenter la quantité"
+                    >
                       <Plus size={14} aria-hidden="true" />
                     </button>
                   </div>
                   <b>{(line.unit_price * line.quantity).toLocaleString("fr-FR")} FCFA</b>
-                  <button type="button" className={styles.remove} onClick={() => removeProduct(line.id)}>
+                  <button
+                    type="button"
+                    className={styles.remove}
+                    onClick={() => removeProduct(line.id)}
+                    aria-label={`Retirer ${line.name}`}
+                  >
                     <X size={16} aria-hidden="true" />
                   </button>
                 </div>
@@ -280,20 +382,81 @@ export default function SalesPage() {
 
           <div className={styles.totalRow}>
             <span>Total</span>
-            <strong>{total.toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} FCFA</strong>
+            <strong>
+              {total.toLocaleString("fr-FR", {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
+              })}{" "}
+              FCFA
+            </strong>
           </div>
 
           {message && (
-            <div className={styles.statusModalBackdrop} onClick={() => setMessage("")}>
-              <div className={`${styles.statusModal} ${noticeType === "success" ? styles.success : styles.error}`} role="status" aria-live="polite" onClick={(event) => event.stopPropagation()}>
-                <div className={styles.statusModalHeader}>{noticeType === "success" ? "Succès" : "Attention"}</div>
-                <h3 className={styles.statusModalTitle}>{noticeType === "success" ? "Vente enregistrée" : "Vente non validée"}</h3>
+            <div
+              className={styles.statusModalBackdrop}
+              onClick={() => setMessage("")}
+            >
+              <div
+                className={`${styles.statusModal} ${
+                  noticeType === "success" ? styles.success : styles.error
+                }`}
+                role="status"
+                aria-live="polite"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <div className={styles.statusModalHeader}>
+                  {noticeType === "success" ? "Succès" : "Attention"}
+                </div>
+                <h3 className={styles.statusModalTitle}>
+                  {noticeType === "success"
+                    ? "Vente enregistrée"
+                    : "Vente non validée"}
+                </h3>
                 <p className={styles.statusModalMessage}>{message}</p>
               </div>
             </div>
           )}
 
-          <div className={styles.checkoutActions}>{isPaymentStep ? <><button type="button" className={styles.secondaryButton} onClick={() => setIsPaymentStep(false)} disabled={isSubmitting}>Retour au panier</button><button type="button" className={styles.primaryButton} onClick={submitSale} disabled={isSubmitting || cart.length === 0 || !hasOpenSession || Boolean(requiresHandoff)}>{isSubmitting ? "Enregistrement…" : "Confirmer la vente"}</button></> : <button type="button" className={styles.primaryButton} onClick={continueToPayment} disabled={cart.length === 0 || !hasOpenSession || Boolean(requiresHandoff)}>Passer au paiement</button>}</div>
+          <div className={styles.checkoutActions}>
+            {isPaymentStep ? (
+              <>
+                <button
+                  type="button"
+                  className={styles.secondaryButton}
+                  onClick={() => setIsPaymentStep(false)}
+                  disabled={isSubmitting}
+                >
+                  Retour au panier
+                </button>
+                <button
+                  type="button"
+                  className={styles.primaryButton}
+                  onClick={submitSale}
+                  disabled={
+                    isSubmitting ||
+                    cart.length === 0 ||
+                    !hasOpenSession ||
+                    Boolean(requiresHandoff)
+                  }
+                >
+                  {isSubmitting ? "Enregistrement…" : "Confirmer la vente"}
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                className={styles.primaryButton}
+                onClick={continueToPayment}
+                disabled={
+                  cart.length === 0 ||
+                  !hasOpenSession ||
+                  Boolean(requiresHandoff)
+                }
+              >
+                Passer au paiement
+              </button>
+            )}
+          </div>
 
           <label className={styles.customerLabel} htmlFor="customer">
             Client <span>(facultatif)</span>
@@ -312,7 +475,75 @@ export default function SalesPage() {
           </select>
         </section>
       </div>
-      {requiresHandoff && handoff && <div className={styles.handoffBackdrop}><section className={styles.handoffModal} role="dialog" aria-modal="true" aria-labelledby="handoff-title"><p className={styles.stepEyebrow}>Passation de caisse</p><h2 id="handoff-title">Prendre connaissance avant de vendre</h2><p className={styles.handoffIntro}>La caisse reste ouverte. Vérifiez la situation laissée par le vendeur précédent, puis confirmez votre prise en charge.</p><div className={styles.handoffMetrics}><div><span>Solde théorique actuel</span><strong>{handoff.theoretical_balance.toLocaleString("fr-FR")} FCFA</strong></div><div><span>Ventes réalisées</span><strong>{handoff.sales_total.toLocaleString("fr-FR")} FCFA</strong></div><div><span>Encaissements</span><strong>{handoff.cash_collected.toLocaleString("fr-FR")} FCFA</strong></div><div><span>Dépenses / retraits</span><strong>{handoff.withdrawals.toLocaleString("fr-FR")} FCFA</strong></div></div><div className={styles.handoffDetails}><span>Vendeur précédent <strong>{handoff.previous_seller ?? "Ouverture de journée"}</strong></span><span>Heure de passation <strong>{new Date(handoff.handoff_at).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}</strong></span><span>Dernière opération <strong>{handoff.last_operation ? `${handoff.last_operation.type} · ${handoff.last_operation.amount.toLocaleString("fr-FR")} FCFA` : "Aucune opération"}</strong></span></div><button type="button" className={styles.primaryButton} onClick={acknowledgeHandoff} disabled={isAcknowledgingHandoff}>{isAcknowledgingHandoff ? "Enregistrement…" : "Je prends connaissance du solde et des opérations"}</button></section></div>}
+
+      {requiresHandoff && handoff && (
+        <div className={styles.handoffBackdrop}>
+          <section
+            className={styles.handoffModal}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="handoff-title"
+          >
+            <p className={styles.stepEyebrow}>Passation de caisse</p>
+            <h2 id="handoff-title">Prendre connaissance avant de vendre</h2>
+            <p className={styles.handoffIntro}>
+              La caisse reste ouverte. Vérifiez la situation laissée par le vendeur
+              précédent, puis confirmez votre prise en charge.
+            </p>
+            <div className={styles.handoffMetrics}>
+              <div>
+                <span>Solde théorique actuel</span>
+                <strong>{handoff.theoretical_balance.toLocaleString("fr-FR")} FCFA</strong>
+              </div>
+              <div>
+                <span>Ventes réalisées</span>
+                <strong>{handoff.sales_total.toLocaleString("fr-FR")} FCFA</strong>
+              </div>
+              <div>
+                <span>Encaissements</span>
+                <strong>{handoff.cash_collected.toLocaleString("fr-FR")} FCFA</strong>
+              </div>
+              <div>
+                <span>Dépenses / retraits</span>
+                <strong>{handoff.withdrawals.toLocaleString("fr-FR")} FCFA</strong>
+              </div>
+            </div>
+            <div className={styles.handoffDetails}>
+              <span>
+                Vendeur précédent{" "}
+                <strong>{handoff.previous_seller ?? "Ouverture de journée"}</strong>
+              </span>
+              <span>
+                Heure de passation{" "}
+                <strong>
+                  {new Date(handoff.handoff_at).toLocaleString("fr-FR", {
+                    dateStyle: "short",
+                    timeStyle: "short",
+                  })}
+                </strong>
+              </span>
+              <span>
+                Dernière opération{" "}
+                <strong>
+                  {handoff.last_operation
+                    ? `${handoff.last_operation.type} · ${handoff.last_operation.amount.toLocaleString("fr-FR")} FCFA`
+                    : "Aucune opération"}
+                </strong>
+              </span>
+            </div>
+            <button
+              type="button"
+              className={styles.primaryButton}
+              onClick={acknowledgeHandoff}
+              disabled={isAcknowledgingHandoff}
+            >
+              {isAcknowledgingHandoff
+                ? "Enregistrement…"
+                : "Je prends connaissance du solde et des opérations"}
+            </button>
+          </section>
+        </div>
+      )}
     </AppShell>
   );
 }
