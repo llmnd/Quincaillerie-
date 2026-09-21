@@ -160,6 +160,11 @@ def test_supplier_customer_and_sale_flow():
     sale_payload = sale_response.json()
     assert sale_payload["customer_id"] == customer_id
     assert sale_payload["total_amount"] == 30.0
+    invoices_response = client.get("/api/v1/accounting/invoices")
+    assert invoices_response.status_code == 200
+    sale_invoice = next(invoice for invoice in invoices_response.json() if invoice["sale_id"] == sale_payload["id"])
+    assert sale_invoice["status"] == "paid"
+    assert sale_invoice["amount_due"] == 0.0
     assert len(sale_payload["items"]) == 1
 
     journal_response = client.get("/api/v1/accounting/journal")
@@ -179,6 +184,38 @@ def test_supplier_customer_and_sale_flow():
     customer_list = client.get("/api/v1/customers")
     assert customer_list.status_code == 200
     assert any(item["id"] == customer_id for item in customer_list.json())
+
+
+def test_manual_wave_payment_is_completed_and_does_not_create_receivable():
+    product_response = client.post(
+        "/api/v1/products",
+        json={
+            "sku": f"WAVE-{uuid.uuid4().hex[:8].upper()}",
+            "name": "Produit Wave",
+            "description": "Paiement manuel Wave",
+            "category": "Vente",
+            "unit_price": 100.0,
+            "stock_quantity": 5,
+        },
+    )
+    assert product_response.status_code == 201
+
+    sale_response = client.post(
+        "/api/v1/sales",
+        json={
+            "status": "pending",
+            "payment_method": "wave",
+            "items": [{"product_id": product_response.json()["id"], "quantity": 1, "unit_price": 100.0}],
+        },
+    )
+    assert sale_response.status_code == 201
+    assert sale_response.json()["status"] == "completed"
+
+    accounts = {account["code"]: account["id"] for account in client.get("/api/v1/accounting/accounts").json()}
+    journal = client.get("/api/v1/accounting/journal").json()
+    sale_entry = next(entry for entry in journal if entry["source_type"] == "sale" and entry["source_id"] == sale_response.json()["id"])
+    assert accounts["411"] not in {line["account_id"] for line in sale_entry["lines"]}
+    assert accounts["521"] in {line["account_id"] for line in sale_entry["lines"]}
 
 
 def test_expense_creation_reaches_journal():
@@ -307,9 +344,12 @@ def test_invoice_update_and_delete_are_supported():
     assert sale_response.status_code == 201
     sale_id = sale_response.json()["id"]
 
-    invoice_response = client.post(f"/api/v1/accounting/invoices/from-sale/{sale_id}")
-    assert invoice_response.status_code == 201
-    invoice_id = invoice_response.json()["id"]
+    invoice_list_response = client.get("/api/v1/accounting/invoices")
+    assert invoice_list_response.status_code == 200
+    invoice_payload = next(invoice for invoice in invoice_list_response.json() if invoice["sale_id"] == sale_id)
+    assert invoice_payload["status"] == "paid"
+    assert invoice_payload["amount_due"] == 0.0
+    invoice_id = invoice_payload["id"]
 
     update_response = client.put(
         f"/api/v1/accounting/invoices/{invoice_id}",

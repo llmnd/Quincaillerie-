@@ -41,6 +41,7 @@ class InvoiceRead(BaseModel):
     subtotal: float
     tax_amount: float
     total_amount: float
+    amount_due: float
     lines: list[InvoiceLineRead]
 
 

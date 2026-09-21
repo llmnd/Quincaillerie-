@@ -2,15 +2,17 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Minus, Plus, X } from "lucide-react";
+import { Minus, Plus, Printer, X } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import AppShell from "../../components/AppShell";
-import { authHeaders } from "../../lib/auth";
+import { authHeaders, getStoredUser } from "../../lib/auth";
 import styles from "./page.module.css";
 
 type Product = { id: number; name: string; sku: string; image_url?: string | null; unit_price: number; stock_quantity: number };
 type Customer = { id: number; name: string; email?: string | null };
 type CartLine = Product & { quantity: number };
+type OrganizationProfile = { name: string; logo?: string | null; email?: string | null; phone?: string | null; address?: string | null };
+type PrintableReceipt = { saleId: number; items: CartLine[]; total: number; paymentMethod: string; organization: OrganizationProfile; sellerName: string };
 type Handoff = { theoretical_balance: number; sales_total: number; cash_collected: number; withdrawals: number; previous_seller?: string | null; handoff_at: string; last_operation?: { type: string; amount: number } | null; requires_acknowledgement: boolean };
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -32,6 +34,9 @@ export default function SalesPage() {
   const [isPaymentStep, setIsPaymentStep] = useState(false);
   const [handoff, setHandoff] = useState<Handoff | null>(null);
   const [isAcknowledgingHandoff, setIsAcknowledgingHandoff] = useState(false);
+  const [printableReceipt, setPrintableReceipt] = useState<PrintableReceipt | null>(null);
+  const [organization, setOrganization] = useState<OrganizationProfile>({ name: "Ma société", logo: null });
+  const [sellerName] = useState(() => getStoredUser()?.full_name || "Vendeur connecté");
   const [userRole] = useState<"admin" | "seller">(() => {
     if (typeof window === "undefined") return "seller";
     try {
@@ -72,10 +77,12 @@ export default function SalesPage() {
       loadResource<Customer[]>("/api/v1/customers", []),
       loadResource<{ status: string }[]>("/api/v1/cash/sessions", []),
       loadResource<Handoff | null>("/api/v1/cash/sessions/current/handoff", null),
-    ]).then(([customerData, sessionData, handoffData]) => {
+      loadResource<OrganizationProfile>("/api/v1/organization/profile", { name: "Ma société", logo: null }),
+    ]).then(([customerData, sessionData, handoffData, organizationData]) => {
       setCustomers(customerData);
       setHasOpenSession(sessionData.some((session) => session.status === "open"));
       setHandoff(handoffData);
+      if (organizationData.name?.trim()) setOrganization(organizationData);
     }).finally(() => setIsLoading(false));
   }, []);
 
@@ -83,10 +90,10 @@ export default function SalesPage() {
   const total = useMemo(() => cart.reduce((sum, line) => sum + line.unit_price * line.quantity, 0), [cart]);
 
   useEffect(() => {
-    if (!message) return;
+    if (!message || noticeType === "success") return;
     const timeout = window.setTimeout(() => setMessage(""), 4000);
     return () => window.clearTimeout(timeout);
-  }, [message]);
+  }, [message, noticeType]);
 
   function addProduct(product: Product) {
     setMessage("");
@@ -103,6 +110,33 @@ export default function SalesPage() {
 
   function removeProduct(productId: number) {
     setCart((current) => current.filter((line) => line.id !== productId));
+  }
+
+  function printReceipt(receipt: PrintableReceipt) {
+    const printFrame = document.createElement("iframe");
+    printFrame.setAttribute("title", "Aperçu du reçu");
+    printFrame.style.position = "fixed";
+    printFrame.style.right = "0";
+    printFrame.style.bottom = "0";
+    printFrame.style.width = "0";
+    printFrame.style.height = "0";
+    printFrame.style.border = "0";
+    document.body.appendChild(printFrame);
+    const printWindow = printFrame.contentWindow;
+    if (!printWindow) {
+      printFrame.remove();
+      return;
+    }
+    printWindow.addEventListener("afterprint", () => printFrame.remove(), { once: true });
+    const escapeHtml = (value: string) => value.replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character] ?? character);
+    const organizationName = escapeHtml(receipt.organization.name || "Ma société");
+    const seller = escapeHtml(receipt.sellerName);
+    const paymentMethod = escapeHtml(receipt.paymentMethod);
+    const contact = [receipt.organization.email, receipt.organization.phone, receipt.organization.address].filter(Boolean).map((value) => escapeHtml(value ?? "")).join(" · ");
+    const logo = receipt.organization.logo ? `<img class="logo" src="${escapeHtml(receipt.organization.logo)}" alt="Logo de ${organizationName}">` : `<div class="logoFallback">${escapeHtml((receipt.organization.name || "E").slice(0, 1).toUpperCase())}</div>`;
+    const lines = receipt.items.map((line) => `<tr><td><strong>${escapeHtml(line.name)}</strong><small>${escapeHtml(line.sku)}</small></td><td>${line.quantity}</td><td>${line.unit_price.toLocaleString("fr-FR")} FCFA</td><td>${(line.unit_price * line.quantity).toLocaleString("fr-FR")} FCFA</td></tr>`).join("");
+    printWindow.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Reçu de vente #${receipt.saleId}</title><style>@page{margin:16mm}body{font-family:Arial,sans-serif;color:#17202a;max-width:760px;margin:0 auto;padding:24px 16px}header{display:flex;justify-content:space-between;gap:28px;border-bottom:2px solid #17202a;padding-bottom:22px;margin-bottom:24px}.brand{display:flex;align-items:center;gap:14px}.logo,.logoFallback{width:58px;height:58px;object-fit:contain;border-radius:8px;border:1px solid #d8dee5}.logoFallback{display:grid;place-items:center;background:#17202a;color:#fff;font-size:25px;font-weight:700}.brand h1{font-size:22px;margin:0 0 6px}.brand p,.meta p{margin:3px 0;color:#687583;font-size:12px}.meta{text-align:right}.meta strong{display:block;margin-bottom:7px;font-size:14px;color:#17202a}.receiptTitle{margin:0 0 4px;font-size:25px;letter-spacing:.04em}.sectionLabel{margin:0 0 8px;color:#687583;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}table{width:100%;border-collapse:collapse;margin:18px 0 24px}th{padding:10px 8px;background:#eef2f5;color:#52606d;font-size:11px;text-align:left;text-transform:uppercase}td{padding:12px 8px;border-bottom:1px solid #e1e6eb;font-size:13px}td small{display:block;margin-top:4px;color:#83909c;font-size:11px}th:nth-child(n+2),td:nth-child(n+2){text-align:right}.summary{margin-left:auto;width:min(100%,320px);border-top:2px solid #17202a;padding-top:12px}.summaryRow{display:flex;justify-content:space-between;padding:5px 0;color:#52606d;font-size:13px}.summaryTotal{margin-top:6px;padding-top:10px;border-top:1px solid #d8dee5;color:#17202a;font-size:18px;font-weight:700}.payment{margin-top:22px;padding:12px 14px;background:#eef7f2;border-left:3px solid #2e9d69;color:#236b4a;font-size:13px}.thanks{text-align:center;margin:34px 0 0;color:#52606d;font-size:14px}.thanks strong{display:block;margin-bottom:5px;color:#17202a;font-size:16px}@media print{body{padding:0}}</style></head><body><header><div class="brand">${logo}<div><h1>${organizationName}</h1><p>${contact || ""}</p></div></div><div class="meta"><h2 class="receiptTitle">REÇU DE VENTE</h2><p>Vente #${receipt.saleId}</p><p>${new Date().toLocaleString("fr-FR")}</p><p>Vendeur : ${seller}</p></div></header><p class="sectionLabel">Articles achetés</p><table><thead><tr><th>Produit</th><th>Qté</th><th>Prix unitaire</th><th>Total</th></tr></thead><tbody>${lines}</tbody></table><div class="summary"><div class="summaryRow summaryTotal"><span>Total payé</span><strong>${receipt.total.toLocaleString("fr-FR")} FCFA</strong></div></div><div class="payment">Paiement confirmé : <strong>${paymentMethod}</strong></div><div class="thanks"><strong>Merci pour votre achat</strong>À bientôt chez ${organizationName}.</div><script>window.onload=function(){window.print();window.onafterprint=function(){window.close()}}</script></body></html>`);
+    printWindow.document.close();
   }
 
   function continueToPayment() {
@@ -129,7 +163,7 @@ export default function SalesPage() {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders() },
         credentials: "include",
-        body: JSON.stringify({ customer_id: selectedCustomer ? Number(selectedCustomer) : null, status: "pending", discount_amount: Number(discount), payment_method: paymentMethod, items: cart.map((line) => ({ product_id: line.id, quantity: line.quantity, unit_price: line.unit_price })) }),
+        body: JSON.stringify({ customer_id: selectedCustomer ? Number(selectedCustomer) : null, status: "completed", discount_amount: Number(discount), payment_method: paymentMethod, items: cart.map((line) => ({ product_id: line.id, quantity: line.quantity, unit_price: line.unit_price })) }),
       });
 
       const payload = await response.json().catch(() => ({}));
@@ -154,8 +188,9 @@ export default function SalesPage() {
       void queryClient.invalidateQueries({ queryKey: ["products", "catalog"] });
       setSelectedCustomer("");
       setIsPaymentStep(false);
+      setPrintableReceipt({ saleId: payload.id, items: cart, total: Number(payload.total_amount), paymentMethod, organization, sellerName });
       setNoticeType("success");
-      setMessage("Vente créée et enregistrée dans la session de caisse.");
+      setMessage("Vente enregistrée avec succès.");
     } catch {
       setNoticeType("error");
       setMessage("La vente n'a pas pu être créée. Vérifiez les informations saisies.");
@@ -394,7 +429,7 @@ export default function SalesPage() {
           {message && (
             <div
               className={styles.statusModalBackdrop}
-              onClick={() => setMessage("")}
+              onClick={() => noticeType !== "success" && setMessage("")}
             >
               <div
                 className={`${styles.statusModal} ${
@@ -406,6 +441,14 @@ export default function SalesPage() {
               >
                 <div className={styles.statusModalHeader}>
                   {noticeType === "success" ? "Succès" : "Attention"}
+                  <button
+                    type="button"
+                    className={styles.statusModalClose}
+                    onClick={() => setMessage("")}
+                    aria-label="Fermer le message"
+                  >
+                    <X size={18} aria-hidden="true" />
+                  </button>
                 </div>
                 <h3 className={styles.statusModalTitle}>
                   {noticeType === "success"
@@ -413,6 +456,16 @@ export default function SalesPage() {
                     : "Vente non validée"}
                 </h3>
                 <p className={styles.statusModalMessage}>{message}</p>
+                {noticeType === "success" && printableReceipt && (
+                  <button
+                    type="button"
+                    className={styles.printInvoiceButton}
+                    onClick={() => printReceipt(printableReceipt)}
+                  >
+                    <Printer size={16} aria-hidden="true" />
+                    Imprimer le reçu
+                  </button>
+                )}
               </div>
             </div>
           )}

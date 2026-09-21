@@ -797,14 +797,12 @@
   display: grid;
   place-items: center;
   padding: 24px;
-  background: rgba(2, 6, 23, 0.78);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: rgb(2, 6, 23);
   animation: fadeIn 0.2s var(--ease);
 }
 
 .statusModal {
-  width: min(440px, 100%);
+  width: min(660px, 100%);
   padding: 26px 24px;
   border: 1px solid var(--line-2);
   border-radius: var(--r-lg);
@@ -827,11 +825,11 @@
 .statusModalHeader {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   gap: 10px;
   margin-bottom: 14px;
   color: var(--ink-4);
-  font-size: 0.62rem;
+  font-size: 0.9rem;
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -840,11 +838,30 @@
 .statusModal.success .statusModalHeader { color: var(--good); }
 .statusModal.error .statusModalHeader { color: var(--danger); }
 
+.statusModalClose {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin: -6px -6px 0 0;
+  padding: 0;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--ink-3);
+  cursor: pointer;
+}
+
+.statusModalClose:hover {
+  border-color: var(--line-3);
+  color: var(--ink-1);
+}
+
 .statusModalTitle {
   margin: 0 0 8px;
   color: var(--ink-1);
-  font-size: 1.35rem;
-  font-weight: 500;
+  font-size: 1.7rem;
+  font-weight: 600;
   letter-spacing: -0.03em;
   line-height: 1.15;
 }
@@ -855,8 +872,29 @@
 .statusModalMessage {
   margin: 0;
   color: var(--ink-3);
-  font-size: 0.85rem;
+  font-size: 1.5rem;
   line-height: 1.55;
+}
+
+.printInvoiceButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 18px;
+  padding: 10px 14px;
+  border: 1px solid var(--good-line);
+  border-radius: var(--r-sm);
+  background: var(--good-soft);
+  color: var(--good);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.printInvoiceButton:hover {
+  background: rgba(100, 238, 174, 0.16);
 }
 
 @keyframes statusIn {

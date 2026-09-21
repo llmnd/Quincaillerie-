@@ -1,11 +1,11 @@
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.api.cash_routes import get_open_cash_session, handoff_is_acknowledged
-from app.core.accounting import get_or_create_default_accounts
+from app.core.accounting import get_or_create_default_accounts, payment_account_code
 from app.api.deps import get_db, require_module, require_roles
 from app.models.accounting import Account, Invoice, InvoiceLine, JournalEntry, JournalLine, Tax
 from app.models.cash import CashRegister
@@ -460,25 +460,31 @@ def create_invoice_from_sale(
         raise HTTPException(status_code=404, detail="Tax not found")
     subtotal = float(sale.total_amount)
     tax_amount = round(subtotal * ((tax.rate if tax else 0.0) / 100), 2)
+    sale.status = "completed"
     invoice_count = db.scalar(select(func.count(Invoice.id)).where(Invoice.organization_id == current_user.organization_id)) or 0
-    invoice = Invoice(organization_id=current_user.organization_id, number=f"FAC-{datetime.utcnow():%Y}-{invoice_count + 1:06d}", sale_id=sale.id, customer_id=sale.customer_id, tax_id=tax.id if tax else None, subtotal=subtotal, tax_amount=tax_amount, total_amount=subtotal + tax_amount)
+    invoice = Invoice(organization_id=current_user.organization_id, number=f"FAC-{datetime.utcnow():%Y}-{invoice_count + 1:06d}", sale_id=sale.id, customer_id=sale.customer_id, tax_id=tax.id if tax else None, status="paid", subtotal=subtotal, tax_amount=tax_amount, total_amount=subtotal + tax_amount)
     db.add(invoice)
     db.flush()
     for item in sale.items:
         db.add(InvoiceLine(organization_id=current_user.organization_id, invoice_id=invoice.id, product_id=item.product_id, description=f"Produit #{item.product_id}", quantity=item.quantity, unit_price=item.unit_price, line_total=item.line_total))
-    account_rows = db.scalars(select(Account).where(Account.organization_id == current_user.organization_id, Account.code.in_(["411", "4431", "701"]))).all()
+    account_codes = [payment_account_code(sale.payment_method), "4431", "701"]
+    account_rows = db.scalars(select(Account).where(Account.organization_id == current_user.organization_id, Account.code.in_(account_codes))).all()
     accounts = {account.code: account for account in account_rows}
-    if len(accounts) != 3:
+    if len(accounts) != len(set(account_codes)):
         raise HTTPException(status_code=500, detail="Default accounting accounts are missing")
     existing_sale_entry = db.scalar(select(JournalEntry).where(JournalEntry.organization_id == current_user.organization_id, JournalEntry.source_type == "sale", JournalEntry.source_id == sale.id))
-    if existing_sale_entry is None:
-        entry = JournalEntry(organization_id=current_user.organization_id, reference=f"VE-{invoice.number}", journal="VENTES", description=f"Facture {invoice.number}", source_type="invoice", source_id=invoice.id)
+    entry = existing_sale_entry
+    if entry is None:
+        entry = JournalEntry(organization_id=current_user.organization_id, reference=f"VE-{invoice.number}", journal="VENTES", description=f"Facture {invoice.number}", source_type="sale", source_id=sale.id)
         db.add(entry)
         db.flush()
-        db.add(JournalLine(organization_id=current_user.organization_id, entry_id=entry.id, account_id=accounts["411"].id, label=f"Client facture {invoice.number}", debit=invoice.total_amount, credit=0))
-        db.add(JournalLine(organization_id=current_user.organization_id, entry_id=entry.id, account_id=accounts["701"].id, label=f"Vente facture {invoice.number}", debit=0, credit=invoice.subtotal))
-        if invoice.tax_amount:
-            db.add(JournalLine(organization_id=current_user.organization_id, entry_id=entry.id, account_id=accounts["4431"].id, label=f"TVA facture {invoice.number}", debit=0, credit=invoice.tax_amount))
+    for line in list(entry.lines):
+        db.delete(line)
+    db.flush()
+    db.add(JournalLine(organization_id=current_user.organization_id, entry_id=entry.id, account_id=accounts[payment_account_code(sale.payment_method)].id, label=f"Encaissement facture {invoice.number}", debit=invoice.total_amount, credit=0))
+    db.add(JournalLine(organization_id=current_user.organization_id, entry_id=entry.id, account_id=accounts["701"].id, label=f"Vente facture {invoice.number}", debit=0, credit=invoice.subtotal))
+    if invoice.tax_amount:
+        db.add(JournalLine(organization_id=current_user.organization_id, entry_id=entry.id, account_id=accounts["4431"].id, label=f"TVA facture {invoice.number}", debit=0, credit=invoice.tax_amount))
     db.commit()
     return db.scalar(select(Invoice).options(selectinload(Invoice.lines)).where(Invoice.id == invoice.id, Invoice.organization_id == current_user.organization_id))
 
@@ -533,6 +539,8 @@ def update_invoice(
     invoice.subtotal = subtotal
     invoice.tax_amount = tax_amount
     invoice.total_amount = subtotal + tax_amount
+    invoice.status = "paid"
+    sale.status = "completed"
     invoice.issue_date = datetime.utcnow()
 
     for line in list(invoice.lines):
@@ -541,7 +549,13 @@ def update_invoice(
     for item in sale.items:
         db.add(InvoiceLine(organization_id=current_user.organization_id, invoice_id=invoice.id, product_id=item.product_id, description=f"Produit #{item.product_id}", quantity=item.quantity, unit_price=item.unit_price, line_total=item.line_total))
 
-    entry = db.scalar(select(JournalEntry).where(JournalEntry.organization_id == current_user.organization_id, JournalEntry.source_type == "invoice", JournalEntry.source_id == invoice.id))
+    entry = db.scalar(select(JournalEntry).where(
+        JournalEntry.organization_id == current_user.organization_id,
+        or_(
+            (JournalEntry.source_type == "sale") & (JournalEntry.source_id == sale.id),
+            (JournalEntry.source_type == "invoice") & (JournalEntry.source_id == invoice.id),
+        ),
+    ))
     if entry is not None:
         for line in list(entry.lines):
             db.delete(line)
@@ -549,15 +563,16 @@ def update_invoice(
         db.delete(entry)
         db.flush()
 
-    account_rows = db.scalars(select(Account).where(Account.organization_id == current_user.organization_id, Account.code.in_(["411", "4431", "701"]))).all()
+    account_codes = [payment_account_code(sale.payment_method), "4431", "701"]
+    account_rows = db.scalars(select(Account).where(Account.organization_id == current_user.organization_id, Account.code.in_(account_codes))).all()
     accounts = {account.code: account for account in account_rows}
-    if len(accounts) != 3:
+    if len(accounts) != len(set(account_codes)):
         raise HTTPException(status_code=500, detail="Default accounting accounts are missing")
 
-    new_entry = JournalEntry(organization_id=current_user.organization_id, reference=f"VE-{invoice.number}", journal="VENTES", description=f"Facture {invoice.number}", source_type="invoice", source_id=invoice.id)
+    new_entry = JournalEntry(organization_id=current_user.organization_id, reference=f"VE-{invoice.number}", journal="VENTES", description=f"Facture {invoice.number}", source_type="sale", source_id=sale.id)
     db.add(new_entry)
     db.flush()
-    db.add(JournalLine(organization_id=current_user.organization_id, entry_id=new_entry.id, account_id=accounts["411"].id, label=f"Client facture {invoice.number}", debit=invoice.total_amount, credit=0))
+    db.add(JournalLine(organization_id=current_user.organization_id, entry_id=new_entry.id, account_id=accounts[payment_account_code(sale.payment_method)].id, label=f"Encaissement facture {invoice.number}", debit=invoice.total_amount, credit=0))
     db.add(JournalLine(organization_id=current_user.organization_id, entry_id=new_entry.id, account_id=accounts["701"].id, label=f"Vente facture {invoice.number}", debit=0, credit=invoice.subtotal))
     if invoice.tax_amount:
         db.add(JournalLine(organization_id=current_user.organization_id, entry_id=new_entry.id, account_id=accounts["4431"].id, label=f"TVA facture {invoice.number}", debit=0, credit=invoice.tax_amount))

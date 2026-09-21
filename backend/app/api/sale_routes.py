@@ -3,14 +3,15 @@ from typing import Any
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, require_module, require_roles
 from app.api.cash_routes import get_open_cash_session, handoff_is_acknowledged
-from app.core.accounting import create_sale_journal
+from app.core.accounting import MANUAL_PAYMENT_METHODS, create_sale_journal
 from app.models.cash import AuditLog, CashOperation, CashSession
+from app.models.accounting import Invoice, InvoiceLine
 from app.models.farming import FarmingBatch
 from app.models.user import User
 from app.models.product import Product
@@ -59,12 +60,12 @@ def create_sale(payload: SaleCreate, db: Session = Depends(get_db), current_user
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Open a cash session before creating a sale")
     if current_user.role != "admin" and not handoff_is_acknowledged(session.id, current_user.id, db):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Acknowledge the cash handoff before creating a sale")
-    if payload.payment_method not in {"cash", "card", "mobile_money", "wave", "orange_money", "other"}:
+    if payload.payment_method not in MANUAL_PAYMENT_METHODS:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported payment method")
 
     if payload.farming_batch_id is not None and db.scalar(select(FarmingBatch.id).where(FarmingBatch.id == payload.farming_batch_id, FarmingBatch.organization_id == current_user.organization_id)) is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Farming batch not found")
-    sale = Sale(organization_id=current_user.organization_id, customer_id=payload.customer_id, farming_batch_id=payload.farming_batch_id, user_id=current_user.id, session_id=session.id, status=payload.status, notes=payload.notes, discount_amount=payload.discount_amount, payment_method=payload.payment_method)
+    sale = Sale(organization_id=current_user.organization_id, customer_id=payload.customer_id, farming_batch_id=payload.farming_batch_id, user_id=current_user.id, session_id=session.id, status="completed", notes=payload.notes, discount_amount=payload.discount_amount, payment_method=payload.payment_method)
     db.add(sale)
     db.flush()
 
@@ -109,8 +110,34 @@ def create_sale(payload: SaleCreate, db: Session = Depends(get_db), current_user
             sale_id=sale.id,
             amount=sale.total_amount,
             payment_method=payload.payment_method,
-            customer_id=sale.customer_id,
         )
+        invoice_count = db.scalar(
+            select(func.count(Invoice.id)).where(Invoice.organization_id == current_user.organization_id)
+        ) or 0
+        invoice = Invoice(
+            organization_id=current_user.organization_id,
+            number=f"FAC-{datetime.utcnow():%Y}-{invoice_count + 1:06d}",
+            sale_id=sale.id,
+            customer_id=sale.customer_id,
+            status="paid",
+            subtotal=sale.total_amount,
+            tax_amount=0.0,
+            total_amount=sale.total_amount,
+        )
+        db.add(invoice)
+        db.flush()
+        for item in sale.items:
+            db.add(
+                InvoiceLine(
+                    organization_id=current_user.organization_id,
+                    invoice_id=invoice.id,
+                    product_id=item.product_id,
+                    description=f"Produit #{item.product_id}",
+                    quantity=item.quantity,
+                    unit_price=item.unit_price,
+                    line_total=item.line_total,
+                )
+            )
         db.add(CashOperation(organization_id=current_user.organization_id, register_id=session.register_id, session_id=session.id, user_id=current_user.id, operation_type="sale", amount=sale.total_amount, payment_method=payload.payment_method, reason=f"Sale #{sale.id}"))
         db.add(AuditLog(organization_id=current_user.organization_id, user_id=current_user.id, register_id=session.register_id, session_id=session.id, action="sale.created", entity_type="sale", entity_id=sale.id, amount=sale.total_amount, after_data=f"payment_method={payload.payment_method}"))
         db.commit()
@@ -136,7 +163,10 @@ def update_sale(sale_id: int, payload: SaleUpdate, db: Session = Depends(get_db)
     if sale is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sale not found")
 
-    for field, value in payload.model_dump(exclude_unset=True).items():
+    updates = payload.model_dump(exclude_unset=True)
+    if updates.get("status") == "pending":
+        updates["status"] = "completed"
+    for field, value in updates.items():
         setattr(sale, field, value)
 
     db.commit()

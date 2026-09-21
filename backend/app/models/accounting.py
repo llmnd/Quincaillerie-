@@ -34,6 +34,10 @@ class Invoice(Base):
     total_amount: Mapped[float] = mapped_column(Float, nullable=False)
     lines: Mapped[list["InvoiceLine"]] = relationship(back_populates="invoice", cascade="all, delete-orphan")
 
+    @property
+    def amount_due(self) -> float:
+        return 0.0 if self.status == "paid" else self.total_amount
+
 
 class InvoiceLine(Base):
     __tablename__ = "invoice_lines"

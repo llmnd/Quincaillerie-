@@ -15,6 +15,12 @@ DEFAULT_ACCOUNTS = (
     ("701", "Ventes de marchandises", "7"),
 )
 
+MANUAL_PAYMENT_METHODS = {"cash", "card", "mobile_money", "wave", "orange_money", "other"}
+
+
+def payment_account_code(payment_method: str) -> str:
+    return "571" if payment_method == "cash" else "521"
+
 
 def cleanup_duplicate_accounts(db: Session) -> None:
     records = db.execute(
@@ -73,7 +79,7 @@ def create_sale_journal(
     sale_id: int,
     amount: float,
     payment_method: str,
-    customer_id: int | None,
+    tax_amount: float = 0.0,
 ) -> JournalEntry:
     existing = db.scalar(
         select(JournalEntry).where(
@@ -86,8 +92,9 @@ def create_sale_journal(
         return existing
 
     accounts = get_or_create_default_accounts(db, organization_id)
-    debit_code = "411" if payment_method == "other" and customer_id is not None else "571"
-    debit_label = "Client à recouvrer" if debit_code == "411" else "Encaissement vente"
+    debit_code = payment_account_code(payment_method)
+    debit_label = "Encaissement vente"
+    subtotal = round(amount - tax_amount, 2)
     entry = JournalEntry(
         organization_id=organization_id,
         reference=f"VE-{sale_id}",
@@ -99,5 +106,7 @@ def create_sale_journal(
     db.add(entry)
     db.flush()
     db.add(JournalLine(organization_id=organization_id, entry_id=entry.id, account_id=accounts[debit_code].id, label=debit_label, debit=amount, credit=0))
-    db.add(JournalLine(organization_id=organization_id, entry_id=entry.id, account_id=accounts["701"].id, label=f"Chiffre d'affaires vente #{sale_id}", debit=0, credit=amount))
+    db.add(JournalLine(organization_id=organization_id, entry_id=entry.id, account_id=accounts["701"].id, label=f"Chiffre d'affaires vente #{sale_id}", debit=0, credit=subtotal))
+    if tax_amount:
+        db.add(JournalLine(organization_id=organization_id, entry_id=entry.id, account_id=accounts["4431"].id, label=f"TVA vente #{sale_id}", debit=0, credit=tax_amount))
     return entry
