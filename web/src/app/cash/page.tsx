@@ -206,6 +206,13 @@ export default function CashPage() {
     };
   }, [openSession?.id]);
 
+  useEffect(() => {
+    const closeRequested = new URLSearchParams(window.location.search).get("close") === "1";
+    if (!isLoading && openSession && closeRequested) {
+      setIsCloseModalOpen(true);
+    }
+  }, [isLoading, openSession]);
+
   async function open(event: FormEvent) {
     event.preventDefault();
     const response = await fetch(`${API_URL}/api/v1/cash/sessions/open`, {
@@ -292,6 +299,11 @@ export default function CashPage() {
     setCloseNote("");
     setIsClosing(false);
     await load();
+    if (new URLSearchParams(window.location.search).get("close") === "1") {
+      window.sessionStorage.removeItem("quincaillerie_sale_draft");
+      window.sessionStorage.removeItem("quincaillerie_pos_return_path");
+      router.replace("/workspace");
+    }
   }
 
   async function saveCashOperation(event: FormEvent<HTMLFormElement>) {

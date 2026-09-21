@@ -73,6 +73,7 @@ export default function WorkspacePage() {
     setUser((getStoredUser() as User | null) ?? null);
   }, []);
 
+
   /* Fermeture du menu : clic extérieur + touche Échap */
   useEffect(() => {
     if (!menuOpen) return;
@@ -136,6 +137,7 @@ export default function WorkspacePage() {
     }
     router.push("/");
   }
+
 
   return (
     <AppShell hideSidebar hideTopbar hideContentPadding showBreadcrumbWhenHidden>

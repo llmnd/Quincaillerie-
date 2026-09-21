@@ -7,6 +7,7 @@
    Tokens globaux
    ------------------------------------------------------------------------- */
 .pageHeader,
+.salesPage,
 .salesLayout,
 .sessionNotice,
 .handoffBackdrop,
@@ -54,6 +55,218 @@
   --r-lg: 12px;
   --r-xl: 16px;
   --r-full: 999px;
+}
+
+.posMenuWrap {
+  position: fixed;
+  z-index: 30;
+  top: 16px;
+  right: 20px;
+}
+
+.posMenuButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--line-3);
+  border-radius: var(--r-md);
+  background: rgba(17, 21, 28, 0.94);
+  color: var(--ink-1);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+}
+
+.posMenuInline {
+  position: relative;
+  top: auto;
+  right: auto;
+  margin-left: auto;
+}
+
+.posMenuDropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  display: grid;
+  min-width: 210px;
+  padding: 6px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  background: #1b2029;
+  box-shadow: var(--shadow-lg);
+}
+
+.posMenuDropdown button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.posMenuDropdown button:hover {
+  background: var(--bg-hover);
+  color: var(--ink-1);
+}
+
+.posMenuDropdown .posMenuDanger { color: var(--danger); }
+
+.posLockScreen {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  width: 100vw;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 24px;
+  border: 0;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(27, 75, 93, 0.92), transparent 34%),
+    radial-gradient(circle at 78% 12%, rgba(42, 24, 61, 0.8), transparent 30%),
+    #070d19;
+  color: #f1f4f8;
+}
+
+.posLockScreen::backdrop { background: #070d19; }
+
+.posLockCard {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  width: min(390px, 100%);
+  padding: 48px 34px 42px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  background: rgba(36, 40, 53, 0.96);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.5);
+  text-align: center;
+}
+
+.posLockCard svg { color: #f1f4f8; }
+.posLockCard h1 { margin: 0; color: #f1f4f8; font-size: 25px; font-weight: 700; letter-spacing: -0.02em; }
+.posLockCard p { margin: 0 0 10px; color: #b6bfcd; font-size: 14px; }
+.posLockCard button {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: #303541;
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.posLockCard button:hover { background: #3a404d; }
+.posLockCard .posLockBackendButton {
+  min-height: 36px;
+  margin-top: 2px;
+  background: transparent;
+  color: #b6bfcd;
+  font-weight: 600;
+}
+.posLockCard .posLockBackendButton:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #f1f4f8;
+}
+
+.salesEntry {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--bg-1);
+  color: var(--ink-1);
+}
+
+.salesEntryCard {
+  width: min(100%, 480px);
+  padding: 32px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-lg);
+  background: var(--bg-2);
+  box-shadow: var(--shadow-lg);
+  text-align: center;
+}
+
+.salesEntryCard h1 { margin: 8px 0 10px; font-size: 24px; }
+.salesEntryCard p { margin: 0; color: var(--ink-3); font-size: 14px; line-height: 1.5; }
+.salesEntryActions { display: flex; justify-content: center; gap: 10px; margin-top: 26px; }
+
+.salesLoading .salesEntryCard::after {
+  content: "";
+  display: block;
+  width: 22px;
+  height: 22px;
+  margin: 22px auto 0;
+  border: 2px solid var(--line-2);
+  border-top-color: var(--accent-hi);
+  border-radius: 50%;
+  animation: salesLoadingSpin 800ms linear infinite;
+}
+
+@keyframes salesLoadingSpin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 520px) {
+  .salesEntryActions { flex-direction: column; }
+  .salesEntryActions button { width: 100%; }
+}
+
+.posCloseBackdrop {
+  position: fixed;
+  z-index: 40;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(5, 7, 10, 0.78);
+}
+
+.posCloseDialog {
+  position: relative;
+  display: grid;
+  gap: 12px;
+  width: min(100%, 430px);
+  padding: 28px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-lg);
+  background: var(--bg-2);
+  color: var(--ink-1);
+  box-shadow: var(--shadow-lg);
+}
+
+.posCloseDialog h2,
+.posCloseDialog p { margin: 0; }
+.posCloseDialog p { color: var(--ink-3); font-size: 13px; line-height: 1.5; }
+.posCloseDialog small { color: var(--ink-3); }
+.posCloseDialog label { color: var(--ink-2); font-size: 12px; font-weight: 700; }
+.posCloseDialog input { min-height: 42px; padding: 0 11px; border: 1px solid var(--line-3); border-radius: var(--r-sm); background: var(--bg-1); color: var(--ink-1); font: inherit; }
+.posCloseDismiss { position: absolute; top: 14px; right: 14px; border: 0; background: transparent; color: var(--ink-3); cursor: pointer; }
+.posCloseActions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+
+@media (max-width: 640px) {
+  .posMenuWrap { top: 10px; right: 10px; }
+  .posCloseActions { flex-direction: column-reverse; }
+  .posCloseActions button { width: 100%; }
 }
 
 /* ==========================================================================
@@ -106,7 +319,7 @@
    AVIS SESSION
    ========================================================================== */
 .sessionNotice {
-  margin-bottom: 18px;
+  margin-bottom: 12px;
   padding: 12px 16px;
   border: 1px solid var(--good-line);
   border-radius: var(--r-md);
@@ -114,6 +327,7 @@
   color: var(--ink-2);
   font-size: 0.8rem;
   line-height: 1.55;
+  flex: 0 0 auto;
 }
 
 .sessionNotice strong { color: var(--good); font-weight: 700; }
@@ -128,37 +342,73 @@
 .sessionNotice a:hover { color: #ffffff; }
 
 /* ==========================================================================
-   LAYOUT VENTES
+   LAYOUT VENTES — PLEIN ÉCRAN
    ========================================================================== */
-.salesLayout {
-  display: grid;
-  grid-template-columns: minmax(340px, 0.68fr) minmax(0, 1.32fr);
-  gap: 18px;
-  align-items: start;
+.salesPage {
+  --bg-1: #11151c;
+  --bg-2: #161a22;
+  --bg-3: #1b2029;
+  --bg-hover: #1e2330;
+  --line-1: rgba(255, 255, 255, 0.05);
+  --line-2: rgba(255, 255, 255, 0.08);
+  --line-3: rgba(255, 255, 255, 0.14);
+  --ink-1: #f1f4f8;
+  --ink-2: #d6dce5;
+  --ink-3: #9aa4b2;
+  --ink-4: #6f7a8a;
+  --ink-5: #4f5866;
+  --accent: #a46aa3;
+  --accent-hi: #c497c2;
+  --accent-soft: rgba(164, 106, 163, 0.1);
+  --accent-line: rgba(164, 106, 163, 0.35);
+  --accent-ink: #2a1629;
+  --good: #64eeae;
+  --danger: #ff6b6b;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --r-sm: 6px;
+  --r-md: 8px;
+  --r-lg: 12px;
+  --r-full: 999px;
+
+  width: 100%;
+  min-height: 100dvh;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 12px 20px 16px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg-1);
+  color: var(--ink-2);
 }
 
-.salesPage {
-  width: 100%;
-  padding: 10px 36px 28px;
+.salesLayout {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(340px, 400px) minmax(0, 1fr);
+  gap: 14px;
+  align-items: stretch;
+  overflow: hidden;
 }
 
 .catalogPanel,
 .cartPanel {
   min-width: 0;
-  padding: 22px 20px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 18px 18px 16px;
   border: 1px solid var(--line-1);
   border-radius: var(--r-md);
   background: var(--bg-1);
+  overflow: hidden;
 }
 
 .catalogPanel { order: 2; }
 
 .cartPanel {
   order: 1;
-  position: sticky;
-  top: 16px;
-  display: flex;
-  flex-direction: column;
   border-top: 2px solid var(--accent);
 }
 
@@ -171,8 +421,9 @@
   justify-content: space-between;
   gap: 16px;
   padding-bottom: 14px;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   border-bottom: 1px solid var(--line-1);
+  flex: 0 0 auto;
 }
 
 .panelHeader h2 {
@@ -198,6 +449,7 @@
   display: flex;
   align-items: center;
   margin-bottom: 10px;
+  flex: 0 0 auto;
 }
 
 .catalogToolbar input {
@@ -240,6 +492,7 @@
   margin-bottom: 12px;
   overflow-x: auto;
   scrollbar-width: none;
+  flex: 0 0 auto;
 }
 
 .categoryBar::-webkit-scrollbar { display: none; }
@@ -289,17 +542,18 @@
 .resetFilters:hover { background: var(--bg-2); color: var(--ink-1); }
 
 /* ==========================================================================
-   LISTE PRODUITS — grille de petites cartes
+   LISTE PRODUITS — remplie la colonne, scroll interne
    ========================================================================== */
 .productList {
   position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
   align-content: start;
-  gap: 8px;
-  height: min(56vh, 560px);
+  gap: 9px;
   overflow-y: auto;
-  padding: 2px 4px 2px 0;
+  padding: 2px 6px 4px 0;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
 }
@@ -370,11 +624,20 @@
 
 .productRow:disabled { cursor: not-allowed; opacity: 0.38; }
 
+.productRowActive {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+}
+.productRowActive:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
 .productImageWrap {
   position: relative;
   display: block;
   width: 100%;
-  height: 68px;
+  height: 76px;
   overflow: hidden;
   background: var(--bg-3);
   flex: 0 0 auto;
@@ -497,7 +760,7 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  min-height: 116px;
+  min-height: 128px;
   border: 1px solid var(--line-1);
   border-radius: var(--r-sm);
   background: var(--bg-2);
@@ -521,7 +784,7 @@
 .skeletonImage {
   display: block;
   width: 100%;
-  height: 68px;
+  height: 76px;
   background: rgba(255, 255, 255, 0.04);
 }
 
@@ -540,14 +803,14 @@
 }
 
 /* ==========================================================================
-   PANIER — LIGNES ULTRA SIMPLES
+   PANIER — lignes avec stepper + footer épinglé
    ========================================================================== */
 .cartLines {
-  flex: 0 0 auto;
-  height: min(42vh, 420px);
-  min-height: 140px;
-  margin: 4px 0 16px;
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 6px 0 0;
   overflow-y: auto;
+  padding-right: 4px;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
 }
@@ -560,7 +823,7 @@
 
 .emptyCart {
   display: grid;
-  min-height: 120px;
+  min-height: 140px;
   place-items: center;
   gap: 8px;
   padding: 18px;
@@ -571,6 +834,7 @@
 }
 
 .emptyCart p { margin: 0; font-size: 0.8rem; }
+.emptyCart small { color: var(--ink-5); font-size: 0.7rem; }
 
 .cartIcon {
   display: grid;
@@ -583,10 +847,10 @@
   border: 1px solid var(--line-2);
 }
 
-/* Ligne unique : quantité + nom + prix + X */
+/* Ligne unique : stepper + nom + prix + X */
 .cartLine {
   display: grid;
-  grid-template-columns: 20px minmax(0, 1fr) auto 26px;
+  grid-template-columns: auto minmax(0, 1fr) auto 26px;
   align-items: center;
   gap: 10px;
   padding: 9px 0;
@@ -595,12 +859,40 @@
 
 .cartLine:last-child { border-bottom: 0; }
 
-.cartLineQty {
-  color: var(--ink-2);
+/* Stepper +/- */
+.qtyControl {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  background: var(--bg-2);
+  overflow: hidden;
+}
+
+.qtyBtn {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink-3);
+  cursor: pointer;
+  transition: background 140ms var(--ease), color 140ms var(--ease);
+}
+.qtyBtn:hover { background: var(--bg-3); color: var(--ink-1); }
+.qtyBtn:active { transform: scale(0.94); }
+
+.qtyValue {
+  min-width: 24px;
+  padding: 0 4px;
+  text-align: center;
+  color: var(--ink-1);
   font-size: 0.8rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  text-align: right;
 }
 
 .cartLineName {
@@ -658,6 +950,25 @@
 
 .clearCartButton:hover { background: var(--danger-soft); border-color: var(--danger); }
 
+/* ---------- Footer panier (épinglé en bas) ---------- */
+.cartFooter {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line-2);
+}
+
+.cartFooter .totalRow {
+  padding: 6px 0 0;
+  border-top: 0;
+}
+
+.cartFooter .checkoutActions { margin-top: 4px; }
+.cartFooter select { margin-bottom: 2px; }
+
 /* ==========================================================================
    TOTAL
    ========================================================================== */
@@ -697,7 +1008,7 @@
    ========================================================================== */
 .customerLabel {
   display: block;
-  margin: 12px 0 6px;
+  margin: 0 0 6px;
   color: var(--ink-3);
   font-size: 0.66rem;
   font-weight: 600;
@@ -1885,10 +2196,23 @@
    RESPONSIVE
    ========================================================================== */
 @media (max-width: 1000px) {
-  .salesPage { padding: 10px 20px 28px; }
-  .salesLayout { grid-template-columns: minmax(0, 1fr); }
-  .cartPanel { position: static; order: 1; }
+  .salesPage {
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+    padding: 10px 20px 24px;
+  }
+  .salesLayout {
+    grid-template-columns: minmax(0, 1fr);
+    overflow: visible;
+  }
+  .cartPanel {
+    position: static;
+    order: 1;
+  }
   .catalogPanel { order: 2; }
+  .cartLines { max-height: 46vh; }
+  .productList { max-height: none; }
 
   .paymentBody {
     grid-template-columns: minmax(0, 1fr);
@@ -1909,24 +2233,25 @@
 }
 
 @media (max-width: 768px) {
-  .productImageWrap { height: 62px; }
-  .productList { grid-template-columns: repeat(auto-fill, minmax(105px, 1fr)); }
+  .productImageWrap { height: 66px; }
+  .productList { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
   .checkoutProductList { grid-template-columns: repeat(auto-fill, minmax(105px, 1fr)); }
-  .cartLines { height: 260px; }
+  .cartLines { height: auto; max-height: 46vh; }
 }
 
 @media (max-width: 640px) {
-  .salesPage { padding: 8px 12px 24px; }
-  .productList { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; }
+  .salesPage { padding: 8px 12px 16px; }
+
+  .productList { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 6px; }
   .checkoutProductList { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; }
-  .productImageWrap { height: 56px; }
+  .productImageWrap { height: 58px; }
   .productInfo { padding: 5px 6px 3px; }
   .productInfo strong { font-size: 0.68rem; }
   .productPriceCol { padding: 3px 6px 6px; }
   .productPriceCol b { font-size: 0.72rem; }
   .productPriceCol i { width: 18px; height: 18px; }
 
-  .cartLine { grid-template-columns: 18px minmax(0, 1fr) auto 22px; gap: 8px; }
+  .cartLine { grid-template-columns: auto minmax(0, 1fr) auto 22px; gap: 8px; }
   .checkoutDraftLine { grid-template-columns: 18px minmax(0, 1fr) auto 22px; gap: 8px; }
 
   .methodGrid { gap: 5px; }
@@ -1948,7 +2273,7 @@
 @media (max-width: 480px) {
   .productList { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .checkoutProductList { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .productImageWrap { height: 52px; }
+  .productImageWrap { height: 54px; }
 }
 
 /* ==========================================================================
@@ -1982,4 +2307,190 @@
   .statusModalBackdrop,
   .handoffBackdrop,
   .paymentPage { display: none; }
+}
+
+.posMenuUser {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 2px 2px 6px;
+  padding: 8px 7px 10px;
+  border-bottom: 1px solid var(--line-2);
+}
+
+.posMenuUserAvatar {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.posMenuUser span:last-child {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.posMenuUser strong,
+.posMenuUser small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.posMenuUser strong { color: var(--ink-1); font-size: 12px; }
+.posMenuUser small { color: var(--ink-4); font-size: 10px; }
+/* =========================================================
+   CHECKOUT v2 — Remise · Client · Aperçu reçu · Détail
+   ========================================================= */
+
+/* ---------- Remise ---------- */
+.discountRow { display: flex; flex-direction: column; gap: 8px; }
+
+.discountToggle {
+  display: inline-flex; align-items: center; gap: 6px; width: fit-content;
+  padding: 6px 12px;
+  border: 1px solid var(--line-2); border-radius: var(--r-full);
+  background: transparent; color: var(--ink-3);
+  font: inherit; font-size: 0.72rem; font-weight: 600; cursor: pointer;
+  transition: border-color 160ms var(--ease), background 160ms var(--ease), color 160ms var(--ease);
+}
+.discountToggle:hover {
+  border-color: var(--accent-line); background: var(--accent-soft); color: var(--accent-hi);
+}
+
+.discountPanel {
+  display: grid; gap: 6px; padding: 10px;
+  border: 1px solid var(--line-2); border-radius: var(--r-sm); background: var(--bg-2);
+}
+.discountPanel input {
+  min-height: 36px; padding: 0 12px;
+  border: 1px solid var(--line-2); border-radius: var(--r-sm);
+  background: var(--bg-1); color: var(--ink-1);
+  font: inherit; font-size: 0.84rem; outline: none;
+  font-variant-numeric: tabular-nums;
+}
+.discountPanel input:focus { border-color: var(--accent); }
+
+.discountPresets { display: flex; flex-wrap: wrap; gap: 5px; }
+
+.discountPreset {
+  flex: 0 0 auto; padding: 5px 10px;
+  border: 1px solid var(--line-2); border-radius: var(--r-full);
+  background: transparent; color: var(--ink-3);
+  font: inherit; font-size: 0.68rem; font-weight: 600; cursor: pointer;
+  transition: border-color 140ms var(--ease), background 140ms var(--ease), color 140ms var(--ease);
+}
+.discountPreset:hover {
+  border-color: var(--accent-line); background: var(--accent-soft); color: var(--accent-hi);
+}
+
+/* ---------- Client recherchable ---------- */
+.customerPicker { display: flex; flex-direction: column; gap: 6px; }
+
+.customerFieldWrap { position: relative; display: flex; align-items: center; }
+
+.customerFieldIcon {
+  position: absolute; left: 12px; color: var(--ink-4); pointer-events: none;
+}
+
+.customerFieldWrap input {
+  width: 100%; min-height: 42px; padding: 10px 36px 10px 34px;
+  border: 1px solid var(--line-2); border-radius: var(--r-sm);
+  background: var(--bg-2); color: var(--ink-1);
+  font: inherit; font-size: 0.88rem; outline: none;
+  transition: border-color 180ms var(--ease);
+}
+.customerFieldWrap input:focus { border-color: var(--accent); background: var(--bg-1); }
+
+.customerFieldClear {
+  position: absolute; right: 8px;
+  display: grid; width: 24px; height: 24px; place-items: center; padding: 0;
+  border: 0; border-radius: var(--r-xs);
+  background: transparent; color: var(--ink-4); cursor: pointer;
+}
+.customerFieldClear:hover { color: var(--ink-1); background: var(--bg-3); }
+
+.customerDropdown {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 20;
+  margin: 0; padding: 4px; list-style: none;
+  max-height: 240px; overflow-y: auto;
+  border: 1px solid var(--line-2); border-radius: var(--r-sm);
+  background: var(--bg-2); box-shadow: var(--shadow-lg);
+}
+.customerDropdown li + li { border-top: 1px solid var(--line-1); }
+.customerDropdown button {
+  display: flex; flex-direction: column; gap: 2px;
+  width: 100%; padding: 9px 10px;
+  border: 0; border-radius: var(--r-xs);
+  background: transparent; color: var(--ink-1);
+  font: inherit; font-size: 0.84rem; text-align: left; cursor: pointer;
+}
+.customerDropdown button:hover { background: var(--bg-hover); }
+.customerDropdown button small { color: var(--ink-4); font-size: 0.68rem; }
+
+/* ---------- Aperçu reçu (écran succès) ---------- */
+.receiptPreview {
+  width: min(100%, 680px); margin-top: 4px;
+  border: 1px solid var(--line-2); border-radius: var(--r-md);
+  background: var(--bg-2); text-align: left; overflow: hidden;
+}
+.receiptPreview > summary {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 16px; cursor: pointer;
+  color: var(--ink-3);
+  font-size: 0.72rem; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  user-select: none; list-style: none;
+}
+.receiptPreview > summary::-webkit-details-marker { display: none; }
+.receiptPreview > summary::before {
+  content: "▸"; font-size: 0.9rem;
+  transition: transform 160ms var(--ease);
+}
+.receiptPreview[open] > summary::before { transform: rotate(90deg); }
+
+.receiptPreviewBody {
+  padding: 12px 16px 14px;
+  display: flex; flex-direction: column; gap: 6px;
+  border-top: 1px solid var(--line-1);
+}
+
+.receiptLine {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  font-size: 0.82rem; color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+.receiptLine > span:first-child {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.receiptTotal {
+  margin-top: 6px; padding-top: 10px;
+  border-top: 1px solid var(--line-2);
+  color: var(--ink-1); font-weight: 700; font-size: 0.95rem;
+}
+
+/* ---------- Détail paiement (aside) ---------- */
+.paymentLinesDetails {
+  border: 1px solid var(--line-1); border-radius: var(--r-md);
+  background: var(--bg-1); overflow: hidden;
+}
+.paymentLinesDetails > summary {
+  padding: 10px 14px; cursor: pointer;
+  color: var(--ink-3);
+  font-size: 0.7rem; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  user-select: none; list-style: none;
+}
+.paymentLinesDetails > summary::-webkit-details-marker { display: none; }
+.paymentLinesDetailsBody {
+  padding: 10px 14px 12px;
+  display: flex; flex-direction: column; gap: 6px;
+  border-top: 1px solid var(--line-1);
 }
