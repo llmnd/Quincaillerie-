@@ -139,7 +139,6 @@ export default function Home() {
           {user ? (
             <div className={styles.connectedPanel}>
               <span className={styles.connectedBadge}>Connecté</span>
-              <p className={styles.eyebrow}>Bienvenue dans votre espace</p>
 
               <h1 className={styles.heroText}>Bonjour, {connectedUserName}</h1>
 

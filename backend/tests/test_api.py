@@ -11,10 +11,18 @@ os.environ["DATABASE_URL"] = f"sqlite:///{TEST_DB}"
 
 from fastapi.testclient import TestClient
 
+from app.core.config import Settings
 from app.main import app
 
 
 client = TestClient(app)
+
+
+def test_default_cors_settings_include_vercel_frontend():
+    settings = Settings()
+    assert "https://monerp.vercel.app" in settings.cors_origins
+    assert "https://www.monerp.vercel.app" in settings.cors_origins
+    assert settings.cors_origin_regex
 
 
 def test_health_check():

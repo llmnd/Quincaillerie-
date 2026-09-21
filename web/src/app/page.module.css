@@ -516,10 +516,10 @@
 .connectedBadge {
   display: inline-block;
   padding: 6px 14px;
-  border: 1px solid var(--line-2);
-  border-radius: 0;
-  background: transparent;
-  color: var(--ink-3);
+  border: 1px solid rgba(139, 208, 157, 0.35);
+  border-radius: 999px;
+  background: rgba(94, 168, 111, 0.12);
+  color: #b8e2c1;
   font-size: 0.58rem;
   font-weight: 500;
   letter-spacing: 0.28em;
@@ -548,6 +548,19 @@
 
 .heroConnected .heroActions {
   margin-top: 16px;
+}
+
+.heroConnected .primaryButton {
+  border-color: rgba(159, 214, 170, 0.4);
+  background: linear-gradient(135deg, rgba(118, 180, 128, 0.26), rgba(118, 180, 128, 0.42));
+  color: #f4faf5;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.heroConnected .primaryButton:active {
+  background: #dff7e4;
+  border-color: #dff7e4;
+  color: #18241a;
 }
 
 /* Modules rapides (connecté) */
