@@ -67,7 +67,14 @@ const paymentMethodLabel = (key: string): string =>
     card: "Carte",
     other: "Autre",
   }[key] ?? key);
-                    {["cash", "wave", "orange_money", "card", "other"].map(
+
+export default function CashPage() {
+  const router = useRouter();
+  const [registers, setRegisters] = useState<Register[]>([]);
+  const [sessions, setSessions] = useState<CashSession[]>([]);
+  const [recaps, setRecaps] = useState<SessionRecap[]>([]);
+  const [balance, setBalance] = useState<CashBalance | null>(null);
+  const [registerId, setRegisterId] = useState("");
   const [amount, setAmount] = useState("");
   const [closeAmount, setCloseAmount] = useState("");
   const [closeNote, setCloseNote] = useState("");
