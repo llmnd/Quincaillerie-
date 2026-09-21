@@ -1,802 +1,941 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import AppShell from "../../components/AppShell";
+import {
+  CheckCircle2,
+  Plus,
+  Printer,
+  Send,
+  ShoppingBag,
+  Tag,
+  User,     // ⬅ nouvelle icône
+  X,
+} from "lucide-react";
 import PosSessionMenu from "../../components/PosSessionMenu";
-import POSCheckoutView from "../../components/POSCheckoutView";
 import { authHeaders } from "../../lib/auth";
 import styles from "./page.module.css";
 
 type Product = {
-  id: number;
-  name: string;
-  sku: string;
-  image_url?: string | null;
-  category?: string | null;
-  unit_price: number;
-  stock_quantity: number;
+  id: number; name: string; sku: string;
+  image_url?: string | null; category?: string | null;
+  unit_price: number; stock_quantity: number;
 };
-
-type Customer = { id: number; name: string; email?: string | null };
 type CartLine = Product & { quantity: number };
-type OrderTab = { id: number; cart: CartLine[]; selectedCustomer: string };
+type PaymentMethod = "cash" | "wave" | "orange_money" | "card" | "other";
 
-type Handoff = {
-  theoretical_balance: number;
-  sales_total: number;
-  cash_collected: number;
-  withdrawals: number;
-  previous_seller?: string | null;
-  handoff_at: string;
-  last_operation?: { type: string; amount: number } | null;
-  requires_acknowledgement: boolean;
+type Draft = {
+  cart: CartLine[];
+  selectedCustomer: string;
+  discount: string;
+  createdAt?: number;
 };
+type OrderTab = { id: number; draft: Draft };
+type Customer = { id: number; name: string; email?: string | null };
+type Step = "products" | "payment" | "success";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-const SKELETON_ROWS = 12;
 
-const formatFCFA = (value: number) =>
-  `${Math.round(value).toLocaleString("fr-FR")} FCFA`;
+const PAYMENT_METHODS: Array<{ id: PaymentMethod; label: string; icon: string; image?: string }> = [
+  { id: "cash", label: "Espèces", icon: "💵" },
+  { id: "wave", label: "Wave", icon: "🌊", image: "https://i.pinimg.com/736x/42/59/b1/4259b108a2b649a2ab983439c62c79bd.jpg" },
+  { id: "orange_money", label: "Orange", icon: "🟠", image: "https://i.pinimg.com/736x/e2/cc/bf/e2ccbf284b0f18ae6e8dc544ac097f4c.jpg" },
+  { id: "card", label: "Carte", icon: "💳" },
+  { id: "other", label: "Autre", icon: "•" },
+];
+const PAYMENT_LABELS: Record<PaymentMethod, string> = {
+  cash: "Espèces",
+  wave: "Wave",
+  orange_money: "Orange Money",
+  card: "Carte",
+  other: "Autre",
+};
+const QUICK_AMOUNTS = [500, 1000, 2000, 5000, 10000];
+const DISCOUNT_PRESETS = [5, 10, 20];
 
-export default function SalesPage() {
+const money = (value: number) => `${Math.round(value).toLocaleString("fr-FR")} FCFA`;
+
+const emptyDraft = (): Draft => ({
+  cart: [], selectedCustomer: "", discount: "0", createdAt: Date.now(),
+});
+
+export default function CheckoutPage() {
   const router = useRouter();
-  const [isInitialViewResolved, setIsInitialViewResolved] = useState(false);
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [cart, setCart] = useState<CartLine[]>([]);
-  const [selectedCustomer, setSelectedCustomer] = useState("");
-  const [orderTabs, setOrderTabs] = useState<OrderTab[]>([{ id: 1, cart: [], selectedCustomer: "" }]);
+
+  const [draft, setDraft] = useState<Draft | null>(null);
+  const [orderTabs, setOrderTabs] = useState<OrderTab[]>([]);
   const [activeOrderId, setActiveOrderId] = useState(1);
+  const [showOrders, setShowOrders] = useState(false);
+  const [step, setStep] = useState<Step>("payment");
+
+  const [products, setProducts] = useState<Product[]>([]);
+  const [productsLoading, setProductsLoading] = useState(true);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
-  const [hasOpenSession, setHasOpenSession] = useState(false);
-  const [isDraftHydrated, setIsDraftHydrated] = useState(false);
-  const [hasPendingSale, setHasPendingSale] = useState(false);
-  const [entryChoice, setEntryChoice] = useState<"choice" | "pos">("choice");
-  const [isCheckoutView, setIsCheckoutView] = useState(false);
-  const [handoff, setHandoff] = useState<Handoff | null>(null);
-  const [isAcknowledgingHandoff, setIsAcknowledgingHandoff] = useState(false);
-  const [handoffError, setHandoffError] = useState("");
+  const [customerQuery, setCustomerQuery] = useState("");
+  const [customerOpen, setCustomerOpen] = useState(false);
+  const [discountOpen, setDiscountOpen] = useState(false);
+  const [selectedCartLineId, setSelectedCartLineId] = useState<number | null>(null);
 
-  const productsQuery = useQuery<Product[]>({
-    queryKey: ["products", "catalog"],
-    queryFn: async () => {
-      const response = await fetch(`${API_URL}/api/v1/products`, {
-        headers: authHeaders(),
-        credentials: "include",
-      });
-      if (!response.ok) throw new Error("Impossible de charger les produits.");
-      return response.json() as Promise<Product[]>;
-    },
-  });
-  const products = productsQuery.data ?? [];
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
+  const [cashReceived, setCashReceived] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const [completedSale, setCompletedSale] = useState<{
+    saleId: number; total: number; given: number; change: number;
+    method: PaymentMethod; lines: CartLine[]; discount: number;
+  } | null>(null);
+
+  /* ---------- Chargement initial ---------- */
   useEffect(() => {
-    const posIsOpen = window.sessionStorage.getItem("quincaillerie_pos_open") === "1";
-    const checkoutIsOpen = window.sessionStorage.getItem("quincaillerie_checkout_view") === "1";
-    setIsCheckoutView(checkoutIsOpen);
-    setEntryChoice(posIsOpen ? "pos" : "choice");
-    setIsInitialViewResolved(true);
-  }, []);
-
-  useEffect(() => {
-    window.sessionStorage.setItem("quincaillerie_pos_return_path", "/sales");
-
+    const stored = window.sessionStorage.getItem("quincaillerie_sale_draft");
+    if (!stored) { router.replace("/sales"); return; }
     try {
-      const stored = window.sessionStorage.getItem("quincaillerie_sale_draft");
-      if (stored) {
-        const draft = JSON.parse(stored) as {
-          cart?: CartLine[];
-          selectedCustomer?: string;
-          orderTabs?: { id: number; draft?: { cart?: CartLine[]; selectedCustomer?: string } }[];
-          activeOrderId?: number;
-        };
-        const hasSale = Array.isArray(draft.cart) && draft.cart.length > 0;
-        setHasPendingSale(hasSale);
-        setCart(hasSale ? draft.cart! : []);
-        setSelectedCustomer(draft.selectedCustomer ?? "");
-        if (draft.orderTabs?.length) {
-          const tabs = draft.orderTabs.map((tab) => ({
-            id: tab.id,
-            cart: tab.draft?.cart ?? [],
-            selectedCustomer: tab.draft?.selectedCustomer ?? "",
-          }));
-          const activeId = draft.activeOrderId ?? tabs[0].id;
-          const active = tabs.find((tab) => tab.id === activeId) ?? tabs[0];
-          setOrderTabs(tabs);
-          setActiveOrderId(active.id);
-          setCart(active.cart);
-          setSelectedCustomer(active.selectedCustomer);
-        }
-      }
-    } catch {
-      window.sessionStorage.removeItem("quincaillerie_sale_draft");
-    } finally {
-      setIsDraftHydrated(true);
-    }
+      const parsed = JSON.parse(stored) as Draft & {
+        draft?: Draft; orderTabs?: OrderTab[]; activeOrderId?: number; step?: Step;
+      };
+      const initialDraft = parsed.draft ?? parsed;
+      setDraft(initialDraft);
+      setOrderTabs(parsed.orderTabs?.length ? parsed.orderTabs : [{ id: 1, draft: initialDraft }]);
+      setActiveOrderId(parsed.activeOrderId ?? 1);
+      setStep(parsed.step ?? (initialDraft.cart.length ? "payment" : "products"));
+    } catch { router.replace("/sales"); }
   }, [router]);
 
   useEffect(() => {
-    if (!isDraftHydrated) return;
-    setOrderTabs((current) =>
-      current.map((tab) =>
-        tab.id === activeOrderId ? { ...tab, cart, selectedCustomer } : tab
-      )
-    );
-  }, [activeOrderId, cart, isDraftHydrated, selectedCustomer]);
+    let active = true;
+    fetch(`${API_URL}/api/v1/cash/sessions`, { headers: authHeaders(), credentials: "include" })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((sessions: { status: string }[]) => {
+        if (active && !sessions.some((s) => s.status === "open")) router.replace("/cash");
+      })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, [router]);
 
   useEffect(() => {
-    if (!isDraftHydrated) return;
+    if (!draft) return;
     window.sessionStorage.setItem(
       "quincaillerie_sale_draft",
-      JSON.stringify({
-        cart,
-        selectedCustomer,
-        orderTabs: orderTabs.map((tab) => ({
-          id: tab.id,
-          draft: { cart: tab.cart, selectedCustomer: tab.selectedCustomer, discount: "0" },
-        })),
-        activeOrderId,
-        discount: "0",
-        createdAt: Date.now(),
-      })
+      JSON.stringify({ ...draft, draft, orderTabs, activeOrderId, step })
     );
-  }, [activeOrderId, cart, isDraftHydrated, orderTabs, selectedCustomer]);
+  }, [activeOrderId, draft, orderTabs, step]);
 
   useEffect(() => {
-    const headers = authHeaders();
-    const loadResource = async <T,>(path: string, fallback: T): Promise<T> => {
-      try {
-        const response = await fetch(`${API_URL}${path}`, {
-          headers,
-          credentials: "include",
-        });
-        return response.ok ? ((await response.json()) as T) : fallback;
-      } catch {
-        return fallback;
-      }
-    };
+    setProductsLoading(true);
+    fetch(`${API_URL}/api/v1/products`, { headers: authHeaders(), credentials: "include" })
+      .then((r) => (r.ok ? (r.json() as Promise<Product[]>) : []))
+      .then(setProducts)
+      .catch(() => setProducts([]))
+      .finally(() => setProductsLoading(false));
 
-    Promise.all([
-      loadResource<Customer[]>("/api/v1/customers", []),
-      loadResource<{ status: string }[]>("/api/v1/cash/sessions", []),
-      loadResource<Handoff | null>("/api/v1/cash/sessions/current/handoff", null),
-    ])
-      .then(([customerData, sessionData, handoffData]) => {
-        setCustomers(customerData);
-        setHasOpenSession(sessionData.some((s) => s.status === "open"));
-        setHandoff(handoffData);
-      })
-      .finally(() => setIsLoading(false));
+    fetch(`${API_URL}/api/v1/customers`, { headers: authHeaders(), credentials: "include" })
+      .then((r) => (r.ok ? (r.json() as Promise<Customer[]>) : []))
+      .then(setCustomers)
+      .catch(() => setCustomers([]));
   }, []);
 
-  function continueSale() {
-    window.sessionStorage.removeItem("quincaillerie_pos_return_path");
-    window.sessionStorage.setItem("quincaillerie_pos_open", "1");
-    setEntryChoice("pos");
-  }
-
-  function openCash() {
-    router.push("/cash");
-  }
-
+  /* ---------- Calculs ---------- */
   const categories = useMemo(() => {
     const set = new Set<string>();
-    for (const product of products) {
-      const c = product.category?.trim();
-      if (c) set.add(c);
-    }
+    for (const p of products) { const c = p.category?.trim(); if (c) set.add(c); }
     return Array.from(set).sort((a, b) => a.localeCompare(b, "fr"));
   }, [products]);
 
   const filteredProducts = useMemo(() => {
-    const normalized = search.trim().toLowerCase();
-    return products.filter((product) => {
-      const matchesSearch =
-        !normalized ||
-        `${product.name} ${product.sku}`.toLowerCase().includes(normalized);
-      const matchesCategory =
-        !activeCategory || product.category === activeCategory;
-      return matchesSearch && matchesCategory;
+    const n = search.trim().toLowerCase();
+    return products.filter((p) => {
+      const okS = !n || `${p.name} ${p.sku}`.toLowerCase().includes(n);
+      const okC = !activeCategory || p.category === activeCategory;
+      return okS && okC;
     });
   }, [products, search, activeCategory]);
 
+  const filteredCustomers = useMemo(() => {
+    const n = customerQuery.trim().toLowerCase();
+    if (!n) return customers.slice(0, 8);
+    return customers.filter((c) => c.name.toLowerCase().includes(n)).slice(0, 8);
+  }, [customers, customerQuery]);
+
   const subtotal = useMemo(
-    () => cart.reduce((sum, line) => sum + line.unit_price * line.quantity, 0),
-    [cart]
+    () => draft?.cart.reduce((s, l) => s + l.unit_price * l.quantity, 0) ?? 0,
+    [draft]
   );
-  const totalItems = useMemo(
-    () => cart.reduce((sum, line) => sum + line.quantity, 0),
-    [cart]
-  );
+  const discount = Math.min(Number(draft?.discount) || 0, subtotal);
+  const amountDue = Math.max(0, subtotal - discount);
+  const received = Number(cashReceived) || 0;
+  const change = Math.max(0, received - amountDue);
+  const isCash = paymentMethod === "cash";
+  const cashSufficient = !isCash || received >= amountDue;
+  const changeState: "idle" | "insufficient" | "ok" = !isCash
+    ? "ok"
+    : !cashReceived ? "idle"
+    : received < amountDue ? "insufficient" : "ok";
 
-  const requiresHandoff = handoff?.requires_acknowledgement;
-
-  useEffect(() => {
-    if (!requiresHandoff) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [requiresHandoff]);
-
+  /* ---------- Actions ---------- */
+  function updateDraft(next: Draft) {
+    setDraft(next);
+    setOrderTabs((c) => c.map((o) => (o.id === activeOrderId ? { ...o, draft: next } : o)));
+  }
   function addProduct(product: Product) {
-    if (product.stock_quantity < 1 || requiresHandoff) return;
-    setCart((current) => {
-      const existing = current.find((line) => line.id === product.id);
-      if (existing) {
-        return current.map((line) =>
-          line.id === product.id
-            ? {
-                ...line,
-                quantity: Math.min(line.quantity + 1, product.stock_quantity),
-              }
-            : line
-        );
+    if (!draft) return;
+    const existing = draft.cart.find((l) => l.id === product.id);
+    const cart = existing
+      ? draft.cart.map((l) =>
+          l.id === product.id
+            ? { ...l, quantity: Math.min(l.quantity + 1, product.stock_quantity) }
+            : l
+        )
+      : [...draft.cart, { ...product, quantity: 1 }];
+    updateDraft({ ...draft, cart });
+  }
+  function removeProduct(productId: number) {
+    if (!draft) return;
+    const cart = draft.cart.flatMap((line) => {
+      if (line.id !== productId) return [line];
+      if (line.quantity <= 1) return [];
+      return [{ ...line, quantity: line.quantity - 1 }];
+    });
+    updateDraft({ ...draft, cart });
+  }
+  function createOrderTab() {
+    const nextId = Math.max(0, ...orderTabs.map((o) => o.id)) + 1;
+    const nd = emptyDraft();
+    setOrderTabs((c) => [...c, { id: nextId, draft: nd }]);
+    setActiveOrderId(nextId); setDraft(nd);
+    setStep("products"); setPaymentMethod("cash");
+    setCashReceived(""); setShowOrders(false);
+    setTimeout(() => searchInputRef.current?.focus(), 0);
+  }
+  function selectOrderTab(order: OrderTab) {
+    setActiveOrderId(order.id); setDraft(order.draft);
+    setStep(order.draft.cart.length ? "payment" : "products");
+    setPaymentMethod("cash"); setCashReceived(""); setShowOrders(false);
+  }
+  function closeOrderTab(orderId: number) {
+    if (orderTabs.length <= 1) {
+      const fresh = emptyDraft();
+      setDraft(fresh);
+      setOrderTabs([{ id: orderTabs[0]?.id ?? 1, draft: fresh }]);
+      setStep("products"); setShowOrders(false);
+      return;
+    }
+    const remaining = orderTabs.filter((o) => o.id !== orderId);
+    setOrderTabs(remaining);
+    if (activeOrderId === orderId) {
+      const next = remaining[remaining.length - 1];
+      setActiveOrderId(next.id); setDraft(next.draft);
+      setStep(next.draft.cart.length ? "payment" : "products");
+    }
+  }
+  function appendDigit(digit: string) {
+    setCashReceived((current) => {
+      if (digit === "C") return "";
+      if (digit === "00") {
+        const base = current || "0";
+        return base === "0" ? "0" : String(Number(base) * 100);
       }
-      return [...current, { ...product, quantity: 1 }];
+      const next = `${current}${digit}`.replace(/^0+(?=\d)/, "");
+      return next || "0";
     });
   }
 
-  function incrementLine(productId: number) {
-    setCart((current) =>
-      current.map((line) => {
-        if (line.id !== productId) return line;
-        const limit =
-          products.find((p) => p.id === productId)?.stock_quantity ??
-          line.quantity + 1;
-        return { ...line, quantity: Math.min(line.quantity + 1, limit) };
-      })
-    );
-  }
+  /* ---------- Raccourcis clavier ---------- */
+  useEffect(() => {
+    if (step === "success") return;
+    const handler = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      const isField = tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA";
+      if (e.key === "Delete" && !isField && step === "products" && selectedCartLineId !== null) {
+        e.preventDefault();
+        removeProduct(selectedCartLineId);
+        setSelectedCartLineId(null);
+        return;
+      }
+      if (e.key === "Escape") {
+        if (showOrders) setShowOrders(false);
+        else if (step === "payment") setStep("products");
+        else if (isField) (e.target as HTMLElement).blur();
+        return;
+      }
+      if (e.key === "Enter" && !isField && step === "payment" && cashSufficient && !isSubmitting) {
+        submitSale();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, showOrders, cashSufficient, isSubmitting, selectedCartLineId, draft]);
 
-  function decrementLine(productId: number) {
-    setCart((current) =>
-      current.flatMap((line) => {
-        if (line.id !== productId) return [line];
-        if (line.quantity <= 1) return [];
-        return [{ ...line, quantity: line.quantity - 1 }];
-      })
-    );
-  }
+  async function submitSale() {
+    if (!draft || !cashSufficient || isSubmitting) return;
+    setIsSubmitting(true); setError("");
+    const given = isCash ? received : amountDue;
+    const changeValue = isCash ? change : 0;
+    const linesSnapshot = draft.cart.map((l) => ({ ...l }));
 
-  function removeProduct(productId: number) {
-    setCart((current) => current.filter((line) => line.id !== productId));
-  }
-
-  function clearCart() {
-    if (cart.length === 0) return;
-    if (!window.confirm("Vider le panier ?")) return;
-    setCart([]);
-    setSelectedCustomer("");
-  }
-
-  function openPayment() {
-    if (cart.length === 0) return;
-    window.sessionStorage.setItem(
-      "quincaillerie_sale_draft",
-      JSON.stringify({
-        cart,
-        selectedCustomer,
-        orderTabs: orderTabs.map((tab) => ({
-          id: tab.id,
-          draft: { cart: tab.cart, selectedCustomer: tab.selectedCustomer, discount: "0" },
-        })),
-        activeOrderId,
-        discount: "0",
-        createdAt: Date.now(),
-      })
-    );
-    window.sessionStorage.setItem("quincaillerie_checkout_view", "1");
-    setIsCheckoutView(true);
-  }
-
-  function selectOrderTab(tab: OrderTab) {
-    setActiveOrderId(tab.id);
-    setCart(tab.cart);
-    setSelectedCustomer(tab.selectedCustomer);
-  }
-
-  function createOrderTab() {
-    const nextId = Math.max(0, ...orderTabs.map((tab) => tab.id)) + 1;
-    const nextTab = { id: nextId, cart: [], selectedCustomer: "" };
-    setOrderTabs((current) => [...current, nextTab]);
-    setActiveOrderId(nextId);
-    setCart([]);
-    setSelectedCustomer("");
-  }
-
-  async function acknowledgeHandoff() {
-    setIsAcknowledgingHandoff(true);
-    setHandoffError("");
     try {
-      const response = await fetch(
-        `${API_URL}/api/v1/cash/sessions/current/handoff/acknowledge`,
-        { method: "POST", headers: authHeaders(), credentials: "include" }
-      );
-      if (!response.ok) throw new Error();
-      setHandoff(await response.json());
+      const response = await fetch(`${API_URL}/api/v1/sales`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        credentials: "include",
+        body: JSON.stringify({
+          customer_id: draft.selectedCustomer ? Number(draft.selectedCustomer) : null,
+          status: "completed",
+          discount_amount: discount,
+          payment_method: paymentMethod,
+          items: draft.cart.map((l) => ({
+            product_id: l.id, quantity: l.quantity, unit_price: l.unit_price,
+          })),
+        }),
+      });
+      const payload = (await response.json().catch(() => ({}))) as {
+        id?: number; total_amount?: number; detail?: string;
+      };
+      if (!response.ok) {
+        setError(typeof payload?.detail === "string"
+          ? payload.detail
+          : "La vente n'a pas pu être enregistrée.");
+        return;
+      }
+      setCompletedSale({
+        saleId: payload.id ?? 0,
+        total: Number(payload.total_amount ?? amountDue),
+        given, change: changeValue, method: paymentMethod,
+        lines: linesSnapshot, discount,
+      });
+      setStep("success");
     } catch {
-      setHandoffError("Impossible d'enregistrer la prise en charge.");
-    } finally {
-      setIsAcknowledgingHandoff(false);
-    }
+      setError("Erreur réseau. La vente n'a pas pu être enregistrée.");
+    } finally { setIsSubmitting(false); }
   }
 
-  const showSkeleton = isLoading || productsQuery.isPending;
-
-  if (!isInitialViewResolved || isLoading || !isDraftHydrated) {
-    return (
-      <AppShell>
-        <main
-          className={`${styles.salesEntry} ${styles.salesLoading}`}
-          aria-busy="true"
-          aria-label="Chargement du point de vente"
-        >
-          <section className={styles.salesEntryCard}>
-            <span className={styles.eyebrow}>Point de vente</span>
-            <h1>Préparation de la vente…</h1>
-          </section>
-        </main>
-      </AppShell>
-    );
+  function printReceipt() {
+    if (!completedSale) return;
+    const w = window.open("", "_blank", "width=420,height=640");
+    if (!w) return;
+    const esc = (s: string) =>
+      s.replace(/[&<>'"]/g, (c) =>
+        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[c] ?? c));
+    const rows = completedSale.lines.map((l) =>
+      `<tr><td>${esc(l.name)}<br><small>${esc(l.sku)}</small></td><td>${l.quantity}</td><td>${l.unit_price.toLocaleString("fr-FR")}</td><td>${(l.unit_price * l.quantity).toLocaleString("fr-FR")}</td></tr>`
+    ).join("");
+    w.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Reçu #${completedSale.saleId}</title><style>
+      @page{margin:12mm}body{font-family:Arial,sans-serif;color:#111;max-width:400px;margin:0 auto;padding:16px}
+      h1{font-size:16px;margin:0 0 4px;text-align:center}
+      .muted{text-align:center;color:#666;font-size:11px;margin-bottom:14px}
+      table{width:100%;border-collapse:collapse;font-size:12px}
+      th,td{padding:6px 4px;text-align:left;border-bottom:1px solid #eee}
+      th:nth-child(n+2),td:nth-child(n+2){text-align:right}
+      .total{display:flex;justify-content:space-between;font-size:16px;font-weight:700;padding:12px 0;border-top:2px solid #111;margin-top:8px}
+      .small{font-size:11px;color:#444;padding:3px 0;display:flex;justify-content:space-between}
+      .center{text-align:center;margin-top:16px;font-size:12px;color:#555}
+    </style></head><body>
+      <h1>Reçu de vente</h1>
+      <p class="muted">Vente #${completedSale.saleId} · ${new Date().toLocaleString("fr-FR")}</p>
+      <table><thead><tr><th>Produit</th><th>Qté</th><th>PU</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table>
+      ${completedSale.discount > 0 ? `<div class="small"><span>Remise</span><strong>- ${completedSale.discount.toLocaleString("fr-FR")} FCFA</strong></div>` : ""}
+      <div class="total"><span>Total</span><strong>${completedSale.total.toLocaleString("fr-FR")} FCFA</strong></div>
+      <div class="small"><span>Mode</span><strong>${PAYMENT_LABELS[completedSale.method]}</strong></div>
+      ${completedSale.method === "cash" ? `<div class="small"><span>Reçu</span><strong>${completedSale.given.toLocaleString("fr-FR")} FCFA</strong></div><div class="small"><span>Monnaie</span><strong>${completedSale.change.toLocaleString("fr-FR")} FCFA</strong></div>` : ""}
+      <p class="center">Merci pour votre achat.</p>
+      <script>window.onload=()=>{window.print();setTimeout(()=>window.close(),400)}</script>
+    </body></html>`);
+    w.document.close();
   }
 
-  if (isCheckoutView) {
-    return <POSCheckoutView />;
+  function startNewSale() {
+    setCompletedSale(null); setError("");
+    const nd = emptyDraft();
+    const remaining = orderTabs.filter((o) => o.id !== activeOrderId);
+    const nextId = Math.max(0, ...remaining.map((o) => o.id), activeOrderId) + 1;
+    const nextOrder = { id: nextId, draft: nd };
+    setDraft(nd); setOrderTabs([...remaining, nextOrder]);
+    setActiveOrderId(nextId); setStep("products");
+    setPaymentMethod("cash"); setCashReceived("");
+    setDiscountOpen(false);
+    setTimeout(() => searchInputRef.current?.focus(), 0);
   }
 
-  if (entryChoice === "choice") {
-    return (
-      <AppShell>
-        <main className={styles.salesEntry}>
-          <section className={styles.salesEntryCard}>
-            <span className={styles.eyebrow}>Point de vente</span>
-            <h1>{hasPendingSale ? "Une vente est en cours" : "Point de vente"}</h1>
-            <p>
-              {hasPendingSale && hasOpenSession
-                ? "Reprenez la vente en attente ou ouvrez la caisse pour gérer la session."
-                : hasOpenSession
-                ? "La caisse est ouverte. Continuez pour accéder au point de vente."
-                : "Ouvrez d’abord une caisse pour commencer ou reprendre une vente."}
-            </p>
-            <div className={styles.salesEntryActions}>
-              {hasOpenSession && (
-                <button
-                  type="button"
-                  className={styles.primaryButton}
-                  onClick={continueSale}
-                >
-                  Continuer la vente
-                </button>
-              )}
-              <button
-                type="button"
-                className={styles.secondaryButton}
-                onClick={openCash}
-              >
-                Ouvrir la caisse
-              </button>
-            </div>
-          </section>
-        </main>
-      </AppShell>
-    );
+  function handleSearchKey(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key !== "Enter") return;
+    if (filteredProducts.length === 0) return;
+    addProduct(filteredProducts[0]);
+    setSearch("");
   }
+
+  if (!draft) return <main className={styles.paymentPage} aria-busy="true" />;
 
   return (
-    <AppShell hideSidebar hideTopbar hideContentPadding>
-      <div className={styles.salesPage}>
+    <main className={styles.paymentPage}>
+      <div className={styles.paymentPageContent}>
+        {/* ============ TOOLBAR ============ */}
         <nav className={styles.checkoutToolbar} aria-label="Commandes">
-          <button type="button" className={`${styles.checkoutTab} ${styles.checkoutTabActive}`}>
-            Caisse
-          </button>
-          <button type="button" className={styles.checkoutTab}>
-            Commandes ({orderTabs.length})
-          </button>
-          <span className={styles.checkoutToolbarDivider} aria-hidden="true" />
           <button
             type="button"
-            className={styles.checkoutNewOrder}
-            onClick={createOrderTab}
-            aria-label="Nouvelle commande"
+            className={`${styles.checkoutTab} ${!showOrders && step !== "success" ? styles.checkoutTabActive : ""}`}
+            onClick={() => { setShowOrders(false); setStep(draft.cart.length ? "payment" : "products"); }}
+          >
+            Caisse
+          </button>
+          <button
+            type="button"
+            className={`${styles.checkoutTab} ${showOrders ? styles.checkoutTabActive : ""}`}
+            onClick={() => setShowOrders(true)}
+          >
+            Commandes ({orderTabs.length})
+          </button>
+
+          <span className={styles.checkoutToolbarDivider} aria-hidden="true" />
+
+          <button
+            type="button" className={styles.checkoutNewOrder}
+            onClick={createOrderTab} disabled={isSubmitting}
+            aria-label="Nouvelle commande" title="Nouvelle commande"
           >
             +
           </button>
+
           <div className={styles.checkoutOrderTabsList}>
-            {orderTabs.map((tab) => {
-              const total = tab.cart.reduce(
-                (sum, line) => sum + line.unit_price * line.quantity,
-                0
-              );
+            {orderTabs.map((order) => {
+              const total = order.draft.cart.reduce((s, l) => s + l.unit_price * l.quantity, 0);
               return (
                 <div
-                  key={tab.id}
-                  className={`${styles.checkoutOrderTabWrap} ${
-                    tab.id === activeOrderId ? styles.checkoutOrderTabWrapActive : ""
-                  }`}
+                  key={order.id}
+                  className={`${styles.checkoutOrderTabWrap} ${activeOrderId === order.id && !showOrders ? styles.checkoutOrderTabWrapActive : ""}`}
                 >
-                  <button
-                    type="button"
-                    className={styles.checkoutOrderTab}
-                    onClick={() => selectOrderTab(tab)}
-                  >
-                    <span className={styles.checkoutOrderTabNumber}>#{tab.id}</span>
+                  <button type="button" className={styles.checkoutOrderTab}
+                    onClick={() => selectOrderTab(order)}>
+                    <span className={styles.checkoutOrderTabNumber}>#{order.id}</span>
                     <span className={styles.checkoutOrderTabTotal}>
-                      {tab.cart.length > 0 ? formatFCFA(total) : "vide"}
+                      {order.draft.cart.length > 0 ? money(total) : "vide"}
                     </span>
+                  </button>
+                  <button type="button" className={styles.checkoutOrderTabClose}
+                    onClick={(e) => { e.stopPropagation(); closeOrderTab(order.id); }}
+                    aria-label={`Fermer la commande ${order.id}`}>
+                    <X size={14} />
                   </button>
                 </div>
               );
             })}
           </div>
-          <PosSessionMenu />
+
+          <div className={`${styles.catalogToolbar} ${styles.checkoutHeaderSearch}`}>
+            <input
+              ref={searchInputRef}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={handleSearchKey}
+              placeholder="Rechercher… (Entrée pour ajouter)"
+              aria-label="Rechercher"
+              autoFocus
+            />
+            {search && (
+              <button type="button" className={styles.searchClear}
+                onClick={() => setSearch("")} aria-label="Effacer">
+                <X size={15} />
+              </button>
+            )}
+          </div>
+
+          <PosSessionMenu inline />
         </nav>
 
-        {!isLoading && !hasOpenSession && (
-          <div className={styles.sessionNotice}>
-            <strong>Caisse à ouvrir.</strong> Une session ouverte est obligatoire
-            pour valider une vente. <Link href="/cash">Ouvrir une caisse</Link>
-          </div>
-        )}
-
-        <div className={styles.salesLayout}>
-          {/* ============================= PANIER ============================= */}
-          <section className={styles.cartPanel}>
-            <div className={styles.panelHeader}>
-              <div>
-                <p className={styles.eyebrow}>Vente</p>
-                <h2>Panier</h2>
-              </div>
-              {cart.length > 0 ? (
-                <button
-                  type="button"
-                  className={styles.clearCartButton}
-                  onClick={clearCart}
-                >
-                  <Trash2 size={11} /> Vider
-                </button>
-              ) : (
-                <span>0 ligne</span>
-              )}
+        {/* ============ SUCCÈS ============ */}
+        {step === "success" && completedSale ? (
+          <section className={styles.successScreen}>
+            <div className={styles.successIcon}>
+              <CheckCircle2 size={46} strokeWidth={1.5} />
             </div>
+            <h1>Paiement réussi</h1>
+            <p className={styles.successSubtitle}>Vente #{completedSale.saleId}</p>
 
-            <div className={styles.cartLines}>
-              {cart.length === 0 ? (
-                <div className={styles.emptyCart}>
-                  <span className={styles.cartIcon}>
-                    <ShoppingBag size={16} />
-                  </span>
-                  <p>Panier vide.</p>
-                  <small>Touchez un produit pour l’ajouter.</small>
-                </div>
-              ) : (
-                cart.map((line) => (
-                  <div className={styles.cartLine} key={line.id}>
-                    <div
-                      className={styles.qtyControl}
-                      role="group"
-                      aria-label={`Quantité ${line.name}`}
-                    >
-                      <button
-                        type="button"
-                        className={styles.qtyBtn}
-                        onClick={() => decrementLine(line.id)}
-                        aria-label={`Réduire ${line.name}`}
-                      >
-                        <Minus size={12} />
-                      </button>
-                      <span className={styles.qtyValue}>{line.quantity}</span>
-                      <button
-                        type="button"
-                        className={styles.qtyBtn}
-                        onClick={() => incrementLine(line.id)}
-                        aria-label={`Augmenter ${line.name}`}
-                      >
-                        <Plus size={12} />
-                      </button>
-                    </div>
-                    <span className={styles.cartLineName}>{line.name}</span>
-                    <b className={styles.cartLinePrice}>
-                      {formatFCFA(line.unit_price * line.quantity)}
-                    </b>
-                    <button
-                      type="button"
-                      className={styles.cartLineRemove}
-                      onClick={() => removeProduct(line.id)}
-                      aria-label={`Retirer ${line.name}`}
-                    >
-                      <X size={13} aria-hidden="true" />
-                    </button>
+            <div className={styles.successGrid}>
+              <div className={styles.successCard}>
+                <span>Total payé</span>
+                <strong>{money(completedSale.total)}</strong>
+              </div>
+              <div className={styles.successCard}>
+                <span>Mode</span>
+                <strong>{PAYMENT_LABELS[completedSale.method]}</strong>
+              </div>
+              {completedSale.method === "cash" && (
+                <>
+                  <div className={styles.successCard}>
+                    <span>Espèces reçues</span>
+                    <strong>{money(completedSale.given)}</strong>
                   </div>
-                ))
+                  <div className={styles.successCard}>
+                    <span>Monnaie rendue</span>
+                    <strong>{money(completedSale.change)}</strong>
+                  </div>
+                </>
               )}
             </div>
 
-            <div className={styles.cartFooter}>
-              <label className={styles.customerLabel} htmlFor="customer">
-                Client <span>(facultatif)</span>
-              </label>
-              <select
-                id="customer"
-                value={selectedCustomer}
-                onChange={(e) => setSelectedCustomer(e.target.value)}
-              >
-                <option value="">Vente comptoir</option>
-                {customers.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
+            <details className={styles.receiptPreview} open>
+              <summary>Aperçu du reçu</summary>
+              <div className={styles.receiptPreviewBody}>
+                {completedSale.lines.map((l) => (
+                  <div className={styles.receiptLine} key={l.id}>
+                    <span>{l.quantity}× {l.name}</span>
+                    <span>{money(l.unit_price * l.quantity)}</span>
+                  </div>
                 ))}
-              </select>
-
-              <div className={styles.totalRow}>
-                <div>
+                {completedSale.discount > 0 && (
+                  <div className={styles.receiptLine}>
+                    <span>Remise</span>
+                    <span>- {money(completedSale.discount)}</span>
+                  </div>
+                )}
+                <div className={`${styles.receiptLine} ${styles.receiptTotal}`}>
                   <span>Total</span>
-                  <small>
-                    {totalItems} article{totalItems > 1 ? "s" : ""}
-                  </small>
+                  <strong>{money(completedSale.total)}</strong>
                 </div>
-                <strong>{formatFCFA(subtotal)}</strong>
               </div>
+            </details>
 
-              <div className={styles.checkoutActions}>
-                <button
-                  type="button"
-                  className={styles.primaryButton}
-                  onClick={openPayment}
-                  disabled={
-                    cart.length === 0 ||
-                    !hasOpenSession ||
-                    Boolean(requiresHandoff)
-                  }
-                >
-                  Payer {formatFCFA(subtotal)}
-                </button>
-              </div>
+            <div className={styles.successActionsLarge}>
+              <button type="button" className={styles.secondaryButton} onClick={printReceipt}>
+                <Printer size={17} /> Imprimer
+              </button>
+              <button type="button" className={styles.secondaryButton}
+                onClick={() => alert("Envoi à connecter")}>
+                <Send size={17} /> Envoyer
+              </button>
+              <button type="button" className={styles.primaryButton} onClick={startNewSale}>
+                <Plus size={17} /> Nouvelle vente
+              </button>
             </div>
           </section>
-
-          {/* ============================= CATALOGUE ============================= */}
-          <section className={styles.catalogPanel}>
-            <div className={styles.panelHeader}>
+        ) : showOrders ? (
+          /* ============ LISTE COMMANDES ============ */
+          <section className={styles.pendingOrdersPage}>
+            <div className={styles.checkoutSelectionHeader}>
               <div>
-                <p className={styles.eyebrow}>Catalogue</p>
-                <h2>Produits</h2>
+                <p className={styles.stepEyebrow}>Commandes</p>
+                <h1>Reprendre une commande</h1>
               </div>
-              <span>{filteredProducts.length} réf.</span>
+              <button type="button" className={styles.primaryButton}
+                onClick={createOrderTab} style={{ width: "auto" }}>
+                <Plus size={15} /> Nouvelle
+              </button>
             </div>
-
-            <div className={styles.catalogToolbar}>
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Rechercher un produit par nom ou SKU…"
-                aria-label="Rechercher un produit"
-              />
-              {search && (
-                <button
-                  type="button"
-                  className={styles.searchClear}
-                  onClick={() => setSearch("")}
-                  aria-label="Effacer"
-                >
-                  <X size={13} />
-                </button>
-              )}
-            </div>
-
-            {categories.length > 0 && (
-              <div className={styles.categoryBar} role="tablist">
-                <button
-                  type="button"
-                  className={
-                    activeCategory === ""
-                      ? styles.categoryActive
-                      : styles.categoryChip
-                  }
-                  onClick={() => setActiveCategory("")}
-                >
-                  Toutes
-                </button>
-                {categories.map((category) => (
-                  <button
-                    key={category}
-                    type="button"
-                    className={
-                      activeCategory === category
-                        ? styles.categoryActive
-                        : styles.categoryChip
-                    }
-                    onClick={() => setActiveCategory(category)}
-                  >
-                    {category}
+            <div className={styles.pendingOrdersList}>
+              {orderTabs.map((order) => {
+                const total = order.draft.cart.reduce((s, l) => s + l.unit_price * l.quantity, 0);
+                const items = order.draft.cart.reduce((s, l) => s + l.quantity, 0);
+                return (
+                  <button key={order.id} type="button"
+                    className={`${styles.pendingOrderCard} ${activeOrderId === order.id ? styles.pendingOrderCardActive : ""}`}
+                    onClick={() => selectOrderTab(order)}>
+                    <strong>
+                      {order.draft.cart.length === 0
+                        ? "Panier vide"
+                        : `${order.draft.cart.length} ligne${order.draft.cart.length > 1 ? "s" : ""} · ${items} art.`}
+                    </strong>
+                    <b>{money(total)}</b>
                   </button>
-                ))}
-              </div>
-            )}
-
-            <div className={styles.productList}>
-              {showSkeleton ? (
-                Array.from({ length: SKELETON_ROWS }).map((_, i) => (
-                  <div
-                    key={i}
-                    className={styles.productRowSkeleton}
-                    aria-hidden="true"
-                  >
-                    <span className={styles.skeletonImage} />
-                    <div className={styles.productRowSkeletonText}>
-                      <span
-                        className={styles.skeletonLine}
-                        style={{ width: "72%" }}
-                      />
-                      <span
-                        className={styles.skeletonLine}
-                        style={{ width: "44%" }}
-                      />
-                    </div>
-                  </div>
-                ))
-              ) : products.length === 0 ? (
-                <div className={styles.productListEmpty}>
-                  <span className={styles.cartIcon}>
-                    <ShoppingBag size={16} />
-                  </span>
-                  <p>Aucun produit.</p>
+                );
+              })}
+            </div>
+          </section>
+        ) : step === "products" ? (
+          /* ============ SÉLECTION PRODUITS ============ */
+          <section className={styles.checkoutProductSelection}>
+            <aside className={styles.checkoutDraftCart}>
+              <div className={styles.checkoutSelectionHeader}>
+                <div>
+                  {/* "Commande #X" est déjà affiché dans la toolbar. */}
                 </div>
-              ) : filteredProducts.length === 0 ? (
-                <div className={styles.productListEmpty}>
-                  <p>Aucun résultat.</p>
-                  {(search || activeCategory) && (
-                    <button
-                      type="button"
-                      className={styles.resetFilters}
-                      onClick={() => {
-                        setSearch("");
-                        setActiveCategory("");
+              </div>
+
+              <div className={styles.checkoutDraftLines}>
+                {draft.cart.length === 0 ? (
+                  <div className={styles.emptyCart}>
+                    <span className={styles.cartIcon}><ShoppingBag size={18} /></span>
+                    <p>Ajoutez des produits.</p>
+                    <small>Touchez une carte pour l’ajouter.</small>
+                  </div>
+                ) : (
+                  draft.cart.map((line) => (
+                    <div
+                      className={`${styles.checkoutDraftLine} ${selectedCartLineId === line.id ? styles.checkoutDraftLineSelected : ""}`}
+                      key={line.id}
+                      tabIndex={0}
+                      role="button"
+                      onFocus={() => setSelectedCartLineId(line.id)}
+                      onClick={() => setSelectedCartLineId(line.id)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          setSelectedCartLineId(line.id);
+                        }
                       }}
+                      aria-label={`${line.name}, appuyez sur Delete pour supprimer`}
                     >
-                      Réinitialiser
-                    </button>
+                      <span className={styles.checkoutDraftLineQty}>{line.quantity}</span>
+                      <span className={styles.checkoutDraftLineName}>{line.name}</span>
+                      <b className={styles.checkoutDraftLinePrice}>
+                        {money(line.unit_price * line.quantity)}
+                      </b>
+                      <button type="button" className={styles.checkoutDraftLineRemove}
+                        onClick={() => removeProduct(line.id)}
+                        aria-label={`Retirer ${line.name}`}>
+                        <X size={15} />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className={styles.checkoutDraftFooter}>
+                {/* Remise */}
+                <div className={styles.discountRow}>
+                  <button type="button" className={styles.discountToggle}
+                    onClick={() => setDiscountOpen((v) => !v)}
+                    aria-expanded={discountOpen}>
+                    <Tag size={14} /> Remise {discount > 0 ? `· ${money(discount)}` : ""}
+                  </button>
+                  {discountOpen && (
+                    <div className={styles.discountPanel}>
+                      <input type="number" inputMode="numeric" min={0} max={subtotal}
+                        value={draft.discount}
+                        onChange={(e) => updateDraft({ ...draft, discount: e.target.value })}
+                        placeholder="Montant (FCFA)" />
+                      <div className={styles.discountPresets}>
+                        {DISCOUNT_PRESETS.map((pct) => (
+                          <button key={pct} type="button" className={styles.discountPreset}
+                            onClick={() => updateDraft({ ...draft, discount: String(Math.round((subtotal * pct) / 100)) })}>
+                            {pct}%
+                          </button>
+                        ))}
+                        <button type="button" className={styles.discountPreset}
+                          onClick={() => updateDraft({ ...draft, discount: "0" })}>
+                          Annuler
+                        </button>
+                      </div>
+                    </div>
                   )}
                 </div>
-              ) : (
-                filteredProducts.map((product) => {
-                  const inCart = cart.find((l) => l.id === product.id);
-                  const isOut = product.stock_quantity < 1;
-                  const isLow =
-                    product.stock_quantity > 0 && product.stock_quantity <= 5;
-                  return (
-                    <button
-                      key={product.id}
-                      type="button"
-                      className={`${styles.productRow}${
-                        inCart ? ` ${styles.productRowActive}` : ""
-                      }`}
-                      onClick={() => addProduct(product)}
-                      disabled={isOut || Boolean(requiresHandoff)}
-                    >
-                      <span className={styles.productImageWrap}>
-                        {product.image_url ? (
-                          <img
-                            src={product.image_url}
-                            alt=""
-                            className={styles.productThumb}
-                          />
-                        ) : (
-                          <span className={styles.productImageFallback}>
-                            {product.name.charAt(0).toUpperCase()}
-                          </span>
-                        )}
-                        {inCart && (
-                          <span className={styles.productQtyBadge}>
-                            {inCart.quantity}
-                          </span>
-                        )}
-                      </span>
-                      <div className={styles.productInfo}>
-                        <strong>{product.name}</strong>
-                        <small>{product.sku}</small>
-                        <span
-                          className={`${styles.stockPill} ${
-                            isOut
-                              ? styles.stockOut
-                              : isLow
-                              ? styles.stockLow
-                              : styles.stockOk
-                          }`}
-                        >
-                          {isOut ? "Rupture" : `${product.stock_quantity} en stock`}
-                        </span>
-                      </div>
-                      <div className={styles.productPriceCol}>
-                        <b>{formatFCFA(product.unit_price)}</b>
-                        <i>
-                          <Plus size={12} aria-hidden="true" />
-                        </i>
-                      </div>
+
+                {/* Client — icône personne seule */}
+                {customers.length > 0 && (
+                  <div className={styles.customerPicker}>
+                    <div className={styles.customerFieldWrap}>
+                      <User size={16} className={styles.customerFieldIcon} /> {/* ⬅ icône personne */}
+                      <input
+                        id="checkout-customer"
+                        type="text"
+                        autoComplete="off"
+                        value={
+                          customerOpen
+                            ? customerQuery
+                            : customers.find((c) => String(c.id) === draft.selectedCustomer)?.name ?? customerQuery
+                        }
+                        placeholder="Client"
+                        onChange={(e) => { setCustomerQuery(e.target.value); setCustomerOpen(true); }}
+                        onFocus={() => setCustomerOpen(true)}
+                        onBlur={() => setTimeout(() => setCustomerOpen(false), 150)}
+                      />
+                      {draft.selectedCustomer && (
+                        <button type="button" className={styles.customerFieldClear}
+                          onClick={() => { updateDraft({ ...draft, selectedCustomer: "" }); setCustomerQuery(""); }}
+                          aria-label="Effacer le client">
+                          <X size={14} />
+                        </button>
+                      )}
+                      {customerOpen && filteredCustomers.length > 0 && (
+                        <ul className={styles.customerDropdown} role="listbox">
+                          <li>
+                            <button type="button"
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => {
+                                updateDraft({ ...draft, selectedCustomer: "" });
+                                setCustomerQuery(""); setCustomerOpen(false);
+                              }}>
+                              Vente comptoir
+                            </button>
+                          </li>
+                          {filteredCustomers.map((c) => (
+                            <li key={c.id}>
+                              <button type="button"
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => {
+                                  updateDraft({ ...draft, selectedCustomer: String(c.id) });
+                                  setCustomerQuery(c.name); setCustomerOpen(false);
+                                }}>
+                                {c.name}
+                                {c.email && <small>{c.email}</small>}
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div className={styles.totalRow}>
+                  <div>
+                    <span>Total</span>
+                    {discount > 0 && (
+                      <small>Sous-total {money(subtotal)} · Remise {money(discount)}</small>
+                    )}
+                  </div>
+                  <strong>{money(amountDue)}</strong>
+                </div>
+                <button type="button" className={styles.primaryButton}
+                  onClick={() => setStep("payment")} disabled={!draft.cart.length}>
+                  Paiement
+                </button>
+              </div>
+            </aside>
+
+            <div className={styles.checkoutCatalogSide}>
+              {/* ⬅ En-tête "Catalogue / Ajouter des produits" supprimé */}
+
+              {categories.length > 0 && (
+                <div className={styles.categoryBar} role="tablist">
+                  <button type="button"
+                    className={activeCategory === "" ? styles.categoryActive : styles.categoryChip}
+                    onClick={() => setActiveCategory("")}>Toutes</button>
+                  {categories.map((category) => (
+                    <button key={category} type="button"
+                      className={activeCategory === category ? styles.categoryActive : styles.categoryChip}
+                      onClick={() => setActiveCategory(category)}>
+                      {category}
                     </button>
-                  );
-                })
+                  ))}
+                </div>
               )}
+
+              <div className={styles.checkoutProductList}>
+                {productsLoading ? (
+                  Array.from({ length: 9 }).map((_, i) => (
+                    <div key={i} className={styles.productRowSkeleton} aria-hidden="true">
+                      <span className={styles.skeletonImage} />
+                      <div className={styles.productRowSkeletonText}>
+                        <span className={styles.skeletonLine} style={{ width: "72%" }} />
+                        <span className={styles.skeletonLine} style={{ width: "44%" }} />
+                      </div>
+                    </div>
+                  ))
+                ) : filteredProducts.length === 0 ? (
+                  <div className={styles.productListEmpty}>
+                    <p>Aucun produit.</p>
+                    {(search || activeCategory) && (
+                      <button type="button" className={styles.resetFilters}
+                        onClick={() => { setSearch(""); setActiveCategory(""); }}>
+                        Réinitialiser
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  filteredProducts.map((product) => {
+                    const inCart = draft.cart.find((l) => l.id === product.id);
+                    const isOut = product.stock_quantity < 1;
+                    const isLow = product.stock_quantity > 0 && product.stock_quantity <= 5;
+                    return (
+                      <button key={product.id} type="button"
+                        className={`${styles.productRow}${inCart ? ` ${styles.productRowActive}` : ""}`}
+                        onClick={() => addProduct(product)} disabled={isOut}>
+                        <span className={styles.productImageWrap}>
+                          {product.image_url ? (
+                            <img src={product.image_url} alt="" className={styles.productThumb} />
+                          ) : (
+                            <span className={styles.productImageFallback}>
+                              {product.name.charAt(0).toUpperCase()}
+                            </span>
+                          )}
+                          {inCart && (
+                            <span className={styles.productQtyBadge}>{inCart.quantity}</span>
+                          )}
+                        </span>
+                        <div className={styles.productInfo}>
+                          <strong>{product.name}</strong>
+                          <small>{product.sku}</small>
+                          <span className={`${styles.stockPill} ${isOut ? styles.stockOut : isLow ? styles.stockLow : styles.stockOk}`}>
+                            {isOut ? "Rupture" : `${product.stock_quantity} en stock`}
+                          </span>
+                        </div>
+                        <div className={styles.productPriceCol}>
+                          <b>{money(product.unit_price)}</b>
+                          <i><Plus size={14} /></i>
+                        </div>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
             </div>
           </section>
-        </div>
+        ) : (
+          /* ============ PAIEMENT ============ */
+          <div className={styles.paymentBody}>
+            <div className={styles.paymentCol}>
+              <section className={styles.paymentSection}>
+                <p className={styles.paymentSectionLabel}>Mode de paiement</p>
+                <div className={styles.methodGrid}>
+                  {PAYMENT_METHODS.map((method) => (
+                    <button key={method.id} type="button"
+                      className={paymentMethod === method.id ? styles.methodButtonActive : styles.methodButton}
+                      onClick={() => { setPaymentMethod(method.id); if (method.id !== "cash") setCashReceived(""); }}
+                      disabled={isSubmitting}>
+                      {method.image ? (
+                        <img className={styles.methodImage} src={method.image} alt="" />
+                      ) : (
+                        <span className={styles.methodIcon}>{method.icon}</span>
+                      )}
+                      <span className={styles.methodLabel}>{method.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </section>
 
-        {/* ============================= MODALE HANDOFF ============================= */}
-        {requiresHandoff && handoff && (
-          <div className={styles.handoffBackdrop}>
-            <section
-              className={styles.handoffModal}
-              role="dialog"
-              aria-modal="true"
-            >
-              <p className={styles.stepEyebrow}>Passation de caisse</p>
-              <h2>Prendre connaissance avant de vendre</h2>
-              <p className={styles.handoffIntro}>
-                Vérifiez la situation laissée par le vendeur précédent.
-              </p>
-              <div className={styles.handoffMetrics}>
-                <div>
-                  <span>Solde théorique</span>
-                  <strong>
-                    {handoff.theoretical_balance.toLocaleString("fr-FR")} FCFA
-                  </strong>
-                </div>
-                <div>
-                  <span>Ventes réalisées</span>
-                  <strong>
-                    {handoff.sales_total.toLocaleString("fr-FR")} FCFA
-                  </strong>
-                </div>
-                <div>
-                  <span>Encaissements</span>
-                  <strong>
-                    {handoff.cash_collected.toLocaleString("fr-FR")} FCFA
-                  </strong>
-                </div>
-                <div>
-                  <span>Dépenses / retraits</span>
-                  <strong>
-                    {handoff.withdrawals.toLocaleString("fr-FR")} FCFA
-                  </strong>
-                </div>
+              {isCash && (
+                <>
+                  <section className={styles.paymentSection}>
+                    <p className={styles.paymentSectionLabel}>Montant reçu</p>
+                    <div className={styles.cashInputRow}>
+                      <div className={`${styles.cashInputDisplay} ${cashReceived ? styles.cashInputDisplayActive : ""}`}>
+                        <span className={styles.cashInputDisplayValue}>{received.toLocaleString("fr-FR")}</span>
+                        <span className={styles.cashInputDisplaySuffix}>FCFA</span>
+                      </div>
+                      <button type="button" className={styles.exactButton}
+                        onClick={() => setCashReceived(String(Math.round(amountDue)))}
+                        disabled={isSubmitting}>Exact</button>
+                    </div>
+                  </section>
+
+                  <div className={styles.keypadRow}>
+                    <div className={styles.keypad}>
+                      {["1","2","3","4","5","6","7","8","9","00","0","C"].map((digit) => (
+                        <button key={digit} type="button"
+                          className={`${styles.keypadKey} ${digit === "C" ? styles.keypadKeyDanger : ""} ${digit === "00" ? styles.keypadKeyAccent : ""}`}
+                          onClick={() => appendDigit(digit)} disabled={isSubmitting}>
+                          {digit}
+                        </button>
+                      ))}
+                    </div>
+                    <div className={styles.quickAmounts}>
+                      {QUICK_AMOUNTS.map((amount) => (
+                        <button key={amount} type="button" className={styles.quickAmount}
+                          onClick={() => setCashReceived(String(received + amount))}
+                          disabled={isSubmitting}>
+                          +{amount.toLocaleString("fr-FR")}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {error && <p className={styles.message} role="alert">{error}</p>}
+
+              <div className={styles.paymentActions}>
+                <button type="button" className={styles.secondaryButton}
+                  onClick={() => setStep("products")} disabled={isSubmitting}>
+                  Retour
+                </button>
+                <button type="button" className={styles.primaryButton}
+                  onClick={submitSale} disabled={!cashSufficient || isSubmitting}>
+                  {isSubmitting ? "…"
+                    : isCash
+                    ? cashSufficient ? `Valider · ${money(amountDue)}` : "Montant insuffisant"
+                    : `Payer ${money(amountDue)}`}
+                </button>
               </div>
-              <div className={styles.handoffDetails}>
-                <span>
-                  Vendeur précédent{" "}
-                  <strong>
-                    {handoff.previous_seller ?? "Ouverture de journée"}
-                  </strong>
-                </span>
-                <span>
-                  Heure de passation{" "}
-                  <strong>
-                    {new Date(handoff.handoff_at).toLocaleString("fr-FR", {
-                      dateStyle: "short",
-                      timeStyle: "short",
-                    })}
-                  </strong>
+            </div>
+
+            <aside className={styles.paymentSummary}>
+              <div className={styles.totalHero}>
+                <span className={styles.totalHeroLabel}>Total</span>
+                <div className={styles.totalHeroAmount}>
+                  <strong>{Math.round(amountDue).toLocaleString("fr-FR")}</strong>
+                  <em>FCFA</em>
+                </div>
+                <span className={styles.totalHeroMeta}>
+                  {draft.cart.length} art. · Commande #{activeOrderId}
+                  {discount > 0 ? ` · Remise ${money(discount)}` : ""}
                 </span>
               </div>
-              {handoffError && <p className={styles.message}>{handoffError}</p>}
-              <button
-                type="button"
-                className={styles.primaryButton}
-                onClick={acknowledgeHandoff}
-                disabled={isAcknowledgingHandoff}
-              >
-                {isAcknowledgingHandoff ? "…" : "Je prends connaissance"}
-              </button>
-            </section>
+
+              {isCash && received > 0 && (
+                <div className={styles.paymentLineList}>
+                  <div className={styles.paymentLineItem}>
+                    <div>
+                      <span>Espèces reçues</span>
+                      <strong>{money(received)}</strong>
+                    </div>
+                    <button type="button" className={styles.paymentLineRemove}
+                      onClick={() => setCashReceived("")} aria-label="Effacer" disabled={isSubmitting}>
+                      <X size={14} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {isCash ? (
+                <div className={`${styles.remainingBox} ${changeState === "insufficient" ? styles.remainingInsufficient : changeState === "ok" ? styles.remainingOk : ""}`}
+                  aria-live="polite">
+                  <div className={styles.remainingRow}>
+                    <span>
+                      {changeState === "insufficient" ? "Restant"
+                        : changeState === "ok" && received === amountDue ? "Exact"
+                        : "Monnaie"}
+                    </span>
+                    <strong>
+                      {changeState === "insufficient"
+                        ? money(amountDue - received)
+                        : changeState === "ok" && received === amountDue
+                        ? "0 FCFA"
+                        : money(change)}
+                    </strong>
+                  </div>
+                  <div className={styles.remainingMeta}>
+                    {changeState === "idle" && "Entrez le montant"}
+                    {changeState === "insufficient" && "Montant insuffisant"}
+                    {changeState === "ok" && received === amountDue && "Montant exact"}
+                    {changeState === "ok" && received > amountDue && "À rendre"}
+                  </div>
+                </div>
+              ) : (
+                <div className={styles.remainingBox}>
+                  <div className={styles.remainingRow}>
+                    <span>Mode</span>
+                    <strong>{PAYMENT_LABELS[paymentMethod]}</strong>
+                  </div>
+                  <div className={styles.remainingMeta}>
+                    Validation par {PAYMENT_LABELS[paymentMethod].toLowerCase()}
+                  </div>
+                </div>
+              )}
+
+              {draft.cart.length > 0 && (
+                <details className={styles.paymentLinesDetails}>
+                  <summary>
+                    Détail · {draft.cart.reduce((s, l) => s + l.quantity, 0)} article(s)
+                  </summary>
+                  <div className={styles.paymentLinesDetailsBody}>
+                    {draft.cart.map((l) => (
+                      <div className={styles.receiptLine} key={l.id}>
+                        <span>{l.quantity}× {l.name}</span>
+                        <span>{money(l.unit_price * l.quantity)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              )}
+            </aside>
           </div>
         )}
       </div>
-    </AppShell>
+    </main>
   );
 }

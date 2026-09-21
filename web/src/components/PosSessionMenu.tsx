@@ -9,6 +9,7 @@ import styles from "../app/sales/page.module.css";
 
 type ClosingSession = { id: number; register_id: number; actual_opening_amount: number; status: string };
 type ClosingBalance = { expected_cash_amount: number; payment_totals?: Record<string, number> };
+const POS_IDLE_TIMEOUT = 60_000;
 
 export default function PosSessionMenu({ inline = false }: Readonly<{ inline?: boolean }>) {
   const router = useRouter();
@@ -25,19 +26,39 @@ export default function PosSessionMenu({ inline = false }: Readonly<{ inline?: b
 
   useEffect(() => {
     const lockPos = () => setIsLocked(true);
+    let inactivityTimer: ReturnType<typeof setTimeout>;
+    const resetInactivityTimer = () => {
+      clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(lockPos, POS_IDLE_TIMEOUT);
+    };
+    const keepCurrentSalesState = () => {
+      const current = new URL(window.location.href);
+      current.searchParams.set("pos", String(Date.now()));
+      window.history.replaceState({ posGuard: true }, "", `${current.pathname}${current.search}`);
+    };
     const handleBackAttempt = () => {
-      window.history.pushState({ posGuard: true }, "", window.location.href);
+      keepCurrentSalesState();
       lockPos();
     };
     const handleVisibilityChange = () => {
-      if (document.visibilityState === "hidden") lockPos();
+      resetInactivityTimer();
     };
 
-    window.history.pushState({ posGuard: true }, "", window.location.href);
+    keepCurrentSalesState();
+    resetInactivityTimer();
+    window.addEventListener("mousemove", resetInactivityTimer);
+    window.addEventListener("mousedown", resetInactivityTimer);
+    window.addEventListener("keydown", resetInactivityTimer);
+    window.addEventListener("touchstart", resetInactivityTimer);
     window.addEventListener("popstate", handleBackAttempt);
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
+      clearTimeout(inactivityTimer);
+      window.removeEventListener("mousemove", resetInactivityTimer);
+      window.removeEventListener("mousedown", resetInactivityTimer);
+      window.removeEventListener("keydown", resetInactivityTimer);
+      window.removeEventListener("touchstart", resetInactivityTimer);
       window.removeEventListener("popstate", handleBackAttempt);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };

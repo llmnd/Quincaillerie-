@@ -9,7 +9,6 @@ import {
 import { useRouter } from "next/navigation";
 import {
   CheckCircle2,
-  Minus,
   Plus,
   Printer,
   Search,
@@ -246,28 +245,6 @@ export default function CheckoutPage() {
         )
       : [...draft.cart, { ...product, quantity: 1 }];
     updateDraft({ ...draft, cart });
-  }
-
-  function incrementLine(productId: number) {
-    if (!draft) return;
-    updateDraft({
-      ...draft,
-      cart: draft.cart.map((l) => {
-        if (l.id !== productId) return l;
-        const limit = products.find((p) => p.id === productId)?.stock_quantity ?? l.quantity + 1;
-        return { ...l, quantity: Math.min(l.quantity + 1, limit) };
-      }),
-    });
-  }
-
-  function decrementLine(productId: number) {
-    if (!draft) return;
-    updateDraft({
-      ...draft,
-      cart: draft.cart.flatMap((l) =>
-        l.id !== productId ? [l] : l.quantity <= 1 ? [] : [{ ...l, quantity: l.quantity - 1 }]
-      ),
-    });
   }
 
   function removeProduct(productId: number) {
@@ -710,29 +687,7 @@ export default function CheckoutPage() {
                 ) : (
                   draft.cart.map((line) => (
                     <div className={styles.checkoutDraftLine} key={line.id}>
-                      <div
-                        className={styles.qtyControl}
-                        role="group"
-                        aria-label={`Quantité ${line.name}`}
-                      >
-                        <button
-                          type="button"
-                          className={styles.qtyBtn}
-                          onClick={() => decrementLine(line.id)}
-                          aria-label={`Réduire ${line.name}`}
-                        >
-                          <Minus size={12} />
-                        </button>
-                        <span className={styles.qtyValue}>{line.quantity}</span>
-                        <button
-                          type="button"
-                          className={styles.qtyBtn}
-                          onClick={() => incrementLine(line.id)}
-                          aria-label={`Augmenter ${line.name}`}
-                        >
-                          <Plus size={12} />
-                        </button>
-                      </div>
+                      <span className={styles.checkoutDraftLineQty}>{line.quantity}</span>
                       <span className={styles.checkoutDraftLineName}>{line.name}</span>
                       <b className={styles.checkoutDraftLinePrice}>
                         {money(line.unit_price * line.quantity)}
