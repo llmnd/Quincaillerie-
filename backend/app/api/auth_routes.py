@@ -6,6 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db, require_roles
+from app.core.accounting import cleanup_duplicate_accounts
 from app.models.accounting import Account
 from app.core.audit import record_audit
 from app.core.config import settings
@@ -167,6 +168,7 @@ def register_organization(payload: BootstrapAdminRequest, response: Response, db
         {"code": "571", "name": "Caisse", "account_class": "5"},
         {"code": "701", "name": "Ventes de marchandises", "account_class": "7"},
     ]
+    cleanup_duplicate_accounts(db)
     for account_spec in default_accounts:
         existing = db.scalar(select(Account.id).where(Account.organization_id == organization.id, Account.code == account_spec["code"]))
         if existing is None:

@@ -16,7 +16,35 @@ DEFAULT_ACCOUNTS = (
 )
 
 
+def cleanup_duplicate_accounts(db: Session) -> None:
+    records = db.execute(
+        select(Account.id, Account.organization_id, Account.code).order_by(Account.organization_id, Account.code, Account.id)
+    ).all()
+    seen: set[tuple[int, str]] = set()
+    keep_ids: dict[tuple[int, str], int] = {}
+
+    for account_id, organization_id, code in records:
+        key = (organization_id, code)
+        if key in seen:
+            keep_id = keep_ids[key]
+            db.execute(
+                "UPDATE journal_lines SET account_id = :keep_id WHERE account_id = :account_id",
+                {"keep_id": keep_id, "account_id": account_id},
+            )
+            db.execute(
+                "DELETE FROM accounts WHERE id = :account_id AND organization_id = :organization_id AND code = :code",
+                {"account_id": account_id, "organization_id": organization_id, "code": code},
+            )
+            continue
+
+        seen.add(key)
+        keep_ids[key] = account_id
+
+    db.flush()
+
+
 def get_or_create_default_accounts(db: Session, organization_id: int) -> dict[str, Account]:
+    cleanup_duplicate_accounts(db)
     accounts = {
         account.code: account
         for account in db.scalars(select(Account).where(Account.organization_id == organization_id)).all()
