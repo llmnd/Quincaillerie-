@@ -64,18 +64,10 @@ const paymentMethodLabel = (key: string): string =>
     cash: "Espèces",
     wave: "Wave",
     orange_money: "Orange Money",
-    mobile_money: "Mobile Money",
     card: "Carte",
     other: "Autre",
   }[key] ?? key);
-
-export default function CashPage() {
-  const router = useRouter();
-  const [registers, setRegisters] = useState<Register[]>([]);
-  const [sessions, setSessions] = useState<CashSession[]>([]);
-  const [recaps, setRecaps] = useState<SessionRecap[]>([]);
-  const [balance, setBalance] = useState<CashBalance | null>(null);
-  const [registerId, setRegisterId] = useState("");
+                    {["cash", "wave", "orange_money", "card", "other"].map(
   const [amount, setAmount] = useState("");
   const [closeAmount, setCloseAmount] = useState("");
   const [closeNote, setCloseNote] = useState("");
@@ -403,7 +395,7 @@ export default function CashPage() {
                 <div className={styles.paymentSummary}>
                   <h3>Encaissements par moyen de paiement</h3>
                   <div className={styles.paymentGrid}>
-                    {["cash", "wave", "orange_money", "mobile_money", "card", "other"].map(
+                    {["cash", "wave", "orange_money", "card", "other"].map(
                       (key) => (
                         <div key={key}>
                           <span>{paymentMethodLabel(key)}</span>
@@ -880,7 +872,7 @@ export default function CashPage() {
                     </div>
 
                     {/* AUTRES MOYENS */}
-                    {["wave", "orange_money", "mobile_money", "other"].map((key) => {
+                    {["wave", "orange_money", "other"].map((key) => {
                       const amount = balance?.payment_totals?.[key] ?? 0;
                       if (amount === 0) return null;
                       return (

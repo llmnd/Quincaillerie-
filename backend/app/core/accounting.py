@@ -15,7 +15,7 @@ DEFAULT_ACCOUNTS = (
     ("701", "Ventes de marchandises", "7"),
 )
 
-MANUAL_PAYMENT_METHODS = {"cash", "card", "mobile_money", "wave", "orange_money", "other"}
+MANUAL_PAYMENT_METHODS = {"cash", "card", "wave", "orange_money", "other"}
 
 
 def payment_account_code(payment_method: str) -> str:
