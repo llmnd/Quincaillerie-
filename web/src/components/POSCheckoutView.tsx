@@ -12,9 +12,9 @@ import {
   User,
   X,
 } from "lucide-react";
-import PosSessionMenu from "../../components/PosSessionMenu";
-import { authHeaders } from "../../lib/auth";
-import styles from "./page.module.css";
+import PosSessionMenu from "./PosSessionMenu";
+import { authHeaders } from "../lib/auth";
+import styles from "../app/sales/page.module.css";
 
 type Product = {
   id: number; name: string; sku: string;
