@@ -22,11 +22,20 @@ def get_or_create_default_accounts(db: Session, organization_id: int) -> dict[st
         for account in db.scalars(select(Account).where(Account.organization_id == organization_id)).all()
     }
     for code, name, account_class in DEFAULT_ACCOUNTS:
-        if code not in accounts:
-            account = Account(organization_id=organization_id, code=code, name=name, account_class=account_class, is_active=True)
-            db.add(account)
-            accounts[code] = account
-    db.flush()
+        if code in accounts:
+            continue
+
+        existing = db.scalar(
+            select(Account).where(Account.organization_id == organization_id, Account.code == code)
+        )
+        if existing is not None:
+            accounts[code] = existing
+            continue
+
+        account = Account(organization_id=organization_id, code=code, name=name, account_class=account_class, is_active=True)
+        db.add(account)
+        db.flush()
+        accounts[code] = account
     return accounts
 
 

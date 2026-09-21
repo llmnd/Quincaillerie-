@@ -4,6 +4,7 @@ from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, require_module, require_roles
@@ -101,17 +102,22 @@ def create_sale(payload: SaleCreate, db: Session = Depends(get_db), current_user
     if payload.discount_amount > total_amount:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Discount cannot exceed sale subtotal")
     sale.total_amount = total_amount - payload.discount_amount
-    create_sale_journal(
-        db,
-        organization_id=current_user.organization_id,
-        sale_id=sale.id,
-        amount=sale.total_amount,
-        payment_method=payload.payment_method,
-        customer_id=sale.customer_id,
-    )
-    db.add(CashOperation(organization_id=current_user.organization_id, register_id=session.register_id, session_id=session.id, user_id=current_user.id, operation_type="sale", amount=sale.total_amount, payment_method=payload.payment_method, reason=f"Sale #{sale.id}"))
-    db.add(AuditLog(organization_id=current_user.organization_id, user_id=current_user.id, register_id=session.register_id, session_id=session.id, action="sale.created", entity_type="sale", entity_id=sale.id, amount=sale.total_amount, after_data=f"payment_method={payload.payment_method}"))
-    db.commit()
+    try:
+        create_sale_journal(
+            db,
+            organization_id=current_user.organization_id,
+            sale_id=sale.id,
+            amount=sale.total_amount,
+            payment_method=payload.payment_method,
+            customer_id=sale.customer_id,
+        )
+        db.add(CashOperation(organization_id=current_user.organization_id, register_id=session.register_id, session_id=session.id, user_id=current_user.id, operation_type="sale", amount=sale.total_amount, payment_method=payload.payment_method, reason=f"Sale #{sale.id}"))
+        db.add(AuditLog(organization_id=current_user.organization_id, user_id=current_user.id, register_id=session.register_id, session_id=session.id, action="sale.created", entity_type="sale", entity_id=sale.id, amount=sale.total_amount, after_data=f"payment_method={payload.payment_method}"))
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="The accounting data for this sale could not be saved because the chart of accounts contains duplicate entries. The transaction was rolled back.") from None
+
     db.refresh(sale)
     return sale
 
