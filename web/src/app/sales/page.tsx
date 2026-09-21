@@ -92,9 +92,23 @@ export default function CheckoutPage() {
 
   /* ---------- Chargement initial ---------- */
   useEffect(() => {
-    const stored = window.sessionStorage.getItem("quincaillerie_sale_draft");
-    if (!stored) { router.replace("/sales"); return; }
+    if (typeof window === "undefined") return;
+
+    const createFreshDraft = () => {
+      const initialDraft = emptyDraft();
+      setDraft(initialDraft);
+      setOrderTabs([{ id: 1, draft: initialDraft }]);
+      setActiveOrderId(1);
+      setStep("products");
+    };
+
     try {
+      const stored = window.sessionStorage.getItem("quincaillerie_sale_draft");
+      if (!stored) {
+        createFreshDraft();
+        return;
+      }
+
       const parsed = JSON.parse(stored) as Draft & {
         draft?: Draft; orderTabs?: OrderTab[]; activeOrderId?: number; step?: Step;
       };
@@ -103,7 +117,9 @@ export default function CheckoutPage() {
       setOrderTabs(parsed.orderTabs?.length ? parsed.orderTabs : [{ id: 1, draft: initialDraft }]);
       setActiveOrderId(parsed.activeOrderId ?? 1);
       setStep(parsed.step ?? (initialDraft.cart.length ? "payment" : "products"));
-    } catch { router.replace("/sales"); }
+    } catch {
+      createFreshDraft();
+    }
   }, [router]);
 
   useEffect(() => {

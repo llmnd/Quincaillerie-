@@ -1,37 +1,26 @@
 "use client";
 
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   CheckCircle2,
   Plus,
   Printer,
-  Search,
   Send,
   ShoppingBag,
   Tag,
-  Trash2,
+  User,
   X,
 } from "lucide-react";
-import PosSessionMenu from "./PosSessionMenu";
-import { authHeaders } from "../lib/auth";
-import styles from "../app/sales/page.module.css";
+import PosSessionMenu from "../../components/PosSessionMenu";
+import { authHeaders } from "../../lib/auth";
+import styles from "./page.module.css";
 
 type Product = {
-  id: number;
-  name: string;
-  sku: string;
-  image_url?: string | null;
-  category?: string | null;
-  unit_price: number;
-  stock_quantity: number;
+  id: number; name: string; sku: string;
+  image_url?: string | null; category?: string | null;
+  unit_price: number; stock_quantity: number;
 };
-
 type CartLine = Product & { quantity: number };
 type PaymentMethod = "cash" | "wave" | "orange_money" | "card" | "other";
 
@@ -41,7 +30,6 @@ type Draft = {
   discount: string;
   createdAt?: number;
 };
-
 type OrderTab = { id: number; draft: Draft };
 type Customer = { id: number; name: string; email?: string | null };
 type Step = "products" | "payment" | "success";
@@ -55,7 +43,6 @@ const PAYMENT_METHODS: Array<{ id: PaymentMethod; label: string; icon: string; i
   { id: "card", label: "Carte", icon: "💳" },
   { id: "other", label: "Autre", icon: "•" },
 ];
-
 const PAYMENT_LABELS: Record<PaymentMethod, string> = {
   cash: "Espèces",
   wave: "Wave",
@@ -63,18 +50,13 @@ const PAYMENT_LABELS: Record<PaymentMethod, string> = {
   card: "Carte",
   other: "Autre",
 };
-
 const QUICK_AMOUNTS = [500, 1000, 2000, 5000, 10000];
 const DISCOUNT_PRESETS = [5, 10, 20];
 
-const money = (value: number) =>
-  `${Math.round(value).toLocaleString("fr-FR")} FCFA`;
+const money = (value: number) => `${Math.round(value).toLocaleString("fr-FR")} FCFA`;
 
 const emptyDraft = (): Draft => ({
-  cart: [],
-  selectedCustomer: "",
-  discount: "0",
-  createdAt: Date.now(),
+  cart: [], selectedCustomer: "", discount: "0", createdAt: Date.now(),
 });
 
 export default function CheckoutPage() {
@@ -94,7 +76,7 @@ export default function CheckoutPage() {
   const [customerQuery, setCustomerQuery] = useState("");
   const [customerOpen, setCustomerOpen] = useState(false);
   const [discountOpen, setDiscountOpen] = useState(false);
-  const [mobileCartOpen, setMobileCartOpen] = useState(false);
+  const [selectedCartLineId, setSelectedCartLineId] = useState<number | null>(null);
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
   const [cashReceived, setCashReceived] = useState("");
@@ -104,107 +86,106 @@ export default function CheckoutPage() {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const [completedSale, setCompletedSale] = useState<{
-    saleId: number;
-    total: number;
-    given: number;
-    change: number;
-    method: PaymentMethod;
-    lines: CartLine[];
-    discount: number;
+    saleId: number; total: number; given: number; change: number;
+    method: PaymentMethod; lines: CartLine[]; discount: number;
   } | null>(null);
 
-  /* ---------- Chargement initial ---------- */
+  /* ---------- Chargement initial du draft ---------- */
   useEffect(() => {
-    const stored = window.sessionStorage.getItem("quincaillerie_sale_draft");
-    if (!stored) {
-      router.replace("/sales");
-      return;
-    }
+    if (typeof window === "undefined") return;
+
+    const createFreshDraft = () => {
+      const initialDraft = emptyDraft();
+      setDraft(initialDraft);
+      setOrderTabs([{ id: 1, draft: initialDraft }]);
+      setActiveOrderId(1);
+      setStep("products");
+    };
+
     try {
+      const stored = window.sessionStorage.getItem("quincaillerie_sale_draft");
+      if (!stored) {
+        createFreshDraft();
+        return;
+      }
+
       const parsed = JSON.parse(stored) as Draft & {
-        draft?: Draft;
-        orderTabs?: OrderTab[];
-        activeOrderId?: number;
-        step?: Step;
+        draft?: Draft; orderTabs?: OrderTab[]; activeOrderId?: number; step?: Step;
       };
       const initialDraft = parsed.draft ?? parsed;
       setDraft(initialDraft);
-      setOrderTabs(
-        parsed.orderTabs?.length ? parsed.orderTabs : [{ id: 1, draft: initialDraft }]
-      );
+      setOrderTabs(parsed.orderTabs?.length ? parsed.orderTabs : [{ id: 1, draft: initialDraft }]);
       setActiveOrderId(parsed.activeOrderId ?? 1);
       setStep(parsed.step ?? (initialDraft.cart.length ? "payment" : "products"));
     } catch {
-      router.replace("/sales");
+      createFreshDraft();
     }
   }, [router]);
 
+  /* ---------- Vérification session cash ouverte ---------- */
   useEffect(() => {
     let active = true;
-    fetch(`${API_URL}/api/v1/cash/sessions`, {
-      headers: authHeaders(),
-      credentials: "include",
-    })
-      .then((response) => (response.ok ? response.json() : []))
+    fetch(`${API_URL}/api/v1/cash/sessions`, { headers: authHeaders(), credentials: "include" })
+      .then((r) => (r.ok ? r.json() : []))
       .then((sessions: { status: string }[]) => {
         if (active && !sessions.some((s) => s.status === "open")) router.replace("/cash");
       })
       .catch(() => undefined);
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [router]);
 
+  /* ---------- Sauvegarde du draft ---------- */
   useEffect(() => {
-    if (!draft) return;
-    window.sessionStorage.setItem(
-      "quincaillerie_sale_draft",
-      JSON.stringify({ ...draft, draft, orderTabs, activeOrderId, step })
-    );
+    if (!draft || typeof window === "undefined") return;
+    try {
+      window.sessionStorage.setItem(
+        "quincaillerie_sale_draft",
+        JSON.stringify({ ...draft, draft, orderTabs, activeOrderId, step })
+      );
+    } catch {
+      // Storage indisponible — pas bloquant, on continue sans persistance
+    }
   }, [activeOrderId, draft, orderTabs, step]);
 
+  /* ---------- Chargement produits + clients ---------- */
   useEffect(() => {
     setProductsLoading(true);
-    fetch(`${API_URL}/api/v1/products`, {
-      headers: authHeaders(),
-      credentials: "include",
-    })
+    fetch(`${API_URL}/api/v1/products`, { headers: authHeaders(), credentials: "include" })
       .then((r) => (r.ok ? (r.json() as Promise<Product[]>) : []))
       .then(setProducts)
       .catch(() => setProducts([]))
       .finally(() => setProductsLoading(false));
 
-    fetch(`${API_URL}/api/v1/customers`, {
-      headers: authHeaders(),
-      credentials: "include",
-    })
-      .then((r) => (r.ok ? (r.json() as Promise<Customer[]>) : []))
+    fetch(`${API_URL}/api/v1/customers`, { headers: authHeaders(), credentials: "include" })
+      .then(async (r) => {
+        if (r.status === 403) {
+          console.warn("[POS] Accès aux clients refusé (403). Le sélecteur client sera masqué.");
+          return [];
+        }
+        if (!r.ok) return [];
+        try {
+          return (await r.json()) as Customer[];
+        } catch {
+          return [];
+        }
+      })
       .then(setCustomers)
       .catch(() => setCustomers([]));
   }, []);
 
-  /* ---------- Ferme la feuille panier si le panier devient vide ---------- */
-  const cartLineCount = draft?.cart.length ?? 0;
-  useEffect(() => {
-    if (cartLineCount === 0) setMobileCartOpen(false);
-  }, [cartLineCount]);
-
   /* ---------- Calculs ---------- */
   const categories = useMemo(() => {
     const set = new Set<string>();
-    for (const p of products) {
-      const c = p.category?.trim();
-      if (c) set.add(c);
-    }
+    for (const p of products) { const c = p.category?.trim(); if (c) set.add(c); }
     return Array.from(set).sort((a, b) => a.localeCompare(b, "fr"));
   }, [products]);
 
   const filteredProducts = useMemo(() => {
     const n = search.trim().toLowerCase();
     return products.filter((p) => {
-      const matchSearch = !n || `${p.name} ${p.sku}`.toLowerCase().includes(n);
-      const matchCat = !activeCategory || p.category === activeCategory;
-      return matchSearch && matchCat;
+      const okS = !n || `${p.name} ${p.sku}`.toLowerCase().includes(n);
+      const okC = !activeCategory || p.category === activeCategory;
+      return okS && okC;
     });
   }, [products, search, activeCategory]);
 
@@ -224,23 +205,16 @@ export default function CheckoutPage() {
   const change = Math.max(0, received - amountDue);
   const isCash = paymentMethod === "cash";
   const cashSufficient = !isCash || received >= amountDue;
-
   const changeState: "idle" | "insufficient" | "ok" = !isCash
     ? "ok"
-    : !cashReceived
-    ? "idle"
-    : received < amountDue
-    ? "insufficient"
-    : "ok";
+    : !cashReceived ? "idle"
+    : received < amountDue ? "insufficient" : "ok";
 
-  /* ---------- Actions panier ---------- */
+  /* ---------- Actions ---------- */
   function updateDraft(next: Draft) {
     setDraft(next);
-    setOrderTabs((current) =>
-      current.map((o) => (o.id === activeOrderId ? { ...o, draft: next } : o))
-    );
+    setOrderTabs((c) => c.map((o) => (o.id === activeOrderId ? { ...o, draft: next } : o)));
   }
-
   function addProduct(product: Product) {
     if (!draft) return;
     const existing = draft.cart.find((l) => l.id === product.id);
@@ -253,61 +227,45 @@ export default function CheckoutPage() {
       : [...draft.cart, { ...product, quantity: 1 }];
     updateDraft({ ...draft, cart });
   }
-
   function removeProduct(productId: number) {
     if (!draft) return;
-    updateDraft({ ...draft, cart: draft.cart.filter((l) => l.id !== productId) });
+    const cart = draft.cart.flatMap((line) => {
+      if (line.id !== productId) return [line];
+      if (line.quantity <= 1) return [];
+      return [{ ...line, quantity: line.quantity - 1 }];
+    });
+    updateDraft({ ...draft, cart });
   }
-
-  function clearCart() {
-    if (!draft || draft.cart.length === 0) return;
-    if (!window.confirm("Vider le panier ?")) return;
-    updateDraft({ ...draft, cart: [] });
-  }
-
-  /* ---------- Onglets commandes ---------- */
   function createOrderTab() {
     const nextId = Math.max(0, ...orderTabs.map((o) => o.id)) + 1;
-    const newDraft = emptyDraft();
-    setOrderTabs((c) => [...c, { id: nextId, draft: newDraft }]);
-    setActiveOrderId(nextId);
-    setDraft(newDraft);
-    setStep("products");
-    setPaymentMethod("cash");
-    setCashReceived("");
-    setShowOrders(false);
+    const nd = emptyDraft();
+    setOrderTabs((c) => [...c, { id: nextId, draft: nd }]);
+    setActiveOrderId(nextId); setDraft(nd);
+    setStep("products"); setPaymentMethod("cash");
+    setCashReceived(""); setShowOrders(false);
     setTimeout(() => searchInputRef.current?.focus(), 0);
   }
-
   function selectOrderTab(order: OrderTab) {
-    setActiveOrderId(order.id);
-    setDraft(order.draft);
+    setActiveOrderId(order.id); setDraft(order.draft);
     setStep(order.draft.cart.length ? "payment" : "products");
-    setPaymentMethod("cash");
-    setCashReceived("");
-    setShowOrders(false);
+    setPaymentMethod("cash"); setCashReceived(""); setShowOrders(false);
   }
-
   function closeOrderTab(orderId: number) {
     if (orderTabs.length <= 1) {
       const fresh = emptyDraft();
       setDraft(fresh);
       setOrderTabs([{ id: orderTabs[0]?.id ?? 1, draft: fresh }]);
-      setStep("products");
-      setShowOrders(false);
+      setStep("products"); setShowOrders(false);
       return;
     }
     const remaining = orderTabs.filter((o) => o.id !== orderId);
     setOrderTabs(remaining);
     if (activeOrderId === orderId) {
       const next = remaining[remaining.length - 1];
-      setActiveOrderId(next.id);
-      setDraft(next.draft);
+      setActiveOrderId(next.id); setDraft(next.draft);
       setStep(next.draft.cart.length ? "payment" : "products");
     }
   }
-
-  /* ---------- Pavé numérique ---------- */
   function appendDigit(digit: string) {
     setCashReceived((current) => {
       if (digit === "C") return "";
@@ -326,9 +284,14 @@ export default function CheckoutPage() {
     const handler = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName;
       const isField = tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA";
+      if (e.key === "Delete" && !isField && step === "products" && selectedCartLineId !== null) {
+        e.preventDefault();
+        removeProduct(selectedCartLineId);
+        setSelectedCartLineId(null);
+        return;
+      }
       if (e.key === "Escape") {
-        if (mobileCartOpen) setMobileCartOpen(false);
-        else if (showOrders) setShowOrders(false);
+        if (showOrders) setShowOrders(false);
         else if (step === "payment") setStep("products");
         else if (isField) (e.target as HTMLElement).blur();
         return;
@@ -340,14 +303,11 @@ export default function CheckoutPage() {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, showOrders, cashSufficient, isSubmitting, mobileCartOpen]);
+  }, [step, showOrders, cashSufficient, isSubmitting, selectedCartLineId, draft]);
 
-  /* ---------- Soumission ---------- */
   async function submitSale() {
     if (!draft || !cashSufficient || isSubmitting) return;
-    setIsSubmitting(true);
-    setError("");
-
+    setIsSubmitting(true); setError("");
     const given = isCash ? received : amountDue;
     const changeValue = isCash ? change : 0;
     const linesSnapshot = draft.cart.map((l) => ({ ...l }));
@@ -363,60 +323,41 @@ export default function CheckoutPage() {
           discount_amount: discount,
           payment_method: paymentMethod,
           items: draft.cart.map((l) => ({
-            product_id: l.id,
-            quantity: l.quantity,
-            unit_price: l.unit_price,
+            product_id: l.id, quantity: l.quantity, unit_price: l.unit_price,
           })),
         }),
       });
-
       const payload = (await response.json().catch(() => ({}))) as {
-        id?: number;
-        total_amount?: number;
-        detail?: string;
+        id?: number; total_amount?: number; detail?: string;
       };
-
       if (!response.ok) {
-        setError(
-          typeof payload?.detail === "string"
-            ? payload.detail
-            : "La vente n'a pas pu être enregistrée."
-        );
+        setError(typeof payload?.detail === "string"
+          ? payload.detail
+          : "La vente n'a pas pu être enregistrée.");
         return;
       }
-
       setCompletedSale({
         saleId: payload.id ?? 0,
         total: Number(payload.total_amount ?? amountDue),
-        given,
-        change: changeValue,
-        method: paymentMethod,
-        lines: linesSnapshot,
-        discount,
+        given, change: changeValue, method: paymentMethod,
+        lines: linesSnapshot, discount,
       });
       setStep("success");
     } catch {
       setError("Erreur réseau. La vente n'a pas pu être enregistrée.");
-    } finally {
-      setIsSubmitting(false);
-    }
+    } finally { setIsSubmitting(false); }
   }
 
-  /* ---------- Impression ---------- */
   function printReceipt() {
     if (!completedSale) return;
     const w = window.open("", "_blank", "width=420,height=640");
     if (!w) return;
     const esc = (s: string) =>
       s.replace(/[&<>'"]/g, (c) =>
-        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[c] ?? c)
-      );
-    const rows = completedSale.lines
-      .map(
-        (l) =>
-          `<tr><td>${esc(l.name)}<br><small>${esc(l.sku)}</small></td><td>${l.quantity}</td><td>${l.unit_price.toLocaleString("fr-FR")}</td><td>${(l.unit_price * l.quantity).toLocaleString("fr-FR")}</td></tr>`
-      )
-      .join("");
+        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[c] ?? c));
+    const rows = completedSale.lines.map((l) =>
+      `<tr><td>${esc(l.name)}<br><small>${esc(l.sku)}</small></td><td>${l.quantity}</td><td>${l.unit_price.toLocaleString("fr-FR")}</td><td>${(l.unit_price * l.quantity).toLocaleString("fr-FR")}</td></tr>`
+    ).join("");
     w.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Reçu #${completedSale.saleId}</title><style>
       @page{margin:12mm}body{font-family:Arial,sans-serif;color:#111;max-width:400px;margin:0 auto;padding:16px}
       h1{font-size:16px;margin:0 0 4px;text-align:center}
@@ -442,24 +383,18 @@ export default function CheckoutPage() {
   }
 
   function startNewSale() {
-    setCompletedSale(null);
-    setError("");
-    const newDraft = emptyDraft();
+    setCompletedSale(null); setError("");
+    const nd = emptyDraft();
     const remaining = orderTabs.filter((o) => o.id !== activeOrderId);
     const nextId = Math.max(0, ...remaining.map((o) => o.id), activeOrderId) + 1;
-    const nextOrder = { id: nextId, draft: newDraft };
-    setDraft(newDraft);
-    setOrderTabs([...remaining, nextOrder]);
-    setActiveOrderId(nextId);
-    setStep("products");
-    setPaymentMethod("cash");
-    setCashReceived("");
+    const nextOrder = { id: nextId, draft: nd };
+    setDraft(nd); setOrderTabs([...remaining, nextOrder]);
+    setActiveOrderId(nextId); setStep("products");
+    setPaymentMethod("cash"); setCashReceived("");
     setDiscountOpen(false);
-    setMobileCartOpen(false);
     setTimeout(() => searchInputRef.current?.focus(), 0);
   }
 
-  /* ---------- Recherche produit + Enter ---------- */
   function handleSearchKey(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key !== "Enter") return;
     if (filteredProducts.length === 0) return;
@@ -472,15 +407,12 @@ export default function CheckoutPage() {
   return (
     <main className={styles.paymentPage}>
       <div className={styles.paymentPageContent}>
-        {/* ============================= TOOLBAR ============================= */}
+        {/* ============ TOOLBAR ============ */}
         <nav className={styles.checkoutToolbar} aria-label="Commandes">
           <button
             type="button"
             className={`${styles.checkoutTab} ${!showOrders && step !== "success" ? styles.checkoutTabActive : ""}`}
-            onClick={() => {
-              setShowOrders(false);
-              setStep(draft.cart.length ? "payment" : "products");
-            }}
+            onClick={() => { setShowOrders(false); setStep(draft.cart.length ? "payment" : "products"); }}
           >
             Caisse
           </button>
@@ -495,12 +427,9 @@ export default function CheckoutPage() {
           <span className={styles.checkoutToolbarDivider} aria-hidden="true" />
 
           <button
-            type="button"
-            className={styles.checkoutNewOrder}
-            onClick={createOrderTab}
-            disabled={isSubmitting}
-            aria-label="Nouvelle commande"
-            title="Nouvelle commande"
+            type="button" className={styles.checkoutNewOrder}
+            onClick={createOrderTab} disabled={isSubmitting}
+            aria-label="Nouvelle commande" title="Nouvelle commande"
           >
             +
           </button>
@@ -513,40 +442,49 @@ export default function CheckoutPage() {
                   key={order.id}
                   className={`${styles.checkoutOrderTabWrap} ${activeOrderId === order.id && !showOrders ? styles.checkoutOrderTabWrapActive : ""}`}
                 >
-                  <button
-                    type="button"
-                    className={styles.checkoutOrderTab}
-                    onClick={() => selectOrderTab(order)}
-                  >
+                  <button type="button" className={styles.checkoutOrderTab}
+                    onClick={() => selectOrderTab(order)}>
                     <span className={styles.checkoutOrderTabNumber}>#{order.id}</span>
                     <span className={styles.checkoutOrderTabTotal}>
                       {order.draft.cart.length > 0 ? money(total) : "vide"}
                     </span>
                   </button>
-                  <button
-                    type="button"
-                    className={styles.checkoutOrderTabClose}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      closeOrderTab(order.id);
-                    }}
-                    aria-label={`Fermer la commande ${order.id}`}
-                  >
-                    <X size={12} />
+                  <button type="button" className={styles.checkoutOrderTabClose}
+                    onClick={(e) => { e.stopPropagation(); closeOrderTab(order.id); }}
+                    aria-label={`Fermer la commande ${order.id}`}>
+                    <X size={14} />
                   </button>
                 </div>
               );
             })}
           </div>
 
+          <div className={`${styles.catalogToolbar} ${styles.checkoutHeaderSearch}`}>
+            <input
+              ref={searchInputRef}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={handleSearchKey}
+              placeholder="Rechercher… (Entrée pour ajouter)"
+              aria-label="Rechercher"
+              autoFocus
+            />
+            {search && (
+              <button type="button" className={styles.searchClear}
+                onClick={() => setSearch("")} aria-label="Effacer">
+                <X size={15} />
+              </button>
+            )}
+          </div>
+
           <PosSessionMenu inline />
         </nav>
 
-        {/* ============================= ÉCRAN SUCCÈS ============================= */}
+        {/* ============ SUCCÈS ============ */}
         {step === "success" && completedSale ? (
           <section className={styles.successScreen}>
             <div className={styles.successIcon}>
-              <CheckCircle2 size={40} strokeWidth={1.5} />
+              <CheckCircle2 size={46} strokeWidth={1.5} />
             </div>
             <h1>Paiement réussi</h1>
             <p className={styles.successSubtitle}>Vente #{completedSale.saleId}</p>
@@ -579,9 +517,7 @@ export default function CheckoutPage() {
               <div className={styles.receiptPreviewBody}>
                 {completedSale.lines.map((l) => (
                   <div className={styles.receiptLine} key={l.id}>
-                    <span>
-                      {l.quantity}× {l.name}
-                    </span>
+                    <span>{l.quantity}× {l.name}</span>
                     <span>{money(l.unit_price * l.quantity)}</span>
                   </div>
                 ))}
@@ -600,35 +536,28 @@ export default function CheckoutPage() {
 
             <div className={styles.successActionsLarge}>
               <button type="button" className={styles.secondaryButton} onClick={printReceipt}>
-                <Printer size={15} /> Imprimer
+                <Printer size={17} /> Imprimer
               </button>
-              <button
-                type="button"
-                className={styles.secondaryButton}
-                onClick={() => alert("Envoi à connecter")}
-              >
-                <Send size={15} /> Envoyer
+              <button type="button" className={styles.secondaryButton}
+                onClick={() => alert("Envoi à connecter")}>
+                <Send size={17} /> Envoyer
               </button>
               <button type="button" className={styles.primaryButton} onClick={startNewSale}>
-                <Plus size={15} /> Nouvelle vente
+                <Plus size={17} /> Nouvelle vente
               </button>
             </div>
           </section>
         ) : showOrders ? (
-          /* ============================= LISTE COMMANDES ============================= */
+          /* ============ LISTE COMMANDES ============ */
           <section className={styles.pendingOrdersPage}>
             <div className={styles.checkoutSelectionHeader}>
               <div>
                 <p className={styles.stepEyebrow}>Commandes</p>
                 <h1>Reprendre une commande</h1>
               </div>
-              <button
-                type="button"
-                className={styles.primaryButton}
-                onClick={createOrderTab}
-                style={{ width: "auto" }}
-              >
-                <Plus size={13} /> Nouvelle
+              <button type="button" className={styles.primaryButton}
+                onClick={createOrderTab} style={{ width: "auto" }}>
+                <Plus size={15} /> Nouvelle
               </button>
             </div>
             <div className={styles.pendingOrdersList}>
@@ -636,23 +565,9 @@ export default function CheckoutPage() {
                 const total = order.draft.cart.reduce((s, l) => s + l.unit_price * l.quantity, 0);
                 const items = order.draft.cart.reduce((s, l) => s + l.quantity, 0);
                 return (
-                  <button
-                    key={order.id}
-                    type="button"
+                  <button key={order.id} type="button"
                     className={`${styles.pendingOrderCard} ${activeOrderId === order.id ? styles.pendingOrderCardActive : ""}`}
-                    onClick={() => selectOrderTab(order)}
-                  >
-                    <div className={styles.pendingOrderHeader}>
-                      <span className={styles.pendingOrderNumber}>Commande #{order.id}</span>
-                      <span className={styles.pendingOrderTime}>
-                        {order.draft.createdAt
-                          ? new Date(order.draft.createdAt).toLocaleTimeString("fr-FR", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })
-                          : "—"}
-                      </span>
-                    </div>
+                    onClick={() => selectOrderTab(order)}>
                     <strong>
                       {order.draft.cart.length === 0
                         ? "Panier vide"
@@ -665,69 +580,46 @@ export default function CheckoutPage() {
             </div>
           </section>
         ) : step === "products" ? (
-          /* ============================= SÉLECTION PRODUITS ============================= */
-          <section
-            className={styles.checkoutProductSelection}
-            data-cart-open={mobileCartOpen ? "true" : "false"}
-          >
-            {/* Backdrop mobile */}
-            <button
-              type="button"
-              className={styles.cartSheetBackdrop}
-              onClick={() => setMobileCartOpen(false)}
-              aria-label="Fermer le panier"
-              tabIndex={-1}
-            />
-
+          /* ============ SÉLECTION PRODUITS ============ */
+          <section className={styles.checkoutProductSelection}>
             <aside className={styles.checkoutDraftCart}>
-              {/* Poignée de tirage (mobile uniquement) */}
-              <button
-                type="button"
-                className={styles.cartSheetHandle}
-                onClick={() => setMobileCartOpen(false)}
-                aria-label="Réduire le panier"
-              />
-
               <div className={styles.checkoutSelectionHeader}>
-                <div>
-                  <p className={styles.stepEyebrow}>Commande #{activeOrderId}</p>
-                  <h1>Panier</h1>
-                </div>
-                {draft.cart.length > 0 && (
-                  <button
-                    type="button"
-                    className={styles.clearCartButton}
-                    onClick={clearCart}
-                  >
-                    <Trash2 size={11} /> Vider
-                  </button>
-                )}
+                <div />
               </div>
 
               <div className={styles.checkoutDraftLines}>
                 {draft.cart.length === 0 ? (
                   <div className={styles.emptyCart}>
-                    <span className={styles.cartIcon}>
-                      <ShoppingBag size={16} />
-                    </span>
+                    <span className={styles.cartIcon}><ShoppingBag size={18} /></span>
                     <p>Ajoutez des produits.</p>
                     <small>Touchez une carte pour l’ajouter.</small>
                   </div>
                 ) : (
                   draft.cart.map((line) => (
-                    <div className={styles.checkoutDraftLine} key={line.id}>
+                    <div
+                      className={`${styles.checkoutDraftLine} ${selectedCartLineId === line.id ? styles.checkoutDraftLineSelected : ""}`}
+                      key={line.id}
+                      tabIndex={0}
+                      role="button"
+                      onFocus={() => setSelectedCartLineId(line.id)}
+                      onClick={() => setSelectedCartLineId(line.id)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          setSelectedCartLineId(line.id);
+                        }
+                      }}
+                      aria-label={`${line.name}, appuyez sur Delete pour supprimer`}
+                    >
                       <span className={styles.checkoutDraftLineQty}>{line.quantity}</span>
                       <span className={styles.checkoutDraftLineName}>{line.name}</span>
                       <b className={styles.checkoutDraftLinePrice}>
                         {money(line.unit_price * line.quantity)}
                       </b>
-                      <button
-                        type="button"
-                        className={styles.checkoutDraftLineRemove}
+                      <button type="button" className={styles.checkoutDraftLineRemove}
                         onClick={() => removeProduct(line.id)}
-                        aria-label={`Retirer ${line.name}`}
-                      >
-                        <X size={13} />
+                        aria-label={`Retirer ${line.name}`}>
+                        <X size={15} />
                       </button>
                     </div>
                   ))
@@ -737,48 +629,26 @@ export default function CheckoutPage() {
               <div className={styles.checkoutDraftFooter}>
                 {/* Remise */}
                 <div className={styles.discountRow}>
-                  <button
-                    type="button"
-                    className={styles.discountToggle}
+                  <button type="button" className={styles.discountToggle}
                     onClick={() => setDiscountOpen((v) => !v)}
-                    aria-expanded={discountOpen}
-                  >
-                    <Tag size={12} /> Remise {discount > 0 ? `· ${money(discount)}` : ""}
+                    aria-expanded={discountOpen}>
+                    <Tag size={14} /> Remise {discount > 0 ? `· ${money(discount)}` : ""}
                   </button>
                   {discountOpen && (
                     <div className={styles.discountPanel}>
-                      <input
-                        type="number"
-                        inputMode="numeric"
-                        min={0}
-                        max={subtotal}
+                      <input type="number" inputMode="numeric" min={0} max={subtotal}
                         value={draft.discount}
-                        onChange={(e) =>
-                          updateDraft({ ...draft, discount: e.target.value })
-                        }
-                        placeholder="Montant (FCFA)"
-                      />
+                        onChange={(e) => updateDraft({ ...draft, discount: e.target.value })}
+                        placeholder="Montant (FCFA)" />
                       <div className={styles.discountPresets}>
                         {DISCOUNT_PRESETS.map((pct) => (
-                          <button
-                            key={pct}
-                            type="button"
-                            className={styles.discountPreset}
-                            onClick={() =>
-                              updateDraft({
-                                ...draft,
-                                discount: String(Math.round((subtotal * pct) / 100)),
-                              })
-                            }
-                          >
+                          <button key={pct} type="button" className={styles.discountPreset}
+                            onClick={() => updateDraft({ ...draft, discount: String(Math.round((subtotal * pct) / 100)) })}>
                             {pct}%
                           </button>
                         ))}
-                        <button
-                          type="button"
-                          className={styles.discountPreset}
-                          onClick={() => updateDraft({ ...draft, discount: "0" })}
-                        >
+                        <button type="button" className={styles.discountPreset}
+                          onClick={() => updateDraft({ ...draft, discount: "0" })}>
                           Annuler
                         </button>
                       </div>
@@ -789,11 +659,8 @@ export default function CheckoutPage() {
                 {/* Client */}
                 {customers.length > 0 && (
                   <div className={styles.customerPicker}>
-                    <label className={styles.customerLabel} htmlFor="checkout-customer">
-                      Client <span>(facultatif)</span>
-                    </label>
                     <div className={styles.customerFieldWrap}>
-                      <Search size={13} className={styles.customerFieldIcon} />
+                      <User size={16} className={styles.customerFieldIcon} />
                       <input
                         id="checkout-customer"
                         type="text"
@@ -801,56 +668,40 @@ export default function CheckoutPage() {
                         value={
                           customerOpen
                             ? customerQuery
-                            : customers.find((c) => String(c.id) === draft.selectedCustomer)?.name ??
-                              customerQuery
+                            : customers.find((c) => String(c.id) === draft.selectedCustomer)?.name ?? customerQuery
                         }
-                        placeholder="Vente comptoir"
-                        onChange={(e) => {
-                          setCustomerQuery(e.target.value);
-                          setCustomerOpen(true);
-                        }}
+                        placeholder="Client"
+                        onChange={(e) => { setCustomerQuery(e.target.value); setCustomerOpen(true); }}
                         onFocus={() => setCustomerOpen(true)}
                         onBlur={() => setTimeout(() => setCustomerOpen(false), 150)}
                       />
                       {draft.selectedCustomer && (
-                        <button
-                          type="button"
-                          className={styles.customerFieldClear}
-                          onClick={() => {
-                            updateDraft({ ...draft, selectedCustomer: "" });
-                            setCustomerQuery("");
-                          }}
-                          aria-label="Effacer le client"
-                        >
-                          <X size={12} />
+                        <button type="button" className={styles.customerFieldClear}
+                          onClick={() => { updateDraft({ ...draft, selectedCustomer: "" }); setCustomerQuery(""); }}
+                          aria-label="Effacer le client">
+                          <X size={14} />
                         </button>
                       )}
                       {customerOpen && filteredCustomers.length > 0 && (
                         <ul className={styles.customerDropdown} role="listbox">
                           <li>
-                            <button
-                              type="button"
+                            <button type="button"
                               onMouseDown={(e) => e.preventDefault()}
                               onClick={() => {
                                 updateDraft({ ...draft, selectedCustomer: "" });
-                                setCustomerQuery("");
-                                setCustomerOpen(false);
-                              }}
-                            >
+                                setCustomerQuery(""); setCustomerOpen(false);
+                              }}>
                               Vente comptoir
                             </button>
                           </li>
                           {filteredCustomers.map((c) => (
                             <li key={c.id}>
-                              <button
-                                type="button"
+                              <button type="button"
                                 onMouseDown={(e) => e.preventDefault()}
                                 onClick={() => {
                                   updateDraft({ ...draft, selectedCustomer: String(c.id) });
-                                  setCustomerQuery(c.name);
-                                  setCustomerOpen(false);
-                                }}
-                              >
+                                  setCustomerQuery(c.name); setCustomerOpen(false);
+                                }}>
                                 {c.name}
                                 {c.email && <small>{c.email}</small>}
                               </button>
@@ -866,73 +717,28 @@ export default function CheckoutPage() {
                   <div>
                     <span>Total</span>
                     {discount > 0 && (
-                      <small>
-                        Sous-total {money(subtotal)} · Remise {money(discount)}
-                      </small>
+                      <small>Sous-total {money(subtotal)} · Remise {money(discount)}</small>
                     )}
                   </div>
                   <strong>{money(amountDue)}</strong>
                 </div>
-                <button
-                  type="button"
-                  className={styles.primaryButton}
-                  onClick={() => {
-                    setMobileCartOpen(false);
-                    setStep("payment");
-                  }}
-                  disabled={!draft.cart.length}
-                >
-                  Paiement {money(amountDue)}
+                <button type="button" className={styles.primaryButton}
+                  onClick={() => setStep("payment")} disabled={!draft.cart.length}>
+                  Paiement
                 </button>
               </div>
             </aside>
 
             <div className={styles.checkoutCatalogSide}>
-              <div className={styles.checkoutSelectionHeader}>
-                <div>
-                  <p className={styles.stepEyebrow}>Catalogue</p>
-                  <h1>Ajouter des produits</h1>
-                </div>
-              </div>
-
-              <div className={styles.catalogToolbar}>
-                <input
-                  ref={searchInputRef}
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  onKeyDown={handleSearchKey}
-                  placeholder="Rechercher… (Entrée pour ajouter)"
-                  aria-label="Rechercher"
-                  autoFocus
-                />
-                {search && (
-                  <button
-                    type="button"
-                    className={styles.searchClear}
-                    onClick={() => setSearch("")}
-                    aria-label="Effacer"
-                  >
-                    <X size={13} />
-                  </button>
-                )}
-              </div>
-
               {categories.length > 0 && (
                 <div className={styles.categoryBar} role="tablist">
-                  <button
-                    type="button"
+                  <button type="button"
                     className={activeCategory === "" ? styles.categoryActive : styles.categoryChip}
-                    onClick={() => setActiveCategory("")}
-                  >
-                    Toutes
-                  </button>
+                    onClick={() => setActiveCategory("")}>Toutes</button>
                   {categories.map((category) => (
-                    <button
-                      key={category}
-                      type="button"
+                    <button key={category} type="button"
                       className={activeCategory === category ? styles.categoryActive : styles.categoryChip}
-                      onClick={() => setActiveCategory(category)}
-                    >
+                      onClick={() => setActiveCategory(category)}>
                       {category}
                     </button>
                   ))}
@@ -954,14 +760,8 @@ export default function CheckoutPage() {
                   <div className={styles.productListEmpty}>
                     <p>Aucun produit.</p>
                     {(search || activeCategory) && (
-                      <button
-                        type="button"
-                        className={styles.resetFilters}
-                        onClick={() => {
-                          setSearch("");
-                          setActiveCategory("");
-                        }}
-                      >
+                      <button type="button" className={styles.resetFilters}
+                        onClick={() => { setSearch(""); setActiveCategory(""); }}>
                         Réinitialiser
                       </button>
                     )}
@@ -970,18 +770,15 @@ export default function CheckoutPage() {
                   filteredProducts.map((product) => {
                     const inCart = draft.cart.find((l) => l.id === product.id);
                     const isOut = product.stock_quantity < 1;
-                    const isLow = product.stock_quantity > 0 && product.stock_quantity <= 5;
                     return (
-                      <button
-                        key={product.id}
-                        type="button"
-                        className={`${styles.productRow}${inCart ? ` ${styles.productRowActive}` : ""}`}
+                      <button key={product.id} type="button"
+                        className={`${styles.productRow}${inCart ? ` ${styles.productRowActive}` : ""}${isOut ? ` ${styles.productRowOut}` : ""}`}
                         onClick={() => addProduct(product)}
                         disabled={isOut}
-                      >
+                        aria-label={product.name}>
                         <span className={styles.productImageWrap}>
                           {product.image_url ? (
-                            <img src={product.image_url} alt="" className={styles.productThumb} />
+                            <img src={product.image_url} alt="" className={styles.productThumb} loading="lazy" />
                           ) : (
                             <span className={styles.productImageFallback}>
                               {product.name.charAt(0).toUpperCase()}
@@ -990,70 +787,33 @@ export default function CheckoutPage() {
                           {inCart && (
                             <span className={styles.productQtyBadge}>{inCart.quantity}</span>
                           )}
-                        </span>
-                        <div className={styles.productInfo}>
-                          <strong>{product.name}</strong>
-                          <small>{product.sku}</small>
-                          <span
-                            className={`${styles.stockPill} ${
-                              isOut ? styles.stockOut : isLow ? styles.stockLow : styles.stockOk
-                            }`}
-                          >
-                            {isOut ? "Rupture" : `${product.stock_quantity} en stock`}
+                          {isOut && (
+                            <span className={styles.productOutOverlay}>Rupture</span>
+                          )}
+                          <span className={styles.productAddIcon} aria-hidden="true">
+                            <Plus size={14} />
                           </span>
-                        </div>
-                        <div className={styles.productPriceCol}>
-                          <b>{money(product.unit_price)}</b>
-                          <i>
-                            <Plus size={12} />
-                          </i>
-                        </div>
+                        </span>
+                        <span className={styles.productName}>{product.name}</span>
                       </button>
                     );
                   })
                 )}
               </div>
             </div>
-
-            {/* Barre flottante mobile — accès pouce */}
-            <button
-              type="button"
-              className={styles.mobileCartBar}
-              onClick={() => setMobileCartOpen(true)}
-              aria-label={`Ouvrir le panier · ${money(amountDue)}`}
-            >
-              <span className={styles.mobileCartBarBadge}>
-                {draft.cart.reduce((s, l) => s + l.quantity, 0)}
-              </span>
-              <span className={styles.mobileCartBarText}>
-                <strong>
-                  {draft.cart.length === 0 ? "Panier vide" : "Voir le panier"}
-                </strong>
-                <small>
-                  {draft.cart.length} ligne{draft.cart.length > 1 ? "s" : ""}
-                </small>
-              </span>
-              <span className={styles.mobileCartBarTotal}>{money(amountDue)}</span>
-            </button>
           </section>
         ) : (
-          /* ============================= PAIEMENT ============================= */
+          /* ============ PAIEMENT ============ */
           <div className={styles.paymentBody}>
             <div className={styles.paymentCol}>
               <section className={styles.paymentSection}>
                 <p className={styles.paymentSectionLabel}>Mode de paiement</p>
                 <div className={styles.methodGrid}>
                   {PAYMENT_METHODS.map((method) => (
-                    <button
-                      key={method.id}
-                      type="button"
+                    <button key={method.id} type="button"
                       className={paymentMethod === method.id ? styles.methodButtonActive : styles.methodButton}
-                      onClick={() => {
-                        setPaymentMethod(method.id);
-                        if (method.id !== "cash") setCashReceived("");
-                      }}
-                      disabled={isSubmitting}
-                    >
+                      onClick={() => { setPaymentMethod(method.id); if (method.id !== "cash") setCashReceived(""); }}
+                      disabled={isSubmitting}>
                       {method.image ? (
                         <img className={styles.methodImage} src={method.image} alt="" />
                       ) : (
@@ -1070,52 +830,31 @@ export default function CheckoutPage() {
                   <section className={styles.paymentSection}>
                     <p className={styles.paymentSectionLabel}>Montant reçu</p>
                     <div className={styles.cashInputRow}>
-                      <div
-                        className={`${styles.cashInputDisplay} ${
-                          cashReceived ? styles.cashInputDisplayActive : ""
-                        }`}
-                      >
-                        <span className={styles.cashInputDisplayValue}>
-                          {received.toLocaleString("fr-FR")}
-                        </span>
+                      <div className={`${styles.cashInputDisplay} ${cashReceived ? styles.cashInputDisplayActive : ""}`}>
+                        <span className={styles.cashInputDisplayValue}>{received.toLocaleString("fr-FR")}</span>
                         <span className={styles.cashInputDisplaySuffix}>FCFA</span>
                       </div>
-                      <button
-                        type="button"
-                        className={styles.exactButton}
+                      <button type="button" className={styles.exactButton}
                         onClick={() => setCashReceived(String(Math.round(amountDue)))}
-                        disabled={isSubmitting}
-                      >
-                        Exact
-                      </button>
+                        disabled={isSubmitting}>Exact</button>
                     </div>
                   </section>
 
                   <div className={styles.keypadRow}>
                     <div className={styles.keypad}>
-                      {["1", "2", "3", "4", "5", "6", "7", "8", "9", "00", "0", "C"].map((digit) => (
-                        <button
-                          key={digit}
-                          type="button"
-                          className={`${styles.keypadKey} ${
-                            digit === "C" ? styles.keypadKeyDanger : ""
-                          } ${digit === "00" ? styles.keypadKeyAccent : ""}`}
-                          onClick={() => appendDigit(digit)}
-                          disabled={isSubmitting}
-                        >
+                      {["1","2","3","4","5","6","7","8","9","00","0","C"].map((digit) => (
+                        <button key={digit} type="button"
+                          className={`${styles.keypadKey} ${digit === "C" ? styles.keypadKeyDanger : ""} ${digit === "00" ? styles.keypadKeyAccent : ""}`}
+                          onClick={() => appendDigit(digit)} disabled={isSubmitting}>
                           {digit}
                         </button>
                       ))}
                     </div>
                     <div className={styles.quickAmounts}>
                       {QUICK_AMOUNTS.map((amount) => (
-                        <button
-                          key={amount}
-                          type="button"
-                          className={styles.quickAmount}
+                        <button key={amount} type="button" className={styles.quickAmount}
                           onClick={() => setCashReceived(String(received + amount))}
-                          disabled={isSubmitting}
-                        >
+                          disabled={isSubmitting}>
                           +{amount.toLocaleString("fr-FR")}
                         </button>
                       ))}
@@ -1124,33 +863,18 @@ export default function CheckoutPage() {
                 </>
               )}
 
-              {error && (
-                <p className={styles.message} role="alert">
-                  {error}
-                </p>
-              )}
+              {error && <p className={styles.message} role="alert">{error}</p>}
 
               <div className={styles.paymentActions}>
-                <button
-                  type="button"
-                  className={styles.secondaryButton}
-                  onClick={() => setStep("products")}
-                  disabled={isSubmitting}
-                >
+                <button type="button" className={styles.secondaryButton}
+                  onClick={() => setStep("products")} disabled={isSubmitting}>
                   Retour
                 </button>
-                <button
-                  type="button"
-                  className={styles.primaryButton}
-                  onClick={submitSale}
-                  disabled={!cashSufficient || isSubmitting}
-                >
-                  {isSubmitting
-                    ? "…"
+                <button type="button" className={styles.primaryButton}
+                  onClick={submitSale} disabled={!cashSufficient || isSubmitting}>
+                  {isSubmitting ? "…"
                     : isCash
-                    ? cashSufficient
-                      ? `Valider · ${money(amountDue)}`
-                      : "Montant insuffisant"
+                    ? cashSufficient ? `Valider · ${money(amountDue)}` : "Montant insuffisant"
                     : `Payer ${money(amountDue)}`}
                 </button>
               </div>
@@ -1176,36 +900,21 @@ export default function CheckoutPage() {
                       <span>Espèces reçues</span>
                       <strong>{money(received)}</strong>
                     </div>
-                    <button
-                      type="button"
-                      className={styles.paymentLineRemove}
-                      onClick={() => setCashReceived("")}
-                      aria-label="Effacer"
-                      disabled={isSubmitting}
-                    >
-                      <X size={12} />
+                    <button type="button" className={styles.paymentLineRemove}
+                      onClick={() => setCashReceived("")} aria-label="Effacer" disabled={isSubmitting}>
+                      <X size={14} />
                     </button>
                   </div>
                 </div>
               )}
 
               {isCash ? (
-                <div
-                  className={`${styles.remainingBox} ${
-                    changeState === "insufficient"
-                      ? styles.remainingInsufficient
-                      : changeState === "ok"
-                      ? styles.remainingOk
-                      : ""
-                  }`}
-                  aria-live="polite"
-                >
+                <div className={`${styles.remainingBox} ${changeState === "insufficient" ? styles.remainingInsufficient : changeState === "ok" ? styles.remainingOk : ""}`}
+                  aria-live="polite">
                   <div className={styles.remainingRow}>
                     <span>
-                      {changeState === "insufficient"
-                        ? "Restant"
-                        : changeState === "ok" && received === amountDue
-                        ? "Exact"
+                      {changeState === "insufficient" ? "Restant"
+                        : changeState === "ok" && received === amountDue ? "Exact"
                         : "Monnaie"}
                     </span>
                     <strong>
@@ -1243,9 +952,7 @@ export default function CheckoutPage() {
                   <div className={styles.paymentLinesDetailsBody}>
                     {draft.cart.map((l) => (
                       <div className={styles.receiptLine} key={l.id}>
-                        <span>
-                          {l.quantity}× {l.name}
-                        </span>
+                        <span>{l.quantity}× {l.name}</span>
                         <span>{money(l.unit_price * l.quantity)}</span>
                       </div>
                     ))}
