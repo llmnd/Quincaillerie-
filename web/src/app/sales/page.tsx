@@ -9,7 +9,7 @@ import {
   Send,
   ShoppingBag,
   Tag,
-  User,     // ⬅ nouvelle icône
+  User,
   X,
 } from "lucide-react";
 import PosSessionMenu from "../../components/PosSessionMenu";
@@ -550,9 +550,7 @@ export default function CheckoutPage() {
           <section className={styles.checkoutProductSelection}>
             <aside className={styles.checkoutDraftCart}>
               <div className={styles.checkoutSelectionHeader}>
-                <div>
-                  {/* "Commande #X" est déjà affiché dans la toolbar. */}
-                </div>
+                <div />
               </div>
 
               <div className={styles.checkoutDraftLines}>
@@ -624,11 +622,11 @@ export default function CheckoutPage() {
                   )}
                 </div>
 
-                {/* Client — icône personne seule */}
+                {/* Client */}
                 {customers.length > 0 && (
                   <div className={styles.customerPicker}>
                     <div className={styles.customerFieldWrap}>
-                      <User size={16} className={styles.customerFieldIcon} /> {/* ⬅ icône personne */}
+                      <User size={16} className={styles.customerFieldIcon} />
                       <input
                         id="checkout-customer"
                         type="text"
@@ -698,8 +696,6 @@ export default function CheckoutPage() {
             </aside>
 
             <div className={styles.checkoutCatalogSide}>
-              {/* ⬅ En-tête "Catalogue / Ajouter des produits" supprimé */}
-
               {categories.length > 0 && (
                 <div className={styles.categoryBar} role="tablist">
                   <button type="button"
@@ -740,14 +736,15 @@ export default function CheckoutPage() {
                   filteredProducts.map((product) => {
                     const inCart = draft.cart.find((l) => l.id === product.id);
                     const isOut = product.stock_quantity < 1;
-                    const isLow = product.stock_quantity > 0 && product.stock_quantity <= 5;
                     return (
                       <button key={product.id} type="button"
-                        className={`${styles.productRow}${inCart ? ` ${styles.productRowActive}` : ""}`}
-                        onClick={() => addProduct(product)} disabled={isOut}>
+                        className={`${styles.productRow}${inCart ? ` ${styles.productRowActive}` : ""}${isOut ? ` ${styles.productRowOut}` : ""}`}
+                        onClick={() => addProduct(product)}
+                        disabled={isOut}
+                        aria-label={product.name}>
                         <span className={styles.productImageWrap}>
                           {product.image_url ? (
-                            <img src={product.image_url} alt="" className={styles.productThumb} />
+                            <img src={product.image_url} alt="" className={styles.productThumb} loading="lazy" />
                           ) : (
                             <span className={styles.productImageFallback}>
                               {product.name.charAt(0).toUpperCase()}
@@ -756,18 +753,14 @@ export default function CheckoutPage() {
                           {inCart && (
                             <span className={styles.productQtyBadge}>{inCart.quantity}</span>
                           )}
-                        </span>
-                        <div className={styles.productInfo}>
-                          <strong>{product.name}</strong>
-                          <small>{product.sku}</small>
-                          <span className={`${styles.stockPill} ${isOut ? styles.stockOut : isLow ? styles.stockLow : styles.stockOk}`}>
-                            {isOut ? "Rupture" : `${product.stock_quantity} en stock`}
+                          {isOut && (
+                            <span className={styles.productOutOverlay}>Rupture</span>
+                          )}
+                          <span className={styles.productAddIcon} aria-hidden="true">
+                            <Plus size={14} />
                           </span>
-                        </div>
-                        <div className={styles.productPriceCol}>
-                          <b>{money(product.unit_price)}</b>
-                          <i><Plus size={14} /></i>
-                        </div>
+                        </span>
+                        <span className={styles.productName}>{product.name}</span>
                       </button>
                     );
                   })

@@ -27,7 +27,7 @@
   --line-1: rgba(255, 255, 255, 0.06);
   --line-2: rgba(255, 255, 255, 0.14);
   --line-3: rgba(255, 255, 255, 0.22);
-  --line-sep: rgba(255, 255, 255, 0.18); /* séparateur entre panneaux */
+  --line-sep: rgba(255, 255, 255, 0.18);
 
   --ink-1: #FFFFFF;
   --ink-2: #E4E7EC;
@@ -76,15 +76,14 @@
   --r-lg: 12px;
   --r-full: 999px;
 
-  /* Échelle typo entreprise */
-  --t-xs:  0.78rem;   /* étiquettes */
-  --t-sm:  0.9rem;    /* secondaire */
-  --t-md:  1rem;      /* base */
-  --t-lg:  1.1rem;    /* corps pos */
-  --t-xl:  1.25rem;   /* sous-titres */
-  --t-2xl: 1.5rem;    /* titres */
-  --t-3xl: 1.85rem;   /* totaux */
-  --t-4xl: 2.5rem;    /* hero */
+  --t-xs:  0.78rem;
+  --t-sm:  0.9rem;
+  --t-md:  1rem;
+  --t-lg:  1.1rem;
+  --t-xl:  1.25rem;
+  --t-2xl: 1.5rem;
+  --t-3xl: 1.85rem;
+  --t-4xl: 2.5rem;
 }
 
 /* -------------------------------------------------------------------------
@@ -524,7 +523,7 @@
 .posToolbarHamburger:hover { color: #FFFFFF; }
 
 /* -------------------------------------------------------------------------
-   9. LAYOUT — séparation visible entre les deux panneaux
+   9. LAYOUT
    ------------------------------------------------------------------------- */
 .salesLayout {
   flex: 1 1 auto;
@@ -544,7 +543,7 @@
   background: var(--bg-app);
   overflow: hidden;
 }
-.cartPanel    { border-right: 1px solid var(--line-sep); }   /* ← visible */
+.cartPanel    { border-right: 1px solid var(--line-sep); }
 .catalogPanel { background: var(--bg-deep); }
 
 .panelHeader {
@@ -598,7 +597,6 @@
   color: var(--ink-3);
 }
 
-/* Ligne panier */
 .cartLine {
   display: grid;
   grid-template-columns: 56px minmax(0, 1fr) auto 30px;
@@ -645,7 +643,6 @@
 }
 .cartLineRemove:hover { color: var(--danger); background: var(--danger-soft); }
 
-/* Stepper */
 .qtyControl {
   display: inline-flex; align-items: center;
   height: 32px;
@@ -921,7 +918,7 @@
 .resetFilters:hover { background: var(--bg-btn-hi); }
 
 /* -------------------------------------------------------------------------
-   14. CATALOGUE — grille produits
+   14. CATALOGUE — grille produits (image + nom uniquement)
    ------------------------------------------------------------------------- */
 .productList,
 .checkoutProductList {
@@ -930,7 +927,7 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   align-content: start;
-  gap: 8px;
+  gap: 10px;
   overflow-y: auto;
   padding: 0 12px 14px;
   scrollbar-width: thin;
@@ -946,126 +943,158 @@
 
 .productRow {
   position: relative;
-  display: flex; flex-direction: column;
-  width: 100%; padding: 0;
-  border: 0; border-radius: var(--r-xs);
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-sm);
   background: var(--bg-card);
   color: var(--ink-1);
-  font: inherit; text-align: left;
+  font: inherit;
+  text-align: left;
   cursor: pointer;
   overflow: hidden;
   transition: transform 140ms var(--ease), box-shadow 140ms var(--ease);
 }
-.productRow:hover:not(:disabled) { transform: translateY(-2px); box-shadow: var(--shadow-md); }
-.productRow:focus-visible { outline: 2px solid var(--teal-line); outline-offset: 2px; }
-.productRow:disabled { cursor: not-allowed; opacity: 0.4; }
-.productRowActive { outline: 2px solid var(--teal-line); outline-offset: -2px; }
+.productRow:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.productRow:focus-visible {
+  outline: 2px solid var(--teal-line);
+  outline-offset: 2px;
+}
+.productRow:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  filter: grayscale(0.6);
+}
+.productRowActive {
+  outline: 2px solid var(--teal-line);
+  outline-offset: -2px;
+}
+.productRowOut { /* état rupture — style géré par :disabled + overlay */ }
 
+/* Image plein cadre — ratio carré */
 .productImageWrap {
   position: relative;
-  display: block; width: 100%;
-  aspect-ratio: 5 / 3;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
   overflow: hidden;
   background: #11151c;
   flex: 0 0 auto;
 }
 .productImageFallback {
-  display: grid; width: 100%; height: 100%;
+  display: grid;
+  width: 100%; height: 100%;
   place-items: center;
   background: linear-gradient(135deg, #2B2F3B, #1B1D26);
-  color: var(--ink-4);
-  font-size: 2rem; font-weight: 700;
-}
-.productThumb { width: 100%; height: 100%; object-fit: cover; display: block; }
-
-.productStrip {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 8px;
-  padding: 10px 12px;
-  background: var(--bg-deep);
-  color: var(--ink-1);
-  min-height: 40px;
-}
-.productStrip strong {
-  min-width: 0; overflow: hidden;
-  font-size: var(--t-md);
-  font-weight: 600;
-  text-overflow: ellipsis; white-space: nowrap;
-}
-.productQtyBadge {
-  display: inline-flex; align-items: center; justify-content: center;
-  min-width: 28px; height: 26px; padding: 0 8px;
-  border-radius: var(--r-xs);
-  background: #FFFFFF;
-  color: #262A36;
-  font-size: var(--t-sm); font-weight: 800;
-  font-variant-numeric: tabular-nums;
-}
-.productColorBar {
-  display: block; height: 4px; width: 100%;
-  background: var(--cat-orange);
-}
-.productInfo {
-  display: flex; flex-direction: column; gap: 3px;
-  min-width: 0; padding: 8px 12px 4px;
-}
-.productInfo strong {
-  display: block; overflow: hidden;
-  color: var(--ink-1);
-  font-size: var(--t-md);
-  font-weight: 600;
-  text-overflow: ellipsis; white-space: nowrap;
-}
-.productInfo small {
-  display: block; overflow: hidden;
-  color: var(--ink-5);
-  font-size: var(--t-sm);
-  text-overflow: ellipsis; white-space: nowrap;
-}
-.productPriceCol {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 4px;
-  padding: 8px 12px 10px;
-  background: var(--bg-deep);
-}
-.productPriceCol b {
-  color: var(--ink-2);
-  font-size: var(--t-md);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-.productPriceCol i {
-  display: grid; width: 22px; height: 22px;
-  flex: 0 0 auto; place-items: center;
-  border-radius: var(--r-xs);
-  background: var(--teal);
-  color: #FFFFFF;
-  font-style: normal;
-}
-.stockPill {
-  display: inline-flex; align-items: center;
-  width: fit-content;
-  margin-top: 2px;
-  padding: 2px 8px;
-  border-radius: var(--r-full);
-  font-size: var(--t-xs);
+  color: var(--ink-3);
+  font-size: 2.2rem;
   font-weight: 700;
 }
-.stockOk  { background: var(--good-soft); color: var(--good); }
-.stockLow { background: rgba(255, 192, 76, 0.1); color: var(--warn); }
-.stockOut { background: var(--danger-soft); color: var(--danger); }
+.productThumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 300ms var(--ease);
+}
+.productRow:hover:not(:disabled) .productThumb {
+  transform: scale(1.05);
+}
 
+/* Badge quantité — coin haut droit */
+.productQtyBadge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 7px;
+  border-radius: var(--r-full);
+  background: #FFFFFF;
+  color: #1B1D26;
+  font-size: var(--t-sm);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  z-index: 2;
+}
+
+/* Overlay rupture — voile sombre + texte */
+.productOutOverlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.55);
+  color: #FFFFFF;
+  font-size: var(--t-sm);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  z-index: 3;
+}
+
+/* Icône + discrète — coin bas droit */
+.productAddIcon {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-full);
+  background: var(--teal);
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  opacity: 0.9;
+  transition: opacity 160ms var(--ease), transform 160ms var(--ease);
+  z-index: 2;
+}
+.productRow:hover:not(:disabled) .productAddIcon {
+  opacity: 1;
+  transform: scale(1.1);
+}
+.productRow:disabled .productAddIcon { display: none; }
+
+/* Nom sous l'image */
+.productName {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  padding: 10px 12px 12px;
+  color: var(--ink-1);
+  font-size: var(--t-md);
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.005em;
+  text-overflow: ellipsis;
+  min-height: calc(2 * 1.25em + 22px);
+}
+
+/* Skeleton */
 .productRowSkeleton {
   position: relative;
-  display: flex; flex-direction: column;
+  display: flex;
+  flex-direction: column;
   width: 100%;
-  min-height: 220px;
-  border-radius: var(--r-xs);
+  border-radius: var(--r-sm);
   background: var(--bg-card);
   overflow: hidden;
 }
 .productRowSkeleton::after {
-  content: ""; position: absolute; inset: 0;
+  content: "";
+  position: absolute;
+  inset: 0;
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.04), transparent);
   animation: skeletonSweep 1.6s ease-in-out infinite;
 }
@@ -1074,21 +1103,33 @@
   to   { transform: translateX(100%); }
 }
 .skeletonImage {
-  display: block; width: 100%;
-  aspect-ratio: 4 / 3;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
   background: rgba(255, 255, 255, 0.04);
 }
-.productRowSkeletonText { padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+.productRowSkeletonText {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
 .skeletonLine {
-  display: block; height: 10px; border-radius: var(--r-xs);
+  display: block;
+  height: 10px;
+  border-radius: var(--r-xs);
   background: rgba(255, 255, 255, 0.06);
 }
 .productListEmpty {
   grid-column: 1 / -1;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  gap: 10px; min-height: 240px;
-  color: var(--ink-4); text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 240px;
+  color: var(--ink-4);
+  text-align: center;
   font-size: var(--t-md);
 }
 .productListEmpty p { margin: 0; }
@@ -1427,7 +1468,7 @@
 .remainingOk .remainingMeta { color: var(--good); }
 
 /* =========================================================================
-   17. CHECKOUT — SELECTION PRODUITS (edge to edge + séparateur visible)
+   17. CHECKOUT — SELECTION PRODUITS
    ========================================================================= */
 .checkoutProductSelection {
   flex: 1 1 auto;
@@ -1437,7 +1478,7 @@
   gap: 1px;
   padding: 0;
   margin: 0;
-  background: var(--line-sep);   /* ← séparateur 1px, visible */
+  background: var(--line-sep);
   overflow: hidden;
 }
 .checkoutDraftCart,
@@ -1603,8 +1644,15 @@
   color: var(--teal-hi);
 }
 
-/* Client compact — icône seule dans le champ */
 .customerPicker { display: flex; flex-direction: column; gap: 6px; }
+.customerLabel {
+  color: var(--ink-4);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.customerLabel span { color: var(--ink-5); font-weight: 500; letter-spacing: normal; text-transform: none; }
 .customerFieldWrap { position: relative; display: flex; align-items: center; }
 .customerFieldIcon {
   position: absolute; left: 14px;
@@ -2069,93 +2117,383 @@
 }
 
 /* -------------------------------------------------------------------------
-   23. RESPONSIVE
+   23. RESPONSIVE — MOBILE / TABLETTE
    ------------------------------------------------------------------------- */
+
 @media (max-width: 1200px) {
-  .salesLayout { grid-template-columns: 420px minmax(0, 1fr); }
+  .salesLayout { grid-template-columns: 400px minmax(0, 1fr); }
   .productList,
   .checkoutProductList { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
+
+/* =========================================================
+   MOBILE & TABLETTE — <= 1000px
+   ========================================================= */
 @media (max-width: 1000px) {
-  .salesPage { height: auto; min-height: 100dvh; overflow: visible; }
-  .salesLayout { grid-template-columns: minmax(0, 1fr); overflow: visible; }
+
+  /* ---------- Structure générale ---------- */
+  .salesPage {
+    height: 100dvh;
+    min-height: 100dvh;
+    overflow: hidden;
+  }
+  .salesLayout {
+    grid-template-columns: minmax(0, 1fr);
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
   .cartPanel {
     order: 1;
     border-right: 0;
     border-bottom: 1px solid var(--line-sep);
   }
   .catalogPanel { order: 2; }
-  .cartLines { max-height: 46vh; }
+  .cartLines { max-height: 50vh; }
 
-  .paymentBody { grid-template-columns: minmax(0, 1fr); overflow-y: auto; }
-  .paymentCol {
+  /* ---------- Toolbar — 3 lignes propres ---------- */
+  .checkoutToolbar {
+    height: auto;
+    min-height: 56px;
+    padding: 8px 12px;
+    gap: 6px;
+    row-gap: 6px;
+    flex-wrap: wrap;
+    flex: 0 0 auto;
+  }
+  .checkoutTab {
+    min-height: 40px;
+    padding: 0 14px;
+    font-size: var(--t-sm);
+  }
+  .checkoutToolbarDivider { display: none; }
+  .checkoutNewOrder {
+    width: 40px;
+    height: 40px;
+    font-size: 1.4rem;
+  }
+  .checkoutNewOrder::before { inset: 5px; }
+  .posMenuWrap {
+    order: 3;
+    margin-left: auto;
+  }
+
+  /* Ligne 2 : recherche pleine largeur */
+  .checkoutHeaderSearch {
+    order: 10;
+    flex: 1 0 100%;
+    min-width: 0;
+    height: 40px;
+    margin: 0;
+    padding: 0;
+    transform: none;
+  }
+  .checkoutHeaderSearch input {
+    min-height: 40px;
+    height: 40px;
+    font-size: var(--t-sm);
+    padding: 8px 36px 8px 14px;
+  }
+
+  /* Ligne 3 : onglets commandes */
+  .checkoutOrderTabsList {
+    order: 11;
+    flex: 1 0 100%;
+    padding: 0;
+  }
+  .checkoutOrderTabWrap { height: 38px; }
+  .checkoutOrderTab { padding: 0 12px; font-size: var(--t-sm); }
+  .checkoutOrderTabTotal { font-size: var(--t-xs); }
+  .checkoutOrderTabClose { width: 24px; }
+
+  /* ======================================================
+     SÉLECTION PRODUITS
+     Un seul flux vertical scrollable :
+       [catalogue] ... [panier] en bas
+     ====================================================== */
+  .checkoutProductSelection {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    grid-template-columns: none;
+    gap: 0;
+    padding: 0;
+    margin: 0;
+    background: var(--bg-app);
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Catalogue EN HAUT */
+  .checkoutCatalogSide {
+    order: 1;
+    flex: 0 0 auto;
+    min-height: auto;
+    max-height: none;
+    padding: 12px 14px 0;
+    background: var(--bg-app);
+    overflow: visible;
+  }
+  .checkoutCatalogSide .catalogToolbar {
+    position: static;
+    padding: 0;
+    margin: 0 0 10px;
+    background: transparent;
+  }
+
+  /* Barre de catégories qui colle en haut */
+  .categoryBar {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    padding: 8px 0;
+    margin: 0 0 10px;
+    background: var(--bg-app);
+  }
+
+  /* La grille produits ne scrolle pas : c'est la page qui scrolle */
+  .checkoutProductList,
+  .productList {
+    overflow: visible;
+    min-height: auto;
+    max-height: none;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    padding: 0 0 16px;
+  }
+  .productName {
+    font-size: var(--t-sm);
+    padding: 8px 10px 10px;
+    min-height: calc(2 * 1.25em + 18px);
+  }
+
+  /* Panier EN BAS */
+  .checkoutDraftCart {
+    order: 2;
+    position: relative;
+    flex: 0 0 auto;
+    min-height: auto;
+    max-height: none;
+    padding: 16px 14px;
+    margin-top: 4px;
+    border-top: 1px solid var(--line-2);
+    background: var(--bg-card);
+    box-shadow: inset 0 3px 0 var(--teal-line);
+    overflow: visible;
+  }
+  .checkoutDraftLines {
+    flex: 0 0 auto;
+    min-height: 0;
+    max-height: 45vh;
+    overflow-y: auto;
+    margin: 0 0 12px;
+    padding-right: 2px;
+  }
+  .checkoutDraftLine {
+    grid-template-columns: 28px minmax(0, 1fr) auto 28px;
+    gap: 10px;
+    padding: 11px 12px;
+    background: var(--bg-btn);
+  }
+  .checkoutDraftFooter {
+    margin-top: 0;
+    padding-top: 12px;
+    border-top: 1px solid var(--line-1);
+  }
+
+  /* ======================================================
+     PAIEMENT
+     Résumé en haut, actions en bas, tout scrollable
+     ====================================================== */
+  .paymentBody {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    grid-template-columns: none;
+    padding: 0 0 20px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+  .paymentSummary {
+    order: 1;
+    flex: 0 0 auto;
+    padding: 14px 16px;
+    gap: 12px;
     border-right: 0;
     border-bottom: 1px solid var(--line-sep);
-    overflow-y: visible;
+    background: var(--bg-app);
+    overflow: visible;
   }
-  .paymentSummary { overflow-y: visible; }
+  .paymentCol {
+    order: 2;
+    flex: 0 0 auto;
+    padding: 14px 16px 0;
+    gap: 14px;
+    border-right: 0;
+    border-bottom: 0;
+    overflow: visible;
+  }
 
-  .checkoutProductSelection {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 1px;
+  .totalHero { padding: 18px 16px; gap: 6px; }
+  .totalHeroAmount strong { font-size: clamp(2.2rem, 9vw, 3rem); }
+  .totalHeroAmount em { font-size: 1.05rem; }
+  .totalHeroMeta { font-size: var(--t-sm); }
+
+  .remainingBox { padding: 14px 16px; gap: 4px; }
+  .remainingRow strong { font-size: 1.6rem; }
+  .remainingRow span { font-size: var(--t-xs); }
+  .remainingMeta { font-size: var(--t-sm); }
+
+  .paymentActions {
+    position: static;
+    margin: 16px 0 0;
+    display: grid;
+    grid-template-columns: 0.8fr 1.2fr;
+    gap: 8px;
     padding: 0;
-    overflow-y: auto;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
   }
-  .checkoutDraftCart,
-  .checkoutCatalogSide { padding: 16px; }
-  .checkoutOrderTabsList { display: none; }
+  .paymentActions .primaryButton,
+  .paymentActions .secondaryButton {
+    min-height: 54px;
+    font-size: var(--t-md);
+  }
+
+  /* ---------- Commandes en attente ---------- */
+  .pendingOrdersPage { padding: 20px 14px 40px; }
+  .pendingOrdersList { grid-template-columns: 1fr; gap: 10px; }
+
+  /* ---------- Succès ---------- */
+  .successScreen { padding: 28px 18px 44px; gap: 18px; }
+  .successIcon { width: 76px; height: 76px; }
+
+  /* ---------- Modales ---------- */
+  .statusModal { padding: 22px 18px; }
+  .handoffModal { padding: 22px 18px; }
+  .posCloseDialog { padding: 22px 18px; }
 }
-@media (max-width: 768px) {
-  .productList,
-  .checkoutProductList { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
-  .cartLines { height: auto; max-height: 46vh; }
-  .posSearch { width: 180px; }
-}
+
+/* =========================================================
+   PETIT MOBILE — <= 640px
+   ========================================================= */
 @media (max-width: 640px) {
+
   .checkoutToolbar { padding: 8px 10px; gap: 4px; }
-  .posSearch { display: none; }
+  .checkoutTab { padding: 0 12px; min-height: 38px; }
+  .checkoutNewOrder { width: 38px; height: 38px; font-size: 1.3rem; }
 
+  /* Catalogue : 2 colonnes */
   .productList,
-  .checkoutProductList { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 0 12px 14px; }
-  .categoryCards { grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 12px; }
-  .categoryCard  { min-height: 56px; font-size: var(--t-sm); padding: 0 10px; gap: 6px; }
+  .checkoutProductList {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    padding: 0 0 14px;
+  }
+  .productImageWrap { aspect-ratio: 1 / 1; }
+  .productName {
+    font-size: var(--t-sm);
+    padding: 8px 10px 10px;
+    min-height: calc(2 * 1.25em + 18px);
+  }
+  .productQtyBadge {
+    top: 6px;
+    right: 6px;
+    min-width: 24px;
+    height: 24px;
+    font-size: var(--t-xs);
+  }
+  .productAddIcon {
+    bottom: 6px;
+    right: 6px;
+    width: 26px;
+    height: 26px;
+  }
 
-  .cartLine { grid-template-columns: 46px minmax(0, 1fr) auto 26px; gap: 8px; padding: 12px 14px; }
+  .categoryChip,
+  .categoryActive { min-height: 28px; padding: 0 12px; font-size: var(--t-xs); }
 
-  .methodGrid { gap: 5px; }
-  .methodButton,
-  .methodButtonActive { padding: 0 12px; font-size: var(--t-sm); min-height: 34px; }
-
-  .keypadRow { grid-template-columns: minmax(0, 1fr); }
-  .quickAmounts { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .keypadKey { min-height: 48px; font-size: 1.25rem; }
-
-  .paymentCol,
-  .paymentSummary { padding: 18px; }
-
-  .posKeypad { gap: 4px; padding: 8px 12px 0; }
-  .posKeypadKey { min-height: 50px; font-size: 1.25rem; }
-  .posPayButton { min-height: 62px; font-size: var(--t-lg); }
-
-  .successGrid { grid-template-columns: 1fr 1fr; }
-  .successActionsLarge { grid-template-columns: 1fr; }
-  .handoffMetrics { grid-template-columns: 1fr; }
-
-  .posMenuWrap { position: fixed; top: 10px; right: 10px; }
-  .posCloseActions { flex-direction: column-reverse; }
-  .posCloseActions button { width: 100%; }
-
-  .checkoutDraftCart,
-  .checkoutCatalogSide { padding: 14px; }
-}
-@media (max-width: 480px) {
-  .productList,
-  .checkoutProductList { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .checkoutDraftFooter { grid-template-columns: 1fr; }
+  /* Panier */
+  .checkoutDraftCart {
+    padding: 14px 12px;
+    padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  }
+  .checkoutDraftLines { max-height: 42vh; }
+  .checkoutDraftLine {
+    grid-template-columns: 24px minmax(0, 1fr) auto 26px;
+    gap: 8px;
+    padding: 10px 10px;
+  }
+  .checkoutDraftLineQty,
+  .checkoutDraftLineName,
+  .checkoutDraftLinePrice { font-size: var(--t-md); }
+  .checkoutDraftFooter { grid-template-columns: 1fr; gap: 10px; }
   .checkoutDraftFooter .discountRow,
   .checkoutDraftFooter .customerPicker,
   .checkoutDraftFooter .totalRow,
-  .checkoutDraftFooter > .primaryButton { grid-column: 1; }
+  .checkoutDraftFooter > .primaryButton { grid-column: 1 / -1; }
+  .checkoutDraftFooter .totalRow strong { font-size: var(--t-2xl); }
+
+  /* Paiement */
+  .paymentCol { padding: 14px 14px 0; gap: 12px; }
+  .paymentSummary { padding: 12px 14px; gap: 10px; }
+
+  .methodGrid { gap: 5px; }
+  .methodButton,
+  .methodButtonActive {
+    padding: 0 12px;
+    min-height: 36px;
+    font-size: var(--t-sm);
+  }
+  .methodImage { width: 20px; height: 20px; }
+
+  .cashInputDisplay {
+    min-height: 56px;
+    padding: 8px 16px;
+    font-size: 1.5rem;
+  }
+  .exactButton { padding: 0 14px; font-size: var(--t-sm); }
+
+  .keypadRow { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .keypad { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .keypadKey { min-height: 56px; font-size: 1.4rem; }
+  .quickAmounts { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .quickAmount { min-height: 42px; font-size: var(--t-sm); }
+
+  /* Succès */
+  .successGrid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .successCard { padding: 14px 12px; }
+  .successCard strong { font-size: var(--t-xl); }
+  .successActionsLarge { grid-template-columns: 1fr; gap: 8px; }
+
+  /* Modales */
+  .handoffMetrics { grid-template-columns: 1fr; }
+  .statusModalTitle { font-size: var(--t-2xl); }
+}
+
+/* =========================================================
+   TRÈS PETIT MOBILE — <= 400px
+   ========================================================= */
+@media (max-width: 400px) {
+  .checkoutTab { padding: 0 10px; font-size: var(--t-xs); }
+  .keypadKey { min-height: 50px; font-size: 1.25rem; }
+  .totalHeroAmount strong { font-size: 1.9rem; }
+  .successGrid { grid-template-columns: 1fr; }
+
+  .productList,
+  .checkoutProductList {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .productName {
+    font-size: var(--t-xs);
+    padding: 7px 8px 9px;
+  }
 }
 
 /* -------------------------------------------------------------------------

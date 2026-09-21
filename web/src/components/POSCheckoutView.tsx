@@ -94,6 +94,7 @@ export default function CheckoutPage() {
   const [customerQuery, setCustomerQuery] = useState("");
   const [customerOpen, setCustomerOpen] = useState(false);
   const [discountOpen, setDiscountOpen] = useState(false);
+  const [mobileCartOpen, setMobileCartOpen] = useState(false);
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
   const [cashReceived, setCashReceived] = useState("");
@@ -181,6 +182,12 @@ export default function CheckoutPage() {
       .then(setCustomers)
       .catch(() => setCustomers([]));
   }, []);
+
+  /* ---------- Ferme la feuille panier si le panier devient vide ---------- */
+  const cartLineCount = draft?.cart.length ?? 0;
+  useEffect(() => {
+    if (cartLineCount === 0) setMobileCartOpen(false);
+  }, [cartLineCount]);
 
   /* ---------- Calculs ---------- */
   const categories = useMemo(() => {
@@ -320,7 +327,8 @@ export default function CheckoutPage() {
       const tag = (e.target as HTMLElement)?.tagName;
       const isField = tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA";
       if (e.key === "Escape") {
-        if (showOrders) setShowOrders(false);
+        if (mobileCartOpen) setMobileCartOpen(false);
+        else if (showOrders) setShowOrders(false);
         else if (step === "payment") setStep("products");
         else if (isField) (e.target as HTMLElement).blur();
         return;
@@ -332,7 +340,7 @@ export default function CheckoutPage() {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, showOrders, cashSufficient, isSubmitting]);
+  }, [step, showOrders, cashSufficient, isSubmitting, mobileCartOpen]);
 
   /* ---------- Soumission ---------- */
   async function submitSale() {
@@ -447,6 +455,7 @@ export default function CheckoutPage() {
     setPaymentMethod("cash");
     setCashReceived("");
     setDiscountOpen(false);
+    setMobileCartOpen(false);
     setTimeout(() => searchInputRef.current?.focus(), 0);
   }
 
@@ -657,8 +666,28 @@ export default function CheckoutPage() {
           </section>
         ) : step === "products" ? (
           /* ============================= SÉLECTION PRODUITS ============================= */
-          <section className={styles.checkoutProductSelection}>
+          <section
+            className={styles.checkoutProductSelection}
+            data-cart-open={mobileCartOpen ? "true" : "false"}
+          >
+            {/* Backdrop mobile */}
+            <button
+              type="button"
+              className={styles.cartSheetBackdrop}
+              onClick={() => setMobileCartOpen(false)}
+              aria-label="Fermer le panier"
+              tabIndex={-1}
+            />
+
             <aside className={styles.checkoutDraftCart}>
+              {/* Poignée de tirage (mobile uniquement) */}
+              <button
+                type="button"
+                className={styles.cartSheetHandle}
+                onClick={() => setMobileCartOpen(false)}
+                aria-label="Réduire le panier"
+              />
+
               <div className={styles.checkoutSelectionHeader}>
                 <div>
                   <p className={styles.stepEyebrow}>Commande #{activeOrderId}</p>
@@ -847,7 +876,10 @@ export default function CheckoutPage() {
                 <button
                   type="button"
                   className={styles.primaryButton}
-                  onClick={() => setStep("payment")}
+                  onClick={() => {
+                    setMobileCartOpen(false);
+                    setStep("payment");
+                  }}
                   disabled={!draft.cart.length}
                 >
                   Paiement {money(amountDue)}
@@ -982,6 +1014,27 @@ export default function CheckoutPage() {
                 )}
               </div>
             </div>
+
+            {/* Barre flottante mobile — accès pouce */}
+            <button
+              type="button"
+              className={styles.mobileCartBar}
+              onClick={() => setMobileCartOpen(true)}
+              aria-label={`Ouvrir le panier · ${money(amountDue)}`}
+            >
+              <span className={styles.mobileCartBarBadge}>
+                {draft.cart.reduce((s, l) => s + l.quantity, 0)}
+              </span>
+              <span className={styles.mobileCartBarText}>
+                <strong>
+                  {draft.cart.length === 0 ? "Panier vide" : "Voir le panier"}
+                </strong>
+                <small>
+                  {draft.cart.length} ligne{draft.cart.length > 1 ? "s" : ""}
+                </small>
+              </span>
+              <span className={styles.mobileCartBarTotal}>{money(amountDue)}</span>
+            </button>
           </section>
         ) : (
           /* ============================= PAIEMENT ============================= */
