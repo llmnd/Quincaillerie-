@@ -16,6 +16,7 @@ MODULE_CATALOG: tuple[dict[str, object], ...] = (
     {"key": "accounting", "label": "Comptabilité", "description": "Taxes, factures et journaux", "href": "/accounting", "required": False},
     {"key": "reports", "label": "Rapports", "description": "Analyse de l’activité", "href": "/reports", "required": False},
     {"key": "farming", "label": "Élevage", "description": "Lots, bâtiments et suivi sanitaire", "href": "/farming", "required": False},
+    {"key": "website", "label": "Website", "description": "Site public, pages et sections", "href": "/website", "required": False},
 )
 
 MODULES_BY_KEY = {str(module["key"]): module for module in MODULE_CATALOG}

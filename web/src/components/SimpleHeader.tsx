@@ -5,7 +5,12 @@ import { useEffect, useState } from "react";
 import { clearStoredAuth, getStoredUser } from "../lib/auth";
 import styles from "./SimpleHeader.module.css";
 
-export default function SimpleHeader() {
+type SimpleHeaderProps = {
+  onWorkspaceClick?: () => void;
+  isWorkspaceActive?: boolean;
+};
+
+export default function SimpleHeader({ onWorkspaceClick, isWorkspaceActive }: SimpleHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
 

@@ -18,6 +18,7 @@ class Organization(Base):
 
     users: Mapped[list["User"]] = relationship(back_populates="organization")
     modules: Mapped[list["OrganizationModule"]] = relationship(back_populates="organization", cascade="all, delete-orphan")
+    websites: Mapped[list["Website"]] = relationship(back_populates="organization", cascade="all, delete-orphan")
 
 
 class OrganizationModule(Base):

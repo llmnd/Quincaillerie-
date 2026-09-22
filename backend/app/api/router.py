@@ -13,6 +13,7 @@ from app.api.farming_routes import router as farming_router
 from app.api.module_routes import organization_router, router as module_router
 from app.api.sale_routes import router as sale_router
 from app.api.supplier_routes import router as supplier_router
+from app.api.website_routes import router as website_router
 from app.models.product import Product
 from app.models.sale import SaleItem
 from app.models.stock_movement import StockMovement
@@ -30,6 +31,7 @@ api_router.include_router(accounting_router)
 api_router.include_router(module_router)
 api_router.include_router(organization_router)
 api_router.include_router(farming_router)
+api_router.include_router(website_router)
 
 
 @api_router.get("/ping")

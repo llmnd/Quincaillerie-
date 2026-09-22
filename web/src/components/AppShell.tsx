@@ -60,6 +60,8 @@ const breadcrumbLabels: Record<string, string> = {
   "/settings/modules": "Modules",
   "/settings/support": "Support",
   "/settings/users": "Utilisateurs",
+  "/website": "Website",
+  "/website/editor": "Éditeur website",
 };
 
 const breadcrumbStorageKey = "quincaillerie_breadcrumbs";
@@ -157,6 +159,7 @@ const applications: Application[] = [
   { label: "Clients", description: "Contacts et comptes", href: "/clients", icon: Users, roles: ["admin", "seller"], moduleKey: "customers" },
   { label: "Stock", description: "Inventaire et mouvements", href: "/stock", icon: Boxes, roles: ["admin"], moduleKey: "stock" },
   { label: "Élevage", description: "Lots et suivi sanitaire", href: "/farming", icon: Bird, roles: ["admin", "seller"], moduleKey: "farming" },
+  { label: "Website", description: "Site public et pages", href: "/website", icon: LayoutGrid, roles: ["admin", "seller"], moduleKey: "website" },
   { label: "Administration", description: "Utilisateurs, rapports et comptabilité", href: "/admin", icon: Settings, roles: ["admin"], moduleKey: "users" },
 ];
 
@@ -170,6 +173,7 @@ const sidebarItems = [
   { label: "Clients", href: "/clients", icon: Users, image: "https://i.pinimg.com/1200x/6d/6e/98/6d6e98e8fd33d1b657418c65eb5600d0.jpg", moduleKey: "customers" },
   { label: "Stock", href: "/stock", icon: Boxes, image: "https://i.pinimg.com/736x/71/16/ba/7116bafcb4ae414d6fd8c74a8cd2a46b.jpg", roles: ["admin"], moduleKey: "stock" },
   { label: "Élevage", href: "/farming", icon: Bird, image: "https://i.pinimg.com/originals/6e/cd/13/6ecd136e249649f0ba8452d13613bcfd.gif", moduleKey: "farming" },
+  { label: "Website", href: "/website", icon: LayoutGrid, image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=900&q=80", moduleKey: "website" },
   { label: "Admin", href: "/admin", icon: Settings, image: "https://i.pinimg.com/1200x/8b/a4/80/8ba4808a95e33280a92660249a971bbd.jpg", roles: ["admin"], moduleKey: "users" },
 ];
 

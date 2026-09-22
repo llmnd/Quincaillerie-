@@ -18,6 +18,7 @@ from app.models.supplier import Supplier  # noqa: E402,F401
 from app.models.cash import AuditLog, CashHandoff, CashOperation, CashRegister, CashSession  # noqa: E402,F401
 from app.models.accounting import Account, Invoice, InvoiceLine, JournalEntry, JournalLine, Tax  # noqa: E402,F401
 from app.models.farming import FarmingBatch, FarmingBuilding, FarmingConsumption, FarmingEggProduction, FarmingHealthEvent, FarmingSite  # noqa: E402,F401
+from app.models.website import Website, WebsiteDomain, WebsitePage, WebsiteSection  # noqa: E402,F401
 
 connect_args = {}
 if settings.database_url.startswith("sqlite"):

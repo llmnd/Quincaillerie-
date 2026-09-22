@@ -36,6 +36,7 @@ export default function Home() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isSessionResolved, setIsSessionResolved] = useState(false);
   const [selectedModule, setSelectedModule] = useState<(typeof modules)[number] | null>(null);
+  const [isWorkspaceClicked, setIsWorkspaceClicked] = useState(false);
 
   /* Session */
   useEffect(() => {
@@ -77,6 +78,11 @@ export default function Home() {
       window.sessionStorage.removeItem("quincaillerie_authenticated");
       setUser(null);
     }
+  }
+
+  function handleWorkspaceClick() {
+    setIsWorkspaceClicked(true);
+    window.setTimeout(() => setIsWorkspaceClicked(false), 400);
   }
 
   if (!isSessionResolved) {
@@ -129,7 +135,10 @@ export default function Home() {
 
   return (
     <>
-      <SimpleHeader />
+      <SimpleHeader
+        onWorkspaceClick={handleWorkspaceClick}
+        isWorkspaceActive={isWorkspaceClicked}
+      />
       <main className={styles.landingPage}>
         {/* =====================================================================
           HERO
@@ -147,9 +156,19 @@ export default function Home() {
               </p>
 
               <div className={styles.heroActions}>
-                <Link href={primaryHref} className={styles.primaryButton}>
-                  {primaryLabel}
-                </Link>
+                <div className={styles.workspaceLandingWrap}>
+                  <Link
+                    href={primaryHref}
+                    className={`${styles.workspaceButton} ${styles.workspaceLandingButton}`}
+                    aria-label="Accéder au workspace"
+                  >
+                    <span>{primaryLabel}</span>
+                  </Link>
+                  <span className={styles.workspaceLandingMarker} aria-hidden="true">
+                    <span className={styles.workspaceLandingMarkerDot} />
+                    <span className={styles.workspaceLandingMarkerText}>Cliquez ici</span>
+                  </span>
+                </div>
                 <a href="#modules" className={styles.textButton}>
                   Voir les modules <span aria-hidden="true">↓</span>
                 </a>

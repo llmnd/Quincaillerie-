@@ -17,6 +17,7 @@ from app.models.supplier import Supplier  # noqa: F401
 from app.models.user import User  # noqa: F401
 from app.models.cash import AuditLog, CashHandoff, CashOperation, CashRegister, CashSession  # noqa: F401
 from app.models.accounting import Account, Invoice, InvoiceLine, JournalEntry, JournalLine, Tax  # noqa: F401
+from app.models.website import Website, WebsiteDomain, WebsitePage, WebsiteSection  # noqa: F401
 
 config = context.config
 

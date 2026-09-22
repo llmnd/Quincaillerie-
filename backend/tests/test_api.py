@@ -105,6 +105,86 @@ def test_products_crud_flow():
     assert detail_response.json()["sku"] == sku
 
 
+def test_website_current_is_scoped_by_organization():
+    org1 = client.post(
+        "/api/v1/auth/register",
+        json={
+            "organization_name": f"Website Org 1 {uuid.uuid4().hex[:8]}",
+            "full_name": "Website Admin 1",
+            "email": f"website1-{uuid.uuid4().hex[:8]}@demo.test",
+            "password": "StrongPass123",
+        },
+    )
+    assert org1.status_code == 201
+    org1_token = org1.cookies.get("access_token", "")
+
+    org2 = client.post(
+        "/api/v1/auth/register",
+        json={
+            "organization_name": f"Website Org 2 {uuid.uuid4().hex[:8]}",
+            "full_name": "Website Admin 2",
+            "email": f"website2-{uuid.uuid4().hex[:8]}@demo.test",
+            "password": "StrongPass123",
+        },
+    )
+    assert org2.status_code == 201
+    org2_token = org2.cookies.get("access_token", "")
+
+    created = client.post(
+        "/api/v1/websites",
+        json={"name": "Premier site", "slug": "premier-site", "template": "commerce"},
+        headers={"Authorization": f"Bearer {org1_token}"},
+    )
+    assert created.status_code == 201, created.text
+
+    org1_current = client.get("/api/v1/websites/current", headers={"Authorization": f"Bearer {org1_token}"})
+    assert org1_current.status_code == 200
+    assert org1_current.json()["slug"] == "premier-site"
+
+    org2_current = client.get("/api/v1/websites/current", headers={"Authorization": f"Bearer {org2_token}"})
+    assert org2_current.status_code == 404
+
+    public_response = client.get("/api/v1/websites/public/premier-site")
+    assert public_response.status_code == 200
+    assert public_response.json()["website"]["slug"] == "premier-site"
+
+
+def test_website_upload_route_persists_media_for_current_org():
+    org = client.post(
+        "/api/v1/auth/register",
+        json={
+            "organization_name": f"Media Org {uuid.uuid4().hex[:8]}",
+            "full_name": "Media Admin",
+            "email": f"media-{uuid.uuid4().hex[:8]}@demo.test",
+            "password": "StrongPass123",
+        },
+    )
+    assert org.status_code == 201, org.text
+    token = org.cookies.get("access_token", "")
+
+    site = client.post(
+        "/api/v1/websites",
+        json={"name": "Site Media", "slug": "site-media", "template": "commerce"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert site.status_code == 201, site.text
+
+    upload = client.post(
+        "/api/v1/websites/current/media/upload",
+        files={"file": ("hero.png", b"fake-image-bytes", "image/png")},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert upload.status_code == 200, upload.text
+    body = upload.json()
+    assert body["url"].startswith("data:image/png;base64,")
+
+    current = client.get("/api/v1/websites/current", headers={"Authorization": f"Bearer {token}"})
+    assert current.status_code == 200
+    media = current.json().get("settings", {}).get("media", [])
+    assert len(media) >= 1
+    assert media[-1]["url"].startswith("data:image/png;base64,")
+
+
 def test_supplier_customer_and_sale_flow():
     supplier_response = client.post(
         "/api/v1/suppliers",
