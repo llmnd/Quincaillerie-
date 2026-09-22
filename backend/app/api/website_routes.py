@@ -37,6 +37,9 @@ DEFAULT_THEME = {
     "cardStyle": "soft",
     "headerStyle": "minimal",
     "footerStyle": "simple",
+    "headerText": "#111827",
+    "categoryText": "#475569",
+    "priceText": "#111827",
 }
 
 

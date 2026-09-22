@@ -1,7 +1,7 @@
 """website builder
 
 Revision ID: 20260922_0001
-Revises: 20260921_0018_fix_account_duplicates
+Revises: 20260921_0018
 Create Date: 2026-09-22 00:00:00.000000
 """
 
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 revision: str = "20260922_0001"
-down_revision: Union[str, None] = "20260921_0018_fix_account_duplicates"
+down_revision: Union[str, None] = "20260921_0018"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
