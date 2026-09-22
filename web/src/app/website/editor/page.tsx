@@ -91,6 +91,9 @@ const defaultTheme: WebsiteTheme = {
   cardStyle: "soft",
   headerStyle: "minimal",
   footerStyle: "simple",
+  headerText: "#111827",
+  categoryText: "#475569",
+  priceText: "#111827",
 };
 
 const MAX_VISIBLE_SECTIONS_IN_PREVIEW = 6;
