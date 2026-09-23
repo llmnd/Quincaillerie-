@@ -75,6 +75,13 @@ type WebsiteTheme = {
   headerStyle?: string;
   footerStyle?: string;
   secondaryText?: string;
+  headerBrand?: string;
+  headerHome?: string;
+  headerAbout?: string;
+  headerProducts?: string;
+  headerServices?: string;
+  headerContact?: string;
+  headerCta?: string;
 };
 
 type OrganizationProfile = {
@@ -1199,7 +1206,18 @@ export default function WebsiteEditorPage() {
                   { id: 2, name: "Produit 3", image_url: null },
                 ]
             ).map((product, productIndex) => (
-              <article key={product.id || productIndex} className={previewStyles.productCard}>
+              <article
+                key={product.id || productIndex}
+                className={`${previewStyles.productCard} ${product.id > 0 ? previewStyles.productCardEditable : ""}`}
+                onClick={() => {
+                  if (isEditable && product.id > 0) router.push(`/products?edit=${product.id}`);
+                }}
+                role={isEditable && product.id > 0 ? "link" : undefined}
+                tabIndex={isEditable && product.id > 0 ? 0 : undefined}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && isEditable && product.id > 0) router.push(`/products?edit=${product.id}`);
+                }}
+              >
                 <div className={previewStyles.productImage}>
                   {product.image_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -1263,7 +1281,18 @@ export default function WebsiteEditorPage() {
                   { id: 3, name: "Produit 4", image_url: null },
                 ]
             ).map((product, productIndex) => (
-              <article key={product.id || productIndex} className={previewStyles.productCard}>
+              <article
+                key={product.id || productIndex}
+                className={`${previewStyles.productCard} ${product.id > 0 ? previewStyles.productCardEditable : ""}`}
+                onClick={() => {
+                  if (isEditable && product.id > 0) router.push(`/products?edit=${product.id}`);
+                }}
+                role={isEditable && product.id > 0 ? "link" : undefined}
+                tabIndex={isEditable && product.id > 0 ? 0 : undefined}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && isEditable && product.id > 0) router.push(`/products?edit=${product.id}`);
+                }}
+              >
                 <div className={previewStyles.productImage}>
                   {product.image_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -2416,6 +2445,28 @@ export default function WebsiteEditorPage() {
                       <option value="bold">Audacieux</option>
                     </select>
                   </label>
+                  <div className={styles.styleGroup}>
+                    <span className={styles.styleGroupTitle}>Contenu du header</span>
+                    {([
+                      ["headerBrand", "Nom affiché"],
+                      ["headerHome", "Accueil"],
+                      ["headerAbout", "À propos"],
+                      ["headerProducts", "Produits"],
+                      ["headerServices", "Services"],
+                      ["headerContact", "Contact"],
+                      ["headerCta", "Bouton contact"],
+                    ] as const).map(([key, label]) => (
+                      <label key={key} className={styles.fieldLabel}>
+                        <span>{label}</span>
+                        <input
+                          className={styles.input}
+                          value={websiteTheme[key] ?? ""}
+                          placeholder={label}
+                          onChange={(event) => void updateThemeValue(key, event.target.value)}
+                        />
+                      </label>
+                    ))}
+                  </div>
                   <label className={styles.fieldLabel}>
                     <span>Pied de page</span>
                     <select
@@ -2505,7 +2556,7 @@ export default function WebsiteEditorPage() {
                         {organizationName.slice(0, 1).toUpperCase()}
                       </div>
                     )}
-                    <span>{organizationName}</span>
+                    <span>{websiteTheme.headerBrand || organizationName}</span>
                   </div>
                   <button
                     type="button"
@@ -2517,13 +2568,14 @@ export default function WebsiteEditorPage() {
                     {previewMenuOpen ? <X size={18} /> : <Menu size={18} />}
                   </button>
                   <nav className={`${previewStyles.siteNav} ${previewMenuOpen ? previewStyles.siteNavOpen : ""}`}>
-                    <a href="#">Accueil</a>
-                    <a href="#">À propos</a>
-                    <a href="#">Produits</a>
-                    <a href="#contact">Contact</a>
+                    <a href="#">{websiteTheme.headerHome || "Accueil"}</a>
+                    <a href="#">{websiteTheme.headerAbout || "À propos"}</a>
+                    <a href="#">{websiteTheme.headerProducts || "Produits"}</a>
+                    <a href="#">{websiteTheme.headerServices || "Services"}</a>
+                    <a href="#contact">{websiteTheme.headerContact || "Contact"}</a>
                   </nav>
                   <button type="button" className={previewStyles.siteHeaderButton} onClick={() => setPreviewMenuOpen(false)}>
-                    Contactez-nous
+                    {websiteTheme.headerCta || "Contactez-nous"}
                   </button>
                 </header>
 

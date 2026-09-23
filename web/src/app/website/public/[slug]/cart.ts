@@ -1,3 +1,5 @@
+import { safeLocal } from "../../../../lib/safeStorage";
+
 export type Product = {
   id?: number;
   name?: string;
@@ -17,7 +19,7 @@ export const cartStorageKey = (slug: string) => `website-cart:${slug}`;
 
 export function readCart(slug: string): CartLine[] {
   try {
-    const raw = window.localStorage.getItem(cartStorageKey(slug));
+    const raw = safeLocal.get(cartStorageKey(slug));
     if (!raw) return [];
     const parsed = JSON.parse(raw) as CartLine[];
     return Array.isArray(parsed) ? parsed : [];
@@ -27,6 +29,12 @@ export function readCart(slug: string): CartLine[] {
 }
 
 export function writeCart(slug: string, cart: CartLine[]) {
-  window.localStorage.setItem(cartStorageKey(slug), JSON.stringify(cart));
-  window.dispatchEvent(new CustomEvent("website-cart-updated", { detail: { slug } }));
+  try {
+    safeLocal.set(cartStorageKey(slug), JSON.stringify(cart));
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("website-cart-updated", { detail: { slug } }));
+    }
+  } catch {
+    // Storage can be blocked by browser tracking prevention.
+  }
 }

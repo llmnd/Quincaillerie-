@@ -13,16 +13,24 @@ type SiteHeaderProps = Readonly<{
   secondaryColor: string;
   textColor: string;
   backHref?: string;
+  labels?: Partial<{
+    home: string;
+    about: string;
+    products: string;
+    services: string;
+    contact: string;
+    cta: string;
+  }>;
 }>;
 
-export default function SiteHeader({ slug, siteName, logo, primaryColor, secondaryColor, textColor, backHref }: SiteHeaderProps) {
+export default function SiteHeader({ slug, siteName, logo, primaryColor, secondaryColor, textColor, backHref, labels }: SiteHeaderProps) {
   const [open, setOpen] = useState(false);
   const links = [
-    { label: "Accueil", href: `/site/${slug}#accueil` },
-    { label: "À propos", href: `/site/${slug}#apropos` },
-    { label: "Produits", href: `/site/${slug}/produits` },
-    { label: "Services", href: `/site/${slug}#services` },
-    { label: "Contact", href: `/site/${slug}#contact` },
+    { label: labels?.home || "Accueil", href: `/site/${slug}#accueil` },
+    { label: labels?.about || "À propos", href: `/site/${slug}#apropos` },
+    { label: labels?.products || "Produits", href: `/site/${slug}/produits` },
+    { label: labels?.services || "Services", href: `/site/${slug}#services` },
+    { label: labels?.contact || "Contact", href: `/site/${slug}#contact` },
   ];
 
   useEffect(() => {
@@ -57,7 +65,7 @@ export default function SiteHeader({ slug, siteName, logo, primaryColor, seconda
           <a key={link.label} href={link.href} onClick={() => setOpen(false)}>{link.label}</a>
         ))}
         <CartBadge slug={slug} textColor={textColor} secondaryColor={secondaryColor} />
-        <a href={`/site/${slug}#contact`} className={styles.contactLink} onClick={() => setOpen(false)}>Contactez-nous</a>
+        <a href={`/site/${slug}#contact`} className={styles.contactLink} onClick={() => setOpen(false)}>{labels?.cta || "Contactez-nous"}</a>
       </nav>
     </header>
   );

@@ -5,6 +5,7 @@ import {
   FormEvent,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import {
@@ -17,6 +18,7 @@ import {
   UploadCloud,
   X,
 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 
 import AppShell from "../../components/AppShell";
 import OdooFormLayout from "../../components/OdooFormLayout";
@@ -70,6 +72,9 @@ function formatFCFA(amount: number) {
 }
 
 export default function ProductsPage() {
+  const searchParams = useSearchParams();
+  const editProductId = searchParams.get("edit");
+  const openedQueryProduct = useRef<string | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -126,6 +131,14 @@ export default function ProductsPage() {
       setIsAdmin(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (!editProductId || openedQueryProduct.current === editProductId || !products.length) return;
+    const product = products.find((item) => String(item.id) === editProductId);
+    if (!product) return;
+    openedQueryProduct.current = editProductId;
+    openEdit(product);
+  }, [editProductId, products]);
 
   /*
    * ============================================================

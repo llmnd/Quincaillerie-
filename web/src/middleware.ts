@@ -8,14 +8,18 @@ const publicBaseDomain = (process.env.NEXT_PUBLIC_PUBLIC_HOST ?? "monerp.vercel.
 
 export function middleware(request: NextRequest) {
   const hostname = request.headers.get("host")?.split(":")[0]?.toLowerCase() ?? "";
+  const path = request.nextUrl.pathname;
   const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
   const isAppHost = hostname === appHost || hostname === `www.${appHost}`;
   const isAutomaticDomain = hostname.endsWith(`.${publicBaseDomain}`) && hostname !== publicBaseDomain;
   const isCustomDomain = !isLocalhost && !isAppHost && hostname.includes(".") && !hostname.endsWith("vercel.app");
 
+  console.log("[middleware]", { hostname, path, isAutomaticDomain, isCustomDomain, appHost, publicBaseDomain });
+
   if ((isAutomaticDomain || isCustomDomain) && !request.nextUrl.pathname.startsWith("/website/public/")) {
     const url = request.nextUrl.clone();
     url.pathname = `/website/public/${hostname}`;
+    console.log("[middleware:rewrite]", { from: path, to: url.pathname, hostname });
     return NextResponse.rewrite(url);
   }
 

@@ -88,20 +88,25 @@ export default function CheckoutRoute({ params }: Readonly<{ params: Promise<{ s
       const path = slug.includes(".")
         ? `/api/v1/websites/public/host/${encodeURIComponent(slug)}`
         : `/api/v1/websites/public/${encodeURIComponent(slug)}`;
-      const response = await fetch(`${API_URL}${path}`, { headers: { Accept: "application/json" } });
-      if (!response.ok) return;
-      const payload = (await response.json()) as PublicPayload;
-      const theme = payload.website?.theme ?? {};
-      if (active) setConfig({
-        loaded: true,
-        slug,
-        siteName: payload.website?.name || payload.organization?.name || "Entreprise",
-        phone: payload.organization?.phone,
-        primaryColor: theme.primary ?? "#111827",
-        secondaryColor: theme.secondary ?? "#714B67",
-        textColor: theme.text ?? "#111827",
-        secondaryTextColor: theme.secondaryText ?? "#475569",
-      });
+
+      try {
+        const response = await fetch(`${API_URL}${path}`, { headers: { Accept: "application/json" } });
+        if (!response.ok) return;
+        const payload = (await response.json()) as PublicPayload;
+        const theme = payload.website?.theme ?? {};
+        if (active) setConfig({
+          loaded: true,
+          slug,
+          siteName: payload.website?.name || payload.organization?.name || "Entreprise",
+          phone: payload.organization?.phone,
+          primaryColor: theme.primary ?? "#111827",
+          secondaryColor: theme.secondary ?? "#714B67",
+          textColor: theme.text ?? "#111827",
+          secondaryTextColor: theme.secondaryText ?? "#475569",
+        });
+      } catch {
+        if (active) setConfig({ loaded: true, slug, siteName: "Entreprise", phone: null, primaryColor: "#111827", secondaryColor: "#714B67", textColor: "#111827", secondaryTextColor: "#475569" });
+      }
     });
     return () => { active = false; };
   }, [params]);

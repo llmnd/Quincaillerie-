@@ -261,7 +261,7 @@
   padding: 0.75rem 1.4rem;
   text-decoration: none;
   background: var(--site-secondary);
-  color: var(--site-text) !important;
+  color: var(--site-text);
   font-weight: 600;
   border-radius: 999px;
 }
@@ -275,7 +275,7 @@
 
 .editableButton .editableButtonText,
 .editableButton [contenteditable] {
-  color: var(--site-text) !important;
+  color: inherit;
 }
 
 /* ---------- Hero ---------- */
@@ -494,3 +494,6 @@
   justify-content: center;
   font-size: 12px;
 }
+
+.productCardEditable { cursor: pointer; }
+.productCardEditable:hover { box-shadow: 0 8px 22px color-mix(in srgb, var(--site-secondary) 20%, transparent); }

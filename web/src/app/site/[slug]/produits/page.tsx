@@ -26,10 +26,17 @@ export default async function ProductsPage({ params }: Readonly<{ params: Promis
   const path = slug.includes(".")
     ? `/api/v1/websites/public/host/${encodeURIComponent(slug)}`
     : `/api/v1/websites/public/${encodeURIComponent(slug)}`;
-  const response = await fetch(`${API_URL}${path}`, { cache: "no-store", headers: { Accept: "application/json" } });
-  if (!response.ok) notFound();
 
-  const payload = (await response.json()) as Payload;
+  let payload: Payload | null = null;
+  try {
+    const response = await fetch(`${API_URL}${path}`, { cache: "no-store", headers: { Accept: "application/json" } });
+    if (!response.ok) notFound();
+    payload = (await response.json()) as Payload;
+  } catch {
+    notFound();
+  }
+
+  if (!payload) notFound();
   const theme = payload.website?.theme ?? {};
   const siteName = payload.website?.name || payload.organization?.name || "Notre catalogue";
   const primaryColor = theme.primary ?? "#111827";
@@ -43,7 +50,23 @@ export default async function ProductsPage({ params }: Readonly<{ params: Promis
 
   return (
     <main className={styles.page} style={{ background: theme.background ?? "#fff", color: textColor, fontFamily: theme.font ?? "Inter, sans-serif", "--secondary": secondaryColor, "--muted": secondaryTextColor } as React.CSSProperties}>
-      <SiteHeader slug={slug} siteName={siteName} logo={payload.website?.logo ?? ""} primaryColor={primaryColor} secondaryColor={secondaryColor} textColor={textColor} backHref={`/site/${slug}`} />
+      <SiteHeader
+        slug={slug}
+        siteName={theme.headerBrand ?? siteName}
+        logo={payload.website?.logo ?? ""}
+        primaryColor={primaryColor}
+        secondaryColor={secondaryColor}
+        textColor={textColor}
+        backHref={`/site/${slug}`}
+        labels={{
+          home: theme.headerHome,
+          about: theme.headerAbout,
+          products: theme.headerProducts,
+          services: theme.headerServices,
+          contact: theme.headerContact,
+          cta: theme.headerCta,
+        }}
+      />
       <div className={styles.container}>
         <header className={styles.catalogIntro}>
           <p className={styles.catalogEyebrow}>Boutique en ligne</p>

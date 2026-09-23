@@ -13,10 +13,17 @@ export default async function CartRoute({ params }: Readonly<{ params: Promise<{
   const path = slug.includes(".")
     ? `/api/v1/websites/public/host/${encodeURIComponent(slug)}`
     : `/api/v1/websites/public/${encodeURIComponent(slug)}`;
-  const response = await fetch(`${API_URL}${path}`, { cache: "no-store", headers: { Accept: "application/json" } });
-  if (!response.ok) notFound();
 
-  const payload = (await response.json()) as Payload;
+  let payload: Payload | null = null;
+  try {
+    const response = await fetch(`${API_URL}${path}`, { cache: "no-store", headers: { Accept: "application/json" } });
+    if (!response.ok) notFound();
+    payload = (await response.json()) as Payload;
+  } catch {
+    notFound();
+  }
+
+  if (!payload) notFound();
   const theme = payload.website?.theme ?? {};
   return (
     <CartPage

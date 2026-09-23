@@ -4,7 +4,12 @@ import SiteHeader from "../../../../components/SiteHeader";
 import SiteSections from "../../_shared/SiteSections";
 import pageStyles from "./publicPage.module.css";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/+$/, "");
+const API_URL = configuredApiUrl || (
+  process.env.NODE_ENV === "production"
+    ? "https://quincaillerie-858p.onrender.com"
+    : "http://localhost:8000"
+);
 
 type WebsiteTheme = {
   primary?: string;
@@ -13,6 +18,13 @@ type WebsiteTheme = {
   text?: string;
   font?: string;
   secondaryText?: string;
+  headerBrand?: string;
+  headerHome?: string;
+  headerAbout?: string;
+  headerProducts?: string;
+  headerServices?: string;
+  headerContact?: string;
+  headerCta?: string;
 };
 
 type PublicPayload = {
@@ -33,14 +45,40 @@ type PublicPayload = {
 };
 
 async function fetchPublicPayload(slug: string): Promise<PublicPayload | null> {
-  const publicPath = slug.includes(".")
-    ? `/api/v1/websites/public/host/${encodeURIComponent(slug)}`
-    : `/api/v1/websites/public/${encodeURIComponent(slug)}`;
-  const response = await fetch(`${API_URL}${publicPath}`, {
-    cache: "no-store",
-    headers: { Accept: "application/json" },
-  });
-  return response.ok ? (await response.json()) as PublicPayload : null;
+  const normalizedSlug = slug.trim();
+  const publicPath = normalizedSlug.includes(".")
+    ? `/api/v1/websites/public/host/${encodeURIComponent(normalizedSlug)}`
+    : `/api/v1/websites/public/${encodeURIComponent(normalizedSlug)}`;
+
+  const requestUrl = `${API_URL}${publicPath}`;
+  console.log("[public-fetch] start", { slug: normalizedSlug, publicPath, requestUrl });
+
+  try {
+    const response = await fetch(requestUrl, {
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+    });
+
+    if (!response.ok) {
+      const responseBody = await response.text().catch(() => "");
+      console.error("[public-fetch] bad status", {
+        slug: normalizedSlug,
+        publicPath,
+        status: response.status,
+        statusText: response.statusText,
+        requestUrl,
+        responseBody: responseBody.slice(0, 500),
+      });
+      return null;
+    }
+
+    const payload = (await response.json()) as PublicPayload;
+    console.log("[public-fetch] success", { slug: normalizedSlug, publicPath, hasWebsite: !!payload.website, hasSections: !!payload.sections, products: payload.products?.length ?? 0 });
+    return payload;
+  } catch (error) {
+    console.error("[public-fetch] exception", { slug: normalizedSlug, publicPath, requestUrl, error });
+    return null;
+  }
 }
 
 export async function generateMetadata({ params }: Readonly<{ params: Promise<{ slug: string }> | { slug: string } }>): Promise<Metadata> {
@@ -101,11 +139,19 @@ export default async function PublicWebsitePage({ params }: Readonly<{ params: P
     <main style={{ minHeight: "100vh", background: theme.background ?? "#ffffff", color: textColor, fontFamily: theme.font ?? "Inter, Arial, sans-serif" }}>
       <SiteHeader
         slug={slug}
-        siteName={siteName}
+        siteName={theme.headerBrand || siteName}
         logo={website.logo ?? ""}
         primaryColor={primaryColor}
         secondaryColor={secondaryColor}
         textColor={textColor}
+        labels={{
+          home: theme.headerHome,
+          about: theme.headerAbout,
+          products: theme.headerProducts,
+          services: theme.headerServices,
+          contact: theme.headerContact,
+          cta: theme.headerCta,
+        }}
       />
       <div className={pageStyles.content}>
         <SiteSections

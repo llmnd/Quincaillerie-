@@ -84,7 +84,7 @@ function ProductCards({ products, gallery = false }: { products: Product[]; gall
       {items.map((product, index) => (
         <article key={product.id ?? index} className={styles.productCard}>
           <div className={styles.productImage}>
-            {imageOf(product) ? <img src={imageOf(product)} alt={product.name ?? "Produit"} /> : `${gallery ? "Image" : "Produit"} ${index + 1}`}
+            {imageOf(product) ? <img src={imageOf(product)} alt={product.name ?? "Produit"} loading="lazy" decoding="async" /> : `${gallery ? "Image" : "Produit"} ${index + 1}`}
           </div>
           {!gallery && <div className={styles.productMeta}><span>{product.category ?? "Catégorie"}</span><strong>{product.name}</strong><em>{productPrice(product)}</em></div>}
         </article>
@@ -110,17 +110,17 @@ export default function SiteSections({ sections, products, siteName, textColor, 
     }
 
     if (section.type === "hero") {
-      return <section key={key} className={styles.previewSiteBlock}><div className={styles.heroPreviewContent}><div><p className={styles.previewEyebrow}>{siteName}</p><h3 style={styleFor(content, "title")} dangerouslySetInnerHTML={{ __html: titleHtml }} /><p style={{ color: secondaryTextColor, ...styleFor(content, "text") }} dangerouslySetInnerHTML={{ __html: bodyHtml }} />{text(content.buttonText) && <a href={text(content.buttonLink, "#contact")} className={styles.editableButton} style={styleFor(content, "button")} onClick={(event) => { if (!slug) event.preventDefault(); }} dangerouslySetInnerHTML={{ __html: buttonHtml }} />}</div>{imageUrl ? <div className={styles.previewHeroImage}><img src={imageUrl} alt={title} /></div> : <div className={styles.heroPreviewVisual}>Image</div>}</div></section>;
+      return <section key={key} className={styles.previewSiteBlock}><div className={styles.heroPreviewContent}><div><p className={styles.previewEyebrow}>{siteName}</p><h3 style={styleFor(content, "title")} dangerouslySetInnerHTML={{ __html: titleHtml }} /><p style={{ color: secondaryTextColor, ...styleFor(content, "text") }} dangerouslySetInnerHTML={{ __html: bodyHtml }} />{text(content.buttonText) && <a href={text(content.buttonLink, "#contact")} className={styles.editableButton} style={styleFor(content, "button")} onClick={(event) => { if (!slug) event.preventDefault(); }} dangerouslySetInnerHTML={{ __html: buttonHtml }} />}</div>{imageUrl ? <div className={styles.previewHeroImage}><img src={imageUrl} alt={title} loading="lazy" decoding="async" /></div> : <div className={styles.heroPreviewVisual}>Image</div>}</div></section>;
     }
 
     if (section.type === "banner") {
-      return <section key={key} className={styles.previewSiteBlock}>{imageUrl && <div className={styles.previewBannerImage}><img src={imageUrl} alt={title} /></div>}<h3 style={styleFor(content, "title")} dangerouslySetInnerHTML={{ __html: titleHtml }} /><p style={{ color: secondaryTextColor, ...styleFor(content, "text") }} dangerouslySetInnerHTML={{ __html: bodyHtml }} /></section>;
+      return <section key={key} className={styles.previewSiteBlock}>{imageUrl && <div className={styles.previewBannerImage}><img src={imageUrl} alt={title} loading="lazy" decoding="async" /></div>}<h3 style={styleFor(content, "title")} dangerouslySetInnerHTML={{ __html: titleHtml }} /><p style={{ color: secondaryTextColor, ...styleFor(content, "text") }} dangerouslySetInnerHTML={{ __html: bodyHtml }} /></section>;
     }
 
     if (section.type === "gallery") {
       return <section key={key} className={styles.previewSiteBlock}><h3 style={styleFor(content, "title")}>{title}</h3><ProductCards products={products} gallery /></section>;
     }
 
-    return <section key={key} className={styles.previewSiteBlock}>{imageUrl && <div className={styles.previewSectionImage}><img src={imageUrl} alt={title} /></div>}<h3 style={styleFor(content, "title")} dangerouslySetInnerHTML={{ __html: titleHtml }} /><p style={{ color: secondaryTextColor, ...styleFor(content, "text") }} dangerouslySetInnerHTML={{ __html: bodyHtml }} /></section>;
+    return <section key={key} className={styles.previewSiteBlock}>{imageUrl && <div className={styles.previewSectionImage}><img src={imageUrl} alt={title} loading="lazy" decoding="async" /></div>}<h3 style={styleFor(content, "title")} dangerouslySetInnerHTML={{ __html: titleHtml }} /><p style={{ color: secondaryTextColor, ...styleFor(content, "text") }} dangerouslySetInnerHTML={{ __html: bodyHtml }} /></section>;
   })}</>;
 }
