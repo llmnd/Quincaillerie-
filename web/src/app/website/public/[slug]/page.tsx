@@ -3,87 +3,14 @@ import type { Metadata } from "next";
 import SiteHeader from "../../../../components/SiteHeader";
 import SiteSections from "../../_shared/SiteSections";
 import pageStyles from "./publicPage.module.css";
+import { fetchPublicWebsite, type PublicWebsitePayload } from "../publicApi";
 
-const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/+$/, "");
-const API_URL = configuredApiUrl || (
-  process.env.NODE_ENV === "production"
-    ? "https://quincaillerie-858p.onrender.com"
-    : "http://localhost:8000"
-);
-
-type WebsiteTheme = {
-  primary?: string;
-  secondary?: string;
-  background?: string;
-  text?: string;
-  font?: string;
-  secondaryText?: string;
-  headerBrand?: string;
-  headerHome?: string;
-  headerAbout?: string;
-  headerProducts?: string;
-  headerServices?: string;
-  headerContact?: string;
-  headerCta?: string;
-};
-
-type PublicPayload = {
-  website?: { name?: string; description?: string | null; logo?: string | null; favicon?: string | null; theme?: WebsiteTheme };
-  organization?: { name?: string; phone?: string | null; email?: string | null };
-  page?: { title?: string | null; meta_title?: string | null; meta_description?: string | null };
-  sections?: Array<{ id?: number; type?: string; visible?: boolean; content?: Record<string, unknown> }>;
-  products?: Array<{
-    id?: number;
-    name?: string;
-    description?: string | null;
-    price?: number | string | null;
-    unit_price?: number | string | null;
-    image?: string | null;
-    image_url?: string | null;
-    category?: string | null;
-  }>;
-};
-
-async function fetchPublicPayload(slug: string): Promise<PublicPayload | null> {
-  const normalizedSlug = slug.trim();
-  const publicPath = normalizedSlug.includes(".")
-    ? `/api/v1/websites/public/host/${encodeURIComponent(normalizedSlug)}`
-    : `/api/v1/websites/public/${encodeURIComponent(normalizedSlug)}`;
-
-  const requestUrl = `${API_URL}${publicPath}`;
-  console.log("[public-fetch] start", { slug: normalizedSlug, publicPath, requestUrl });
-
-  try {
-    const response = await fetch(requestUrl, {
-      cache: "no-store",
-      headers: { Accept: "application/json" },
-    });
-
-    if (!response.ok) {
-      const responseBody = await response.text().catch(() => "");
-      console.error("[public-fetch] bad status", {
-        slug: normalizedSlug,
-        publicPath,
-        status: response.status,
-        statusText: response.statusText,
-        requestUrl,
-        responseBody: responseBody.slice(0, 500),
-      });
-      return null;
-    }
-
-    const payload = (await response.json()) as PublicPayload;
-    console.log("[public-fetch] success", { slug: normalizedSlug, publicPath, hasWebsite: !!payload.website, hasSections: !!payload.sections, products: payload.products?.length ?? 0 });
-    return payload;
-  } catch (error) {
-    console.error("[public-fetch] exception", { slug: normalizedSlug, publicPath, requestUrl, error });
-    return null;
-  }
-}
+type WebsiteTheme = Record<string, string | undefined>;
+type PublicPayload = PublicWebsitePayload;
 
 export async function generateMetadata({ params }: Readonly<{ params: Promise<{ slug: string }> | { slug: string } }>): Promise<Metadata> {
   const { slug } = await Promise.resolve(params);
-  const payload = await fetchPublicPayload(slug);
+  const payload = await fetchPublicWebsite(slug);
   const website = payload?.website ?? {};
   const organization = payload?.organization ?? {};
   const name = website.name || organization.name || "Entreprise";
@@ -113,7 +40,7 @@ export async function generateMetadata({ params }: Readonly<{ params: Promise<{ 
 
 export default async function PublicWebsitePage({ params }: Readonly<{ params: Promise<{ slug: string }> | { slug: string } }>) {
   const { slug } = await Promise.resolve(params);
-  const payload = await fetchPublicPayload(slug);
+  const payload = await fetchPublicWebsite(slug);
   if (!payload) notFound();
   const website = payload.website ?? {};
   const organization = payload.organization ?? {};

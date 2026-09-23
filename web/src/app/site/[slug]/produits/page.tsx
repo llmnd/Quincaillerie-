@@ -1,9 +1,8 @@
 import { notFound } from "next/navigation";
 import ProductCatalog from "../../../website/public/[slug]/productCatalog";
+import { fetchPublicWebsite } from "../../../website/public/publicApi";
 import SiteHeader from "../../../../components/SiteHeader";
 import styles from "./productsPage.module.css";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 type Product = {
   id?: number;
@@ -23,19 +22,7 @@ type Payload = {
 
 export default async function ProductsPage({ params }: Readonly<{ params: Promise<{ slug: string }> }>) {
   const { slug } = await params;
-  const path = slug.includes(".")
-    ? `/api/v1/websites/public/host/${encodeURIComponent(slug)}`
-    : `/api/v1/websites/public/${encodeURIComponent(slug)}`;
-
-  let payload: Payload | null = null;
-  try {
-    const response = await fetch(`${API_URL}${path}`, { cache: "no-store", headers: { Accept: "application/json" } });
-    if (!response.ok) notFound();
-    payload = (await response.json()) as Payload;
-  } catch {
-    notFound();
-  }
-
+  const payload = await fetchPublicWebsite(slug) as Payload | null;
   if (!payload) notFound();
   const theme = payload.website?.theme ?? {};
   const siteName = payload.website?.name || payload.organization?.name || "Notre catalogue";

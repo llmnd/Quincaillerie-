@@ -95,6 +95,7 @@ export default function ProductCatalog({
         ? current.map((line, i) => i === index ? { ...line, quantity: line.quantity + 1 } : line)
         : [...current, { product: cartProduct, quantity: 1 }];
       writeCart(slug, next);
+      window.dispatchEvent(new CustomEvent("website-cart-added", { detail: { slug } }));
       return next;
     });
   }
@@ -253,9 +254,10 @@ export default function ProductCatalog({
                     type="button"
                     className={styles.btnSolid}
                     onClick={() => addToRequest(product)}
+                    aria-label={`Ajouter ${product.name ?? "le produit"} au panier`}
+                    title="Ajouter au panier"
                   >
                     <Plus size={13} aria-hidden="true" />
-                    Commander
                   </button>
                 </div>
               </article>
@@ -321,7 +323,7 @@ export default function ProductCatalog({
                 }}
               >
                 <Plus size={14} aria-hidden="true" />
-                Ajouter à ma demande
+                Ajouter au panier
               </button>
             </div>
           </div>

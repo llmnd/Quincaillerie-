@@ -49,6 +49,8 @@ export default function SiteHeader({ slug, siteName, logo, primaryColor, seconda
         <span className={styles.siteName}>{siteName}</span>
       </a>
 
+      <CartBadge slug={slug} textColor={textColor} secondaryColor={secondaryColor} />
+
       <button
         type="button"
         className={styles.menuButton}
@@ -64,7 +66,6 @@ export default function SiteHeader({ slug, siteName, logo, primaryColor, seconda
         {links.map((link) => (
           <a key={link.label} href={link.href} onClick={() => setOpen(false)}>{link.label}</a>
         ))}
-        <CartBadge slug={slug} textColor={textColor} secondaryColor={secondaryColor} />
         <a href={`/site/${slug}#contact`} className={styles.contactLink} onClick={() => setOpen(false)}>{labels?.cta || "Contactez-nous"}</a>
       </nav>
     </header>

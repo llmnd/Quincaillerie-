@@ -4,8 +4,7 @@ import { ArrowLeft, MessageCircle, ShoppingBag } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { readCart, type CartLine } from "../../../website/public/[slug]/cart";
 import styles from "../../../website/public/[slug]/productCatalog.module.css";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+import { fetchPublicWebsite } from "../../../website/public/publicApi";
 
 type CustomerDetails = { name: string; phone: string; address: string; note: string };
 
@@ -74,25 +73,15 @@ function CheckoutPage({ slug, siteName, phone, primaryColor, secondaryColor, tex
   );
 }
 
-type PublicPayload = {
-  website?: { name?: string; theme?: Record<string, string> };
-  organization?: { name?: string; phone?: string | null };
-};
-
 export default function CheckoutRoute({ params }: Readonly<{ params: Promise<{ slug: string }> }>) {
   const [config, setConfig] = useState<(CheckoutPageProps & { loaded: boolean }) | null>(null);
 
   useEffect(() => {
     let active = true;
     void params.then(async ({ slug }) => {
-      const path = slug.includes(".")
-        ? `/api/v1/websites/public/host/${encodeURIComponent(slug)}`
-        : `/api/v1/websites/public/${encodeURIComponent(slug)}`;
-
       try {
-        const response = await fetch(`${API_URL}${path}`, { headers: { Accept: "application/json" } });
-        if (!response.ok) return;
-        const payload = (await response.json()) as PublicPayload;
+        const payload = await fetchPublicWebsite(slug);
+        if (!payload) return;
         const theme = payload.website?.theme ?? {};
         if (active) setConfig({
           loaded: true,
