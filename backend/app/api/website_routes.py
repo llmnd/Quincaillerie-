@@ -561,9 +561,16 @@ def public_website(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Website has no pages")
     sections = sorted(page.sections, key=lambda section: section.position)
     products = db.scalars(select(Product).where(Product.organization_id == website.organization_id, Product.is_active.is_(True)).order_by(Product.id.desc()).limit(12)).all()
+    organization = db.get(Organization, website.organization_id)
+    organization_settings = organization.settings if organization and isinstance(organization.settings, dict) else {}
     return {
         "website": _serialize_website(website),
-        "organization": {"id": website.organization_id, "name": db.scalar(select(Organization.name).where(Organization.id == website.organization_id))},
+        "organization": {
+            "id": website.organization_id,
+            "name": organization.name if organization else None,
+            "phone": organization_settings.get("phone"),
+            "email": organization_settings.get("email"),
+        },
         "page": _serialize_page(page),
         "sections": [_serialize_section(section) for section in sections],
         "products": [

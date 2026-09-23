@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import ProductCatalog from "./ProductCatalog";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -26,6 +27,8 @@ type PublicWebsitePayload = {
   organization?: {
     id?: number;
     name?: string;
+    phone?: string | null;
+    email?: string | null;
   };
   page?: {
     title?: string;
@@ -92,7 +95,6 @@ export default async function PublicWebsitePage({ params }: { params: Promise<{ 
   const secondaryTextColor = theme.secondaryText ?? "#475569";
   const headerTextColor = textColor;
   const categoryTextColor = textColor;
-  const priceTextColor = textColor;
 
   return (
     <main
@@ -186,7 +188,7 @@ export default async function PublicWebsitePage({ params }: { params: Promise<{ 
           {[
             { label: "Accueil", href: "#accueil" },
             { label: "À propos", href: "#apropos" },
-            { label: "Produits", href: "#produits" },
+            { label: "Produits", href: `/site/${slug}/produits` },
             { label: "Services", href: "#services" },
             { label: "Contact", href: "#contact" },
           ].map((item) => (
@@ -313,58 +315,20 @@ export default async function PublicWebsitePage({ params }: { params: Promise<{ 
           }
 
           if (type === "products") {
-            const productCards = payload.products && payload.products.length > 0 ? payload.products.slice(0, 3) : [];
-
             return (
               <section
                 key={section.id ?? `${section.type}-${index}`}
                 id="produits"
-                style={{ padding: "18px 0 12px", color: textColor }}
+                style={{ color: textColor }}
               >
-                <h2 style={{ margin: "0 0 18px", color: headerTextColor, fontSize: 30 }}>{asText(content.title, "Nos produits")}</h2>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                    gap: 18,
-                  }}
-                >
-                  {productCards.map((product) => (
-                    <article
-                      key={product.id}
-                      style={{
-                        border: "1px solid rgba(15, 23, 42, 0.08)",
-                        borderRadius: 18,
-                        background: "#ffffff",
-                        overflow: "hidden",
-                        boxShadow: "0 10px 30px rgba(15, 23, 42, 0.04)",
-                      }}
-                    >
-                      <div
-                        style={{
-                          height: 180,
-                          background: "linear-gradient(135deg, #f8fafc, #e2e8f0)",
-                          display: "grid",
-                          placeItems: "center",
-                          color: "#475569",
-                          fontWeight: 800,
-                        }}
-                      >
-                        {product.image ? <img src={product.image} alt={product.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "Produit"}
-                      </div>
-                      <div style={{ padding: 16 }}>
-                        <div style={{ color: categoryTextColor, fontSize: 11, letterSpacing: 1.2, textTransform: "uppercase", fontWeight: 800 }}>
-                          {product.category || "Catégorie"}
-                        </div>
-                        <h3 style={{ margin: "10px 0 8px", fontSize: 20, color: headerTextColor }}>{product.name}</h3>
-                        <p style={{ margin: 0, color: secondaryTextColor, lineHeight: 1.6 }}>{product.description || "Produit disponible pour votre entreprise."}</p>
-                        <strong style={{ display: "block", marginTop: 12, color: priceTextColor, fontSize: 18 }}>
-                          {typeof product.price === "number" ? `${product.price.toFixed(2)} €` : product.price || "Prix sur demande"}
-                        </strong>
-                      </div>
-                    </article>
-                  ))}
-                </div>
+                <ProductCatalog
+                  products={payload.products ?? []}
+                  primaryColor={primaryColor}
+                  secondaryColor={secondaryColor}
+                  textColor={textColor}
+                  secondaryTextColor={secondaryTextColor}
+                  phone={organization.phone}
+                />
               </section>
             );
           }
