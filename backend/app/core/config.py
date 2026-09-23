@@ -24,6 +24,8 @@ class Settings(BaseSettings):
         "https://www.monerp.vercel.app",
     ]
     cors_origin_regex: str = r"https://([a-z0-9-]+\.)*vercel\.app"
+    public_site_base_domain: str = "monerp.vercel.app"
+    public_site_protocol: str = "https"
 
     model_config = SettingsConfigDict(
         env_file=".env",

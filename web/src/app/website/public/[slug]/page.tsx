@@ -66,7 +66,10 @@ export default async function PublicWebsitePage({ params }: { params: Promise<{ 
   const resolvedParams = await Promise.resolve(params);
   const slug = resolvedParams.slug;
 
-  const response = await fetch(`${API_URL}/api/v1/websites/public/${encodeURIComponent(slug)}`, {
+  const publicPath = slug.includes(".")
+    ? `/api/v1/websites/public/host/${encodeURIComponent(slug)}`
+    : `/api/v1/websites/public/${encodeURIComponent(slug)}`;
+  const response = await fetch(`${API_URL}${publicPath}`, {
     cache: "no-store",
     headers: { Accept: "application/json" },
   });

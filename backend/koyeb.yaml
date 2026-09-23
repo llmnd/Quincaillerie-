@@ -28,6 +28,10 @@ services:
         value: ${SECRET_KEY}
       - key: CORS_ORIGINS
         value: ${CORS_ORIGINS}
+      - key: PUBLIC_SITE_BASE_DOMAIN
+        value: ${PUBLIC_SITE_BASE_DOMAIN}
+      - key: PUBLIC_SITE_PROTOCOL
+        value: https
       - key: APP_ENV
         value: production
       - key: DEBUG

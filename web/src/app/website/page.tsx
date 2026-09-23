@@ -46,6 +46,9 @@ type WebsiteRecord = {
   published: boolean;
   theme?: Record<string, unknown>;
   settings?: Record<string, unknown>;
+  public_url?: string;
+  primary_domain?: string;
+  domains?: Array<{ id: number; domain: string; type: string; verified: boolean; active: boolean }>;
 };
 
 type OrganizationProfile = {
@@ -438,9 +441,12 @@ export default function WebsiteConfigPage() {
 
   const previewUrl = useMemo(() => {
     if (!form.slug) return "";
-    const host = process.env.NEXT_PUBLIC_PUBLIC_HOST ?? "localhost:3000";
+    const host = process.env.NEXT_PUBLIC_PUBLIC_HOST ?? "monerp.vercel.app";
+    const mode = process.env.NEXT_PUBLIC_PUBLIC_SITE_MODE ?? "path";
+    if (mode === "path") return `https://${host}/site/${form.slug}`;
+    if (website?.public_url) return website.public_url;
     return `https://${form.slug}.${host}`;
-  }, [form.slug]);
+  }, [form.slug, website?.public_url]);
 
   const isDirty = useMemo(() => {
     if (!website) return form.name.trim().length > 0;
@@ -647,6 +653,31 @@ export default function WebsiteConfigPage() {
     } finally {
       setPublishing(false);
     }
+  }
+
+  async function configureCustomDomain() {
+    if (!website) return;
+    const domain = window.prompt("Domaine personnalisé (ex: www.exemple.com)");
+    if (!domain?.trim()) return;
+    const response = await fetch(`${API_URL}/api/v1/websites/current/domains`, {
+      method: "POST",
+      credentials: "include",
+      headers: { Accept: "application/json", "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ domain: domain.trim() }),
+    });
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      showToast("error", (payload as { detail?: string }).detail ?? "Domaine invalide");
+      return;
+    }
+    const domainRecord = (await response.json()) as { id: number; domain: string; type: string; verified: boolean; active: boolean };
+    setWebsite((current) => current ? {
+      ...current,
+      primary_domain: domainRecord.domain,
+      public_url: `https://${domainRecord.domain}`,
+      domains: [...(current.domains ?? []), domainRecord],
+    } : current);
+    showToast("success", "Domaine ajouté. Configurez son CNAME vers votre domaine public.");
   }
 
   async function deleteWebsite() {
@@ -1127,10 +1158,18 @@ export default function WebsiteConfigPage() {
                   )}
                 </div>
                 <span className={styles.fieldHint}>
-                  <code>
-                    {form.slug || "mon-site"}.{process.env.NEXT_PUBLIC_PUBLIC_HOST ?? "localhost:3000"}
-                  </code>
+                  <code>{previewUrl || "https://monerp.vercel.app/site/mon-site"}</code>
                 </span>
+                {website && (
+                  <button
+                    type="button"
+                    className={styles.btnGhostCompact}
+                    onClick={() => void configureCustomDomain()}
+                    style={{ marginTop: 8, width: "100%" }}
+                  >
+                    <Globe size={12} /> Configurer un domaine personnalisé
+                  </button>
+                )}
               </label>
 
               <label className={styles.field}>

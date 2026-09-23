@@ -144,9 +144,49 @@ def test_website_current_is_scoped_by_organization():
     org2_current = client.get("/api/v1/websites/current", headers={"Authorization": f"Bearer {org2_token}"})
     assert org2_current.status_code == 404
 
+    publish_response = client.post(
+        "/api/v1/websites/current/publish",
+        headers={"Authorization": f"Bearer {org1_token}"},
+    )
+    assert publish_response.status_code == 200
+
     public_response = client.get("/api/v1/websites/public/premier-site")
     assert public_response.status_code == 200
     assert public_response.json()["website"]["slug"] == "premier-site"
+
+
+def test_website_publish_creates_organization_subdomain_and_resolves_public_host():
+    registration = client.post(
+        "/api/v1/auth/register",
+        json={
+            "organization_name": f"Public Host Org {uuid.uuid4().hex[:8]}",
+            "full_name": "Public Host Admin",
+            "email": f"public-host-{uuid.uuid4().hex[:8]}@demo.test",
+            "password": "StrongPass123",
+        },
+    )
+    assert registration.status_code == 201
+    token = registration.cookies.get("access_token", "")
+
+    created = client.post(
+        "/api/v1/websites",
+        json={"name": "Public Host Site", "slug": "public-host-site", "template": "commerce"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert created.status_code == 201, created.text
+
+    published = client.post(
+        "/api/v1/websites/current/publish",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert published.status_code == 200, published.text
+    body = published.json()
+    assert body["primary_domain"].endswith(".monerp.vercel.app")
+    assert body["domains"][0]["type"] == "subdomain"
+
+    public = client.get(f"/api/v1/websites/public/host/{body['primary_domain']}")
+    assert public.status_code == 200, public.text
+    assert public.json()["website"]["id"] == body["id"]
 
 
 def test_website_upload_route_persists_media_for_current_org():

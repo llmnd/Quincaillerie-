@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import re
 from datetime import datetime
 from typing import Any
 
@@ -9,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.api.deps import get_db, require_roles
+from app.core.config import settings
 from app.models.organization import Organization
 from app.models.product import Product
 from app.models.user import User
@@ -45,6 +47,11 @@ DEFAULT_THEME = {
 
 
 def _serialize_website(website: Website) -> dict[str, Any]:
+    domains = sorted(website.domains, key=lambda item: (item.type != "custom", item.id))
+    primary_domain = next((item for item in domains if item.type == "custom" and item.active), None)
+    if primary_domain is None:
+        primary_domain = next((item for item in domains if item.type == "subdomain" and item.active), None)
+    primary_host = primary_domain.domain if primary_domain else f"{website.organization.slug}.{settings.public_site_base_domain}"
     return {
         "id": website.id,
         "organization_id": website.organization_id,
@@ -57,6 +64,18 @@ def _serialize_website(website: Website) -> dict[str, Any]:
         "published": website.published,
         "theme": {**DEFAULT_THEME, **(website.theme or {})},
         "settings": website.settings or {},
+        "domains": [
+            {
+                "id": item.id,
+                "domain": item.domain,
+                "type": item.type,
+                "verified": item.verified,
+                "active": item.active,
+            }
+            for item in domains
+        ],
+        "primary_domain": primary_host,
+        "public_url": f"{settings.public_site_protocol}://{primary_host}",
         "created_at": website.created_at.isoformat() if website.created_at else None,
         "updated_at": website.updated_at.isoformat() if website.updated_at else None,
     }
@@ -104,6 +123,34 @@ def _get_website_for_current_org(db: Session, current_user: User, website_id: in
     return website
 
 
+def _normalize_domain(value: str) -> str:
+    domain = value.strip().lower().rstrip(".")
+    if "://" in domain:
+        domain = domain.split("://", 1)[1]
+    domain = domain.split("/", 1)[0].split(":", 1)[0]
+    if not re.fullmatch(r"(?=.{1,255}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}", domain):
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid domain name")
+    return domain
+
+
+def _subdomain_for_website(website: Website) -> str:
+    return f"{website.organization.slug}.{settings.public_site_base_domain}".lower()
+
+
+def _ensure_subdomain(db: Session, website: Website) -> WebsiteDomain:
+    domain = _subdomain_for_website(website)
+    existing = db.scalar(select(WebsiteDomain).where(WebsiteDomain.domain == domain))
+    if existing is not None:
+        if existing.website_id != website.id:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Organization subdomain is already assigned")
+        existing.active = True
+        existing.verified = True
+        return existing
+    record = WebsiteDomain(website_id=website.id, domain=domain, type="subdomain", verified=True, active=True)
+    db.add(record)
+    return record
+
+
 def _default_template_config(template: str | None) -> dict[str, Any]:
     template_name = template or "commerce"
     pages = [
@@ -147,7 +194,11 @@ def get_current_website(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles("admin", "seller")),
 ) -> dict[str, Any]:
-    website = db.scalar(select(Website).where(Website.organization_id == current_user.organization_id).order_by(Website.id.desc()))
+    website = db.scalar(
+        select(Website)
+        .where(Website.organization_id == current_user.organization_id)
+        .order_by(Website.id.desc())
+    )
     if website is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No website configured for this organization")
     return _serialize_website(website)
@@ -419,8 +470,10 @@ def publish_website(
     current_user: User = Depends(require_roles("admin")),
 ) -> dict[str, Any]:
     website = _get_website_for_current_org(db, current_user)
+    _ensure_subdomain(db, website)
     website.published = True
     db.commit()
+    db.refresh(website)
     return _serialize_website(website)
 
 
@@ -435,13 +488,72 @@ def unpublish_website(
     return _serialize_website(website)
 
 
+@router.get("/current/domains", response_model=list[dict[str, Any]])
+def list_current_website_domains(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin", "seller")),
+) -> list[dict[str, Any]]:
+    website = _get_website_for_current_org(db, current_user)
+    return [
+        {"id": item.id, "domain": item.domain, "type": item.type, "verified": item.verified, "active": item.active}
+        for item in sorted(website.domains, key=lambda item: (item.type != "custom", item.id))
+    ]
+
+
+@router.post("/current/domains", response_model=dict[str, Any], status_code=status.HTTP_201_CREATED)
+def add_current_website_domain(
+    payload: dict[str, str],
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin")),
+) -> dict[str, Any]:
+    website = _get_website_for_current_org(db, current_user)
+    raw_domain = payload.get("domain", "")
+    domain = _normalize_domain(raw_domain)
+    base_domain = settings.public_site_base_domain.lower().strip().rstrip(".")
+    if domain == base_domain or domain.endswith(f".{base_domain}"):
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Use the automatic organization subdomain")
+    existing = db.scalar(select(WebsiteDomain).where(WebsiteDomain.domain == domain))
+    if existing is not None and existing.website_id != website.id:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Domain is already assigned")
+    record = existing or WebsiteDomain(website_id=website.id, domain=domain, type="custom", verified=False, active=True)
+    if existing is None:
+        db.add(record)
+    db.commit()
+    db.refresh(record)
+    return {
+        "id": record.id,
+        "domain": record.domain,
+        "type": record.type,
+        "verified": record.verified,
+        "active": record.active,
+        "verification": {"type": "CNAME", "name": record.domain, "target": base_domain},
+    }
+
+
+@router.delete("/current/domains/{domain_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_current_website_domain(
+    domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin")),
+) -> Response:
+    website = _get_website_for_current_org(db, current_user)
+    record = db.scalar(select(WebsiteDomain).where(WebsiteDomain.id == domain_id, WebsiteDomain.website_id == website.id))
+    if record is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Domain not found")
+    if record.type == "subdomain":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="The automatic subdomain cannot be deleted")
+    db.delete(record)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 @router.get("/public/{slug}", response_model=dict[str, Any])
 def public_website(
     slug: str,
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     website = db.scalar(select(Website).options(selectinload(Website.pages).selectinload(WebsitePage.sections)).where(Website.slug == slug))
-    if website is None:
+    if website is None or not website.published:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Website not found")
     pages = sorted(website.pages, key=lambda page: page.position)
     page = next((item for item in pages if item.published), pages[0] if pages else None)
@@ -466,6 +578,26 @@ def public_website(
             for product in products
         ],
     }
+
+
+@router.get("/public/host/{host}", response_model=dict[str, Any])
+def public_website_by_host(
+    host: str,
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    domain = _normalize_domain(host)
+    website = db.scalar(
+        select(Website)
+        .join(WebsiteDomain, WebsiteDomain.website_id == Website.id)
+        .where(
+            WebsiteDomain.domain == domain,
+            WebsiteDomain.active.is_(True),
+            Website.published.is_(True),
+        )
+    )
+    if website is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Published website not found for host")
+    return public_website(website.slug, db)
 
 
 @router.get("/public/{slug}/products")
