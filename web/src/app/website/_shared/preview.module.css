@@ -6,6 +6,8 @@
 
 /* ---------- Shell ---------- */
 .sitePreviewShell {
+  container-type: inline-size;
+  container-name: site-preview;
   background: #ffffff;
   border: 1px solid #dfeaf2;
   border-radius: 12px;
@@ -45,6 +47,7 @@
 }
 
 .siteHeader {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -52,6 +55,19 @@
   padding: 16px 26px;
   border-bottom: 1px solid color-mix(in srgb, var(--site-text) 8%, transparent);
   color: var(--site-text);
+}
+
+.previewMenuButton {
+  display: none;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  margin-left: auto;
+  border: 1px solid color-mix(in srgb, var(--site-text) 14%, transparent);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--site-text);
+  cursor: pointer;
 }
 
 .companyBrand {
@@ -118,6 +134,36 @@
   transition: transform 0.15s ease;
 }
 .siteHeaderButton:hover { transform: translateY(-1px); }
+
+@container site-preview (max-width: 640px) {
+  .siteHeader { padding: 11px 14px; gap: 8px; }
+  .themeRoot[data-header="centered"] .siteHeader { flex-direction: row; text-align: left; }
+  .companyBrand { min-width: 0; font-size: 15px; gap: 8px; }
+  .companyLogo, .companyLogoFallback { width: 32px; height: 32px; border-radius: 9px; }
+  .previewMenuButton { display: grid; }
+  .siteNav {
+    position: absolute;
+    top: calc(100% + 1px);
+    right: 10px;
+    left: 10px;
+    z-index: 5;
+    display: none;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+    padding: 8px;
+    border: 1px solid color-mix(in srgb, var(--site-text) 12%, transparent);
+    border-radius: 10px;
+    background: var(--site-bg);
+    box-shadow: 0 14px 28px color-mix(in srgb, var(--site-text) 16%, transparent);
+  }
+  .siteNav.siteNavOpen { display: flex; }
+  .siteNav a { padding: 9px 10px; }
+  .siteHeaderButton { display: none; }
+  .heroPreviewContent { grid-template-columns: 1fr; gap: 14px; }
+  .siteMainContent { padding: 14px 12px 18px; }
+  .siteFooter { flex-direction: column; align-items: flex-start; padding: 12px 14px; }
+}
 
 .siteBody {
   display: flex;

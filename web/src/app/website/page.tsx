@@ -29,6 +29,7 @@ import AppShell from "../../components/AppShell";
 import { authHeaders } from "../../lib/auth";
 import styles from "./page.module.css";
 import previewStyles from "./_shared/preview.module.css";
+import SiteSections from "./_shared/SiteSections";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const MAX_VISIBLE_SECTIONS = 6;
@@ -70,6 +71,7 @@ type Theme = {
   cardStyle: string;
   headerStyle: string;
   footerStyle: string;
+  secondaryText?: string;
   /* Couleurs granulaires */
   headerText?: string;
   categoryText?: string;
@@ -1495,7 +1497,15 @@ export default function WebsiteConfigPage() {
                         <p>Aucune section visible. Ouvrez l'éditeur pour ajouter du contenu.</p>
                       </div>
                     ) : (
-                      visibleSections.map((s, i) => renderSection(s, i))
+                      <SiteSections
+                        sections={visibleSections}
+                        products={products}
+                        siteName={form.name || orgName}
+                        textColor={theme.text}
+                        secondaryTextColor={theme.secondaryText ?? "#475569"}
+                        primaryColor={theme.primary}
+                        secondaryColor={theme.secondary}
+                      />
                     )}
                   </div>
                 </main>

@@ -113,6 +113,8 @@
   transition: all 0.15s ease;
 }
 .deviceIconButton:hover { background: rgba(255, 255, 255, 0.08); color: #ffffff; }
+.deviceIconButton:disabled { opacity: 0.35; cursor: not-allowed; }
+.deviceIconButton:disabled:hover { background: rgba(255, 255, 255, 0.03); color: #94a3b8; }
 .deviceIconButtonActive {
   background: rgba(14, 165, 164, 0.22);
   border-color: rgba(14, 165, 164, 0.5);
@@ -380,6 +382,58 @@
 /* ---------- Pages ---------- */
 .addForm { margin-top: 12px; display: grid; gap: 10px; }
 .inlineToolbar { display: flex; justify-content: flex-start; gap: 6px; }
+
+.inlineTextToolbar {
+  position: sticky;
+  top: 8px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  max-width: calc(100% - 16px);
+  margin: 8px auto -38px;
+  padding: 6px 8px;
+  border: 1px solid #334155;
+  border-radius: 7px;
+  background: #202735;
+  color: #f8fafc;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.24);
+}
+
+.inlineToolbarLabel {
+  padding: 0 7px 0 2px;
+  border-right: 1px solid rgba(255, 255, 255, 0.18);
+  color: #cbd5e1;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.inlineToolbarSelect,
+.inlineToolbarButton,
+.inlineColorButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: #f8fafc;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.inlineToolbarSelect { min-width: 54px; padding: 0 5px; background: #2d3748; cursor: pointer; }
+.inlineToolbarButton { cursor: pointer; }
+.inlineToolbarButton:hover,
+.inlineToolbarSelect:hover,
+.inlineColorButton:hover { border-color: #64748b; background: #374151; }
+.inlineColorButton { position: relative; cursor: pointer; }
+.inlineColorButton span { text-decoration: underline; text-decoration-color: #14b8a6; text-decoration-thickness: 3px; }
+.inlineColorButton input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 .pageList { display: grid; gap: 6px; margin-top: 8px; }
 
 .pageCard {

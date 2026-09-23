@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  AlignCenter,
+  AlignLeft,
+  AlignRight,
   ChevronRight,
   Copy,
   Eye,
@@ -21,12 +24,15 @@ import {
   Smartphone,
   Trash2,
   Type,
+  Undo2,
+  Redo2,
   X,
 } from "lucide-react";
 import AppShell from "../../../components/AppShell";
 import { authHeaders } from "../../../lib/auth";
 import styles from "./page.module.css";
 import previewStyles from "../_shared/preview.module.css";
+import { sanitizeInlineHtml } from "../_shared/SiteSections";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
@@ -40,6 +46,10 @@ type Section = {
   visible: boolean;
   content: Record<string, unknown>;
   settings: Record<string, unknown>;
+};
+
+type EditorSnapshot = {
+  sections: Section[];
 };
 
 type PageItem = {
@@ -198,6 +208,7 @@ async function uploadWebsiteMedia(file: File): Promise<string> {
 function EditableText({
   as = "span",
   value,
+  htmlValue,
   editable = false,
   active = false,
   focused = false,
@@ -205,12 +216,15 @@ function EditableText({
   className,
   style,
   onSelect,
+  onDoubleClick,
   onCommit,
   onHoverChange,
+  link,
   ...props
 }: {
   as?: "span" | "p" | "h1" | "h2" | "h3" | "h4" | "strong" | "em";
   value: string;
+  htmlValue?: string;
   editable?: boolean;
   active?: boolean;
   focused?: boolean;
@@ -218,22 +232,26 @@ function EditableText({
   className?: string;
   style?: React.CSSProperties;
   onSelect?: () => void;
+  onDoubleClick?: () => void;
+  link?: string;
   onCommit?: (nextValue: string) => void;
   onHoverChange?: (hovering: boolean) => void;
 } & React.HTMLAttributes<HTMLElement>) {
   const Tag = as as React.ElementType;
   const ref = useRef<HTMLElement | null>(null);
   const isFocusedRef = useRef(false);
-  const initialValue = useRef(value);
 
   useEffect(() => {
     const node = ref.current;
     if (!node) return;
     if (isFocusedRef.current) return;
-    if (node.textContent !== value) {
+    const nextHtml = htmlValue ? sanitizeInlineHtml(htmlValue) : "";
+    if (nextHtml) {
+      if (node.innerHTML !== nextHtml) node.innerHTML = nextHtml;
+    } else if (node.textContent !== value) {
       node.textContent = value;
     }
-  }, [value]);
+  }, [htmlValue, value]);
 
   return (
     <Tag
@@ -248,17 +266,33 @@ function EditableText({
         isFocusedRef.current = true;
         onSelect?.();
       }}
+      onDoubleClick={() => {
+        onSelect?.();
+        onDoubleClick?.();
+      }}
+      onClick={(event: React.MouseEvent<HTMLElement>) => {
+        if (editable) {
+          event.preventDefault();
+          onSelect?.();
+          return;
+        }
+        if (!link) return;
+        event.preventDefault();
+        window.open(link, "_blank", "noopener,noreferrer");
+      }}
       onBlur={(event: React.FocusEvent<HTMLElement>) => {
         isFocusedRef.current = false;
-        const raw = event.currentTarget.textContent ?? "";
-        const next = raw.trim() ? raw : value;
+        const raw = event.currentTarget.innerHTML;
+        const next = raw.trim() ? sanitizeInlineHtml(raw) : value;
         if (next !== value) onCommit?.(next);
-        if (event.currentTarget.textContent !== next) {
+        if (htmlValue && event.currentTarget.innerHTML !== next) {
+          event.currentTarget.innerHTML = next;
+        } else if (!htmlValue && event.currentTarget.textContent !== next) {
           event.currentTarget.textContent = next;
         }
       }}
       onInput={(event: React.FormEvent<HTMLElement>) => {
-        const next = event.currentTarget.textContent ?? "";
+        const next = sanitizeInlineHtml(event.currentTarget.innerHTML);
         onCommit?.(next);
       }}
       onKeyDown={(event: React.KeyboardEvent<HTMLElement>) => {
@@ -273,9 +307,7 @@ function EditableText({
       }}
       onMouseEnter={() => onHoverChange?.(true)}
       onMouseLeave={() => onHoverChange?.(false)}
-    >
-      {initialValue.current}
-    </Tag>
+    />
   );
 }
 
@@ -580,6 +612,7 @@ export default function WebsiteEditorPage() {
   const [editorMode, setEditorMode] = useState<"edit" | "preview">("edit");
   const [deviceMode, setDeviceMode] = useState<"desktop" | "tablet" | "mobile">("desktop");
   const [hoveredElementId, setHoveredElementId] = useState<string | null>(null);
+  const [inlineTextColor, setInlineTextColor] = useState("#111827");
   const [isReady, setIsReady] = useState(false);
   const [savingPage, setSavingPage] = useState(false);
   const [savingSite, setSavingSite] = useState(false);
@@ -588,8 +621,13 @@ export default function WebsiteEditorPage() {
   const [openAccordion, setOpenAccordion] = useState<AccordionKey>("blocks");
   const [toast, setToast] = useState<string | null>(null);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [previewMenuOpen, setPreviewMenuOpen] = useState(false);
+  const [, setHistoryTick] = useState(0);
 
   const textPatchTimers = useRef<Map<string, number>>(new Map());
+  const undoStack = useRef<EditorSnapshot[]>([]);
+  const redoStack = useRef<EditorSnapshot[]>([]);
+  const lastHistoryAt = useRef(0);
 
   /* ---------- Data fetching ---------- */
   async function fetchWebsiteTheme() {
@@ -701,6 +739,15 @@ export default function WebsiteEditorPage() {
         event.preventDefault();
         void saveWebsite();
       }
+      if (modifier && event.key.toLowerCase() === "z") {
+        event.preventDefault();
+        if (event.shiftKey) redo();
+        else undo();
+      }
+      if (modifier && event.key.toLowerCase() === "y") {
+        event.preventDefault();
+        redo();
+      }
     }
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
@@ -725,8 +772,51 @@ export default function WebsiteEditorPage() {
     setSelectedElementId(elementId);
   }
 
+  function cloneSections(value: Section[]): Section[] {
+    return value.map((section) => ({ ...section, content: { ...section.content }, settings: { ...section.settings } }));
+  }
+
+  function pushHistory() {
+    const now = Date.now();
+    if (now - lastHistoryAt.current > 700) {
+      undoStack.current = [...undoStack.current.slice(-49), { sections: cloneSections(sections) }];
+      redoStack.current = [];
+      lastHistoryAt.current = now;
+      setHistoryTick((tick) => tick + 1);
+    }
+  }
+
+  async function persistSectionsSnapshot(snapshot: Section[]) {
+    await Promise.all(snapshot.filter((section) => section.id).map((section) => fetch(`${API_URL}/api/v1/websites/sections/${section.id}`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { Accept: "application/json", "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ content: section.content, settings: section.settings, visible: section.visible, position: section.position }),
+    })));
+  }
+
+  function undo() {
+    const previous = undoStack.current.pop();
+    if (!previous) return;
+    redoStack.current.push({ sections: cloneSections(sections) });
+    setSections(cloneSections(previous.sections));
+    void persistSectionsSnapshot(previous.sections);
+    setHistoryTick((tick) => tick + 1);
+  }
+
+  function redo() {
+    const next = redoStack.current.pop();
+    if (!next) return;
+    undoStack.current.push({ sections: cloneSections(sections) });
+    setSections(cloneSections(next.sections));
+    void persistSectionsSnapshot(next.sections);
+    setHistoryTick((tick) => tick + 1);
+  }
+
   function commitSectionElementValue(sectionId: number | null, elementId: string | null, nextValue: string) {
     if (sectionId == null || !elementId) return;
+
+    pushHistory();
 
     setSections((current) =>
       current.map((section) =>
@@ -765,6 +855,7 @@ export default function WebsiteEditorPage() {
 
   function updateSelectedSectionField(key: string, value: string) {
     if (!selectedSection || !selectedSection.id) return;
+    pushHistory();
     setSections((current) =>
       current.map((item) =>
         item.id === selectedSection.id
@@ -777,15 +868,40 @@ export default function WebsiteEditorPage() {
     const existing = timers.get(keyId);
     if (existing) window.clearTimeout(existing);
     const timer = window.setTimeout(() => {
+      const currentSection = sections.find((item) => item.id === selectedSection.id);
       void fetch(`${API_URL}/api/v1/websites/sections/${selectedSection.id}`, {
         method: "PATCH",
         credentials: "include",
         headers: { Accept: "application/json", "Content-Type": "application/json", ...authHeaders() },
-        body: JSON.stringify({ content: { ...selectedSection.content, [key]: value } }),
+        body: JSON.stringify({ content: { ...(currentSection?.content ?? selectedSection.content), [key]: value } }),
       }).catch((error) => console.error("Failed to persist section content", error));
       timers.delete(keyId);
     }, 400);
     timers.set(keyId, timer);
+  }
+
+  function selectedTextKey(suffix: string) {
+    if (!selectedElementId) return suffix;
+    if (selectedElementId === "title") return `title${suffix}`;
+    if (selectedElementId === "button") return suffix === "Link" ? "buttonLink" : `button${suffix}`;
+    return `text${suffix}`;
+  }
+
+  function updateInlineTextStyle(suffix: string, value: string) {
+    updateSelectedSectionField(selectedTextKey(suffix), value);
+  }
+
+  function insertInlineLink() {
+    if (!selectedElementId) return;
+    const current = String(selectedSection?.content?.[selectedTextKey("Link")] ?? "");
+    const next = window.prompt("Adresse du lien", current || "https://");
+    if (next !== null) updateInlineTextStyle("Link", next.trim());
+  }
+
+  function formatInline(command: "bold" | "italic" | "underline" | "createLink", value?: string) {
+    document.execCommand(command, false, value);
+    const active = document.activeElement as HTMLElement | null;
+    active?.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "formatInline" }));
   }
 
   /* ---------- Preview ---------- */
@@ -856,6 +972,24 @@ export default function WebsiteEditorPage() {
     const textClass = `${previewStyles.editableText} ${previewStyles.editableSecondaryText} ${isTextFocused ? previewStyles.editableTextFocused : ""} ${isTitleActive ? previewStyles.editableTextActive : ""} ${hoveredElementId === "text" && isTitleActive ? previewStyles.editableTextHover : ""}`;
     const buttonClass = `${previewStyles.editableButton} ${isButtonFocused ? previewStyles.editableTextFocused : ""} ${isTitleActive ? previewStyles.editableTextActive : ""} ${hoveredElementId === "button" && isTitleActive ? previewStyles.editableTextHover : ""}`;
 
+    const inlineStyle = (element: "title" | "subtitle" | "text" | "button"): React.CSSProperties => {
+      const prefix = element === "title" ? "title" : element === "button" ? "button" : "text";
+      const size = content[`${prefix}Size`];
+      const weight = content[`${prefix}Weight`];
+      const color = content[`${prefix}Color`];
+      const textAlign = content[`${prefix}Align`];
+      const italic = content[`${prefix}Italic`] === "true";
+      const underline = content[`${prefix}Underline`] === "true";
+      return {
+        fontSize: sizeToCss(String(size ?? ""), ""),
+        fontWeight: weightToCss(String(weight ?? ""), "") as React.CSSProperties["fontWeight"],
+        color: typeof color === "string" && color ? color : undefined,
+        textAlign: textAlign === "left" || textAlign === "center" || textAlign === "right" ? textAlign : undefined,
+        fontStyle: italic ? "italic" : undefined,
+        textDecoration: underline ? "underline" : undefined,
+      };
+    };
+
     const commitTitle = (next: string) => commitSectionElementValue(section.id ?? null, "title", next);
     const commitSubtitle = (next: string) => commitSectionElementValue(section.id ?? null, "subtitle", next);
     const commitText = (next: string) => commitSectionElementValue(section.id ?? null, "text", next);
@@ -874,19 +1008,22 @@ export default function WebsiteEditorPage() {
               <EditableText
                 as="h3"
                 value={String(content.title ?? "Bienvenue")}
+                htmlValue={String(content.titleHtml ?? "")}
                 editable={isEditable}
+                link={String(content.titleLink ?? "")}
                 active={isTitleActive}
                 focused={isTitleFocused}
                 hovered={hoveredElementId === "title" && isTitleActive}
                 className={titleClass}
                 style={{
+                  ...inlineStyle("title"),
                   fontSize: sizeToCss(String(content.titleSize ?? ""), ""),
                   fontWeight: weightToCss(String(content.titleWeight ?? ""), "") as React.CSSProperties["fontWeight"],
                 }}
                 data-section-id={previewSectionId}
                 data-element-id="title"
                 onSelect={() => selectSectionElement(section, "title")}
-                onCommit={commitTitle}
+                onCommit={(next) => commitSectionElementValue(section.id ?? null, "titleHtml", next)}
                 onHoverChange={(hovering) =>
                   setHoveredElementId((c) => (hovering ? "title" : c === "title" ? null : c))
                 }
@@ -894,19 +1031,22 @@ export default function WebsiteEditorPage() {
               <EditableText
                 as="p"
                 value={String(content.subtitle ?? "Votre site public")}
+                htmlValue={String(content.textHtml ?? "")}
                 editable={isEditable}
+                link={String(content.textLink ?? "")}
                 active={isTitleActive}
                 focused={isSubtitleFocused}
                 hovered={hoveredElementId === "subtitle" && isTitleActive}
                 className={subtitleClass}
                 style={{
+                  ...inlineStyle("subtitle"),
                   fontSize: sizeToCss(String(content.textSize ?? ""), ""),
                   fontWeight: weightToCss(String(content.textWeight ?? ""), "") as React.CSSProperties["fontWeight"],
                 }}
                 data-section-id={previewSectionId}
                 data-element-id="subtitle"
                 onSelect={() => selectSectionElement(section, "subtitle")}
-                onCommit={commitSubtitle}
+                onCommit={(next) => commitSectionElementValue(section.id ?? null, "textHtml", next)}
                 onHoverChange={(hovering) =>
                   setHoveredElementId((c) => (hovering ? "subtitle" : c === "subtitle" ? null : c))
                 }
@@ -927,13 +1067,16 @@ export default function WebsiteEditorPage() {
               >
                 <EditableText
                   value={String(content.buttonText ?? "Découvrir")}
+                  htmlValue={String(content.buttonTextHtml ?? "")}
                   editable={isEditable}
+                  link={String(content.buttonLink ?? "")}
                   active={isTitleActive}
                   focused={isButtonFocused}
                   hovered={hoveredElementId === "button" && isTitleActive}
                   className={previewStyles.editableButtonText}
+                  style={inlineStyle("button")}
                   onSelect={() => selectSectionElement(section, "button")}
-                  onCommit={(next) => commitSectionElementValue(section.id ?? null, "buttonText", next)}
+                  onCommit={(next) => commitSectionElementValue(section.id ?? null, "buttonTextHtml", next)}
                   onHoverChange={(hovering) =>
                     setHoveredElementId((c) => (hovering ? "button" : c === "button" ? null : c))
                   }
@@ -971,19 +1114,22 @@ export default function WebsiteEditorPage() {
           <EditableText
             as="h3"
             value={String(content.title ?? "Bannière")}
+            htmlValue={String(content.titleHtml ?? "")}
             editable={isEditable}
+            link={String(content.titleLink ?? "")}
             active={isTitleActive}
             focused={isTitleFocused}
             hovered={hoveredElementId === "title" && isTitleActive}
             className={titleClass}
             style={{
+              ...inlineStyle("title"),
               fontSize: sizeToCss(String(content.titleSize ?? ""), ""),
               fontWeight: weightToCss(String(content.titleWeight ?? ""), "") as React.CSSProperties["fontWeight"],
             }}
             data-section-id={previewSectionId}
             data-element-id="title"
             onSelect={() => selectSectionElement(section, "title")}
-            onCommit={commitTitle}
+            onCommit={(next) => commitSectionElementValue(section.id ?? null, "titleHtml", next)}
             onHoverChange={(hovering) =>
               setHoveredElementId((c) => (hovering ? "title" : c === "title" ? null : c))
             }
@@ -991,19 +1137,22 @@ export default function WebsiteEditorPage() {
           <EditableText
             as="p"
             value={String(content.subtitle ?? "Une bannière personnalisée")}
+            htmlValue={String(content.textHtml ?? "")}
             editable={isEditable}
+            link={String(content.textLink ?? "")}
             active={isTitleActive}
             focused={isSubtitleFocused}
             hovered={hoveredElementId === "subtitle" && isTitleActive}
             className={subtitleClass}
             style={{
+              ...inlineStyle("subtitle"),
               fontSize: sizeToCss(String(content.textSize ?? ""), ""),
               fontWeight: weightToCss(String(content.textWeight ?? ""), "") as React.CSSProperties["fontWeight"],
             }}
             data-section-id={previewSectionId}
             data-element-id="subtitle"
             onSelect={() => selectSectionElement(section, "subtitle")}
-            onCommit={commitSubtitle}
+            onCommit={(next) => commitSectionElementValue(section.id ?? null, "textHtml", next)}
             onHoverChange={(hovering) =>
               setHoveredElementId((c) => (hovering ? "subtitle" : c === "subtitle" ? null : c))
             }
@@ -1023,11 +1172,13 @@ export default function WebsiteEditorPage() {
             as="h3"
             value={String(content.title ?? "Nos produits")}
             editable={isEditable}
+            link={String(content.titleLink ?? "")}
             active={isTitleActive}
             focused={isTitleFocused}
             hovered={hoveredElementId === "title" && isTitleActive}
             className={titleClass}
             style={{
+              ...inlineStyle("title"),
               fontSize: sizeToCss(String(content.titleSize ?? ""), ""),
               fontWeight: weightToCss(String(content.titleWeight ?? ""), "") as React.CSSProperties["fontWeight"],
             }}
@@ -1084,11 +1235,13 @@ export default function WebsiteEditorPage() {
             as="h3"
             value={String(content.title ?? "Images de nos produits")}
             editable={isEditable}
+            link={String(content.titleLink ?? "")}
             active={isTitleActive}
             focused={isTitleFocused}
             hovered={hoveredElementId === "title" && isTitleActive}
             className={titleClass}
             style={{
+              ...inlineStyle("title"),
               fontSize: sizeToCss(String(content.titleSize ?? ""), ""),
               fontWeight: weightToCss(String(content.titleWeight ?? ""), "") as React.CSSProperties["fontWeight"],
             }}
@@ -1147,19 +1300,22 @@ export default function WebsiteEditorPage() {
         <EditableText
           as="h3"
           value={String(content.title ?? section.type)}
+          htmlValue={String(content.titleHtml ?? "")}
           editable={isEditable}
+          link={String(content.titleLink ?? "")}
           active={isTitleActive}
           focused={isTitleFocused}
           hovered={hoveredElementId === "title" && isTitleActive}
           className={titleClass}
           style={{
+            ...inlineStyle("title"),
             fontSize: sizeToCss(String(content.titleSize ?? ""), ""),
             fontWeight: weightToCss(String(content.titleWeight ?? ""), "") as React.CSSProperties["fontWeight"],
           }}
           data-section-id={previewSectionId}
           data-element-id="title"
           onSelect={() => selectSectionElement(section, "title")}
-          onCommit={commitTitle}
+          onCommit={(next) => commitSectionElementValue(section.id ?? null, "titleHtml", next)}
           onHoverChange={(hovering) =>
             setHoveredElementId((c) => (hovering ? "title" : c === "title" ? null : c))
           }
@@ -1167,19 +1323,22 @@ export default function WebsiteEditorPage() {
         <EditableText
           as="p"
           value={String(content.text ?? content.subtitle ?? "Contenu par défaut. Cliquez pour modifier.")}
+          htmlValue={String(content.textHtml ?? "")}
           editable={isEditable}
+          link={String(content.textLink ?? "")}
           active={isTitleActive}
           focused={isTextFocused}
           hovered={hoveredElementId === "text" && isTitleActive}
           className={textClass}
           style={{
+            ...inlineStyle("text"),
             fontSize: sizeToCss(String(content.textSize ?? ""), ""),
             fontWeight: weightToCss(String(content.textWeight ?? ""), "") as React.CSSProperties["fontWeight"],
           }}
           data-section-id={previewSectionId}
           data-element-id="text"
           onSelect={() => selectSectionElement(section, "text")}
-          onCommit={commitText}
+          onCommit={(next) => commitSectionElementValue(section.id ?? null, "textHtml", next)}
           onHoverChange={(hovering) =>
             setHoveredElementId((c) => (hovering ? "text" : c === "text" ? null : c))
           }
@@ -1692,6 +1851,26 @@ export default function WebsiteEditorPage() {
                 </button>
               </div>
               <div className={styles.saveRow}>
+                <button
+                  type="button"
+                  className={styles.deviceIconButton}
+                  onClick={undo}
+                  disabled={undoStack.current.length === 0}
+                  title="Annuler (Ctrl+Z)"
+                  aria-label="Annuler"
+                >
+                  <Undo2 size={14} />
+                </button>
+                <button
+                  type="button"
+                  className={styles.deviceIconButton}
+                  onClick={redo}
+                  disabled={redoStack.current.length === 0}
+                  title="Rétablir (Ctrl+Y)"
+                  aria-label="Rétablir"
+                >
+                  <Redo2 size={14} />
+                </button>
                 <button
                   type="button"
                   className={styles.ghostButton}
@@ -2273,6 +2452,49 @@ export default function WebsiteEditorPage() {
                   } as React.CSSProperties
                 }
               >
+                {editorMode === "edit" && selectedSectionId && selectedElementId && (
+                  <div className={styles.inlineTextToolbar} role="toolbar" aria-label="Mise en forme du texte">
+                    <span className={styles.inlineToolbarLabel}>Texte</span>
+                    <select
+                      className={styles.inlineToolbarSelect}
+                      value={String(selectedSection?.content?.[selectedTextKey("Size")] ?? "md")}
+                      onChange={(event) => updateInlineTextStyle("Size", event.target.value)}
+                      aria-label="Taille du texte"
+                    >
+                      {SIZE_OPTIONS.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}
+                    </select>
+                    <select
+                      className={styles.inlineToolbarSelect}
+                      value={String(selectedSection?.content?.[selectedTextKey("Weight")] ?? "normal")}
+                      onChange={(event) => updateInlineTextStyle("Weight", event.target.value)}
+                      aria-label="Graisse du texte"
+                    >
+                      {WEIGHT_OPTIONS.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}
+                    </select>
+                    <label className={styles.inlineColorButton} title="Couleur du texte">
+                      <span>A</span>
+                      <input
+                        type="color"
+                        value={String(selectedSection?.content?.[selectedTextKey("Color")] ?? inlineTextColor)}
+                        onChange={(event) => {
+                          setInlineTextColor(event.target.value);
+                          updateInlineTextStyle("Color", event.target.value);
+                        }}
+                        aria-label="Couleur du texte"
+                      />
+                    </label>
+                    <button type="button" className={styles.inlineToolbarButton} onMouseDown={(event) => event.preventDefault()} onClick={() => formatInline("bold")} aria-label="Gras"><strong>B</strong></button>
+                    <button type="button" className={styles.inlineToolbarButton} onMouseDown={(event) => event.preventDefault()} onClick={() => formatInline("italic")} aria-label="Italique"><em>I</em></button>
+                    <button type="button" className={styles.inlineToolbarButton} onMouseDown={(event) => event.preventDefault()} onClick={() => formatInline("underline")} aria-label="Souligné"><u>U</u></button>
+                    <button type="button" className={styles.inlineToolbarButton} onClick={() => updateInlineTextStyle("Align", "left")} aria-label="Aligner à gauche"><AlignLeft size={14} /></button>
+                    <button type="button" className={styles.inlineToolbarButton} onClick={() => updateInlineTextStyle("Align", "center")} aria-label="Centrer"><AlignCenter size={14} /></button>
+                    <button type="button" className={styles.inlineToolbarButton} onClick={() => updateInlineTextStyle("Align", "right")} aria-label="Aligner à droite"><AlignRight size={14} /></button>
+                    <button type="button" className={styles.inlineToolbarButton} onMouseDown={(event) => event.preventDefault()} onClick={() => {
+                      const current = window.prompt("Adresse du lien", "https://");
+                      if (current) formatInline("createLink", current.trim());
+                    }} aria-label="Insérer un lien">↗</button>
+                  </div>
+                )}
                 <header className={previewStyles.siteHeader}>
                   <div className={previewStyles.companyBrand}>
                     {organizationLogo ? (
@@ -2285,13 +2507,22 @@ export default function WebsiteEditorPage() {
                     )}
                     <span>{organizationName}</span>
                   </div>
-                  <nav className={previewStyles.siteNav}>
+                  <button
+                    type="button"
+                    className={previewStyles.previewMenuButton}
+                    aria-label={previewMenuOpen ? "Fermer le menu du site" : "Ouvrir le menu du site"}
+                    aria-expanded={previewMenuOpen}
+                    onClick={() => setPreviewMenuOpen((open) => !open)}
+                  >
+                    {previewMenuOpen ? <X size={18} /> : <Menu size={18} />}
+                  </button>
+                  <nav className={`${previewStyles.siteNav} ${previewMenuOpen ? previewStyles.siteNavOpen : ""}`}>
                     <a href="#">Accueil</a>
                     <a href="#">À propos</a>
                     <a href="#">Produits</a>
                     <a href="#contact">Contact</a>
                   </nav>
-                  <button type="button" className={previewStyles.siteHeaderButton}>
+                  <button type="button" className={previewStyles.siteHeaderButton} onClick={() => setPreviewMenuOpen(false)}>
                     Contactez-nous
                   </button>
                 </header>
