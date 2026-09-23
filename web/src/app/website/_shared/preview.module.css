@@ -9,13 +9,14 @@
   background: #ffffff;
   border: 1px solid #dfeaf2;
   border-radius: 12px;
-  overflow: hidden;
+  overflow: visible;
   box-shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
   width: 100%;
   min-width: 0;
   display: flex;
   flex-direction: column;
   min-height: 100%;
+  height: max-content;
 
   --site-bg:        var(--editor-bg, #ffffff);
   --site-text:      var(--editor-text, #0f172a);
@@ -24,9 +25,10 @@
   --site-radius:    12px;
 
   /* Nouveaux : avec fallback sur primary si non fournis */
-  --site-header-text:   var(--editor-header-text,   var(--site-primary));
-  --site-category-text: var(--editor-category-text, color-mix(in srgb, var(--site-primary) 70%, transparent));
-  --site-price-text:    var(--editor-price-text,    var(--site-primary));
+  --site-header-text:   var(--site-text);
+  --site-category-text: var(--site-text);
+  --site-price-text:    var(--site-text);
+  --site-secondary-text: var(--editor-secondary-text, color-mix(in srgb, var(--site-text) 70%, transparent));
 
   background: var(--site-bg);
   color: var(--site-text);
@@ -49,6 +51,7 @@
   gap: 14px;
   padding: 16px 26px;
   border-bottom: 1px solid color-mix(in srgb, var(--site-text) 8%, transparent);
+  color: var(--site-text);
 }
 
 .companyBrand {
@@ -84,16 +87,22 @@
   align-items: center;
   justify-content: center;
   flex: 1;
+  min-width: 0;
   gap: 18px;
   font-size: 14px;
   font-weight: 600;
   flex-wrap: wrap;
+  visibility: visible;
+  opacity: 1;
 }
 
 .siteNav a {
-  color: var(--site-header-text);
+  display: inline-block;
+  color: var(--site-text) !important;
   text-decoration: none;
   transition: color 0.15s ease;
+  visibility: visible;
+  opacity: 1;
 }
 .siteNav a:hover { color: var(--site-secondary); }
 
@@ -101,7 +110,7 @@
   background: var(--site-secondary);
   border: none;
   border-radius: 8px;
-  color: #ffffff;
+  color: var(--site-text);
   padding: 10px 18px;
   font-weight: 600;
   cursor: pointer;
@@ -178,6 +187,14 @@
   transition: background-color 0.15s ease, outline-color 0.15s ease;
 }
 
+.editableText {
+  color: var(--site-text);
+}
+
+.previewSiteBlock .editableSecondaryText {
+  color: var(--site-secondary-text);
+}
+
 .editableTextActive { /* no-op */ }
 
 .editableTextHover {
@@ -198,7 +215,7 @@
   padding: 0.75rem 1.4rem;
   text-decoration: none;
   background: var(--site-secondary);
-  color: #ffffff !important;
+  color: var(--site-text) !important;
   font-weight: 600;
   border-radius: 999px;
 }
@@ -212,7 +229,7 @@
 
 .editableButton .editableButtonText,
 .editableButton [contenteditable] {
-  color: #ffffff !important;
+  color: var(--site-text) !important;
 }
 
 /* ---------- Hero ---------- */
@@ -410,16 +427,16 @@
   border-bottom-color: transparent !important;
 }
 .themeRoot[data-header="bold"] .siteHeader,
-.themeRoot[data-header="bold"] .siteHeader * { color: #ffffff !important; }
+.themeRoot[data-header="bold"] .siteHeader * { color: var(--site-header-text) !important; }
 .themeRoot[data-header="bold"] .siteHeaderButton {
   background: var(--site-bg) !important;
   color: var(--site-text) !important;
 }
 .themeRoot[data-header="bold"] .companyBrand,
 .themeRoot[data-header="bold"] .companyBrand span,
-.themeRoot[data-header="bold"] .siteNav a { color: #ffffff !important; }
+.themeRoot[data-header="bold"] .siteNav a { color: var(--site-header-text) !important; }
 .themeRoot[data-header="bold"] .siteNav a:hover {
-  color: color-mix(in srgb, #ffffff 70%, var(--site-secondary)) !important;
+  color: color-mix(in srgb, var(--site-header-text) 70%, var(--site-secondary)) !important;
 }
 
 .themeRoot[data-footer="columns"] .siteFooter {

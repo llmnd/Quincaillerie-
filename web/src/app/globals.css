@@ -64,7 +64,7 @@ a,
 .recapMeta small,
 .gridMetrics div p,
 .opItem small {
-  color: #ffffff !important;
+  color: inherit;
 }
 
 h1,

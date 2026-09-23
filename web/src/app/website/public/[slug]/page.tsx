@@ -9,6 +9,7 @@ type WebsiteTheme = {
   text?: string;
   accent?: string;
   font?: string;
+  secondaryText?: string;
   headerText?: string;
   categoryText?: string;
   priceText?: string;
@@ -85,9 +86,10 @@ export default async function PublicWebsitePage({ params }: { params: Promise<{ 
   const secondaryColor = theme.secondary ?? "#714B67";
   const backgroundColor = theme.background ?? "#ffffff";
   const textColor = theme.text ?? "#111827";
-  const headerTextColor = theme.headerText ?? theme.primary ?? "#111827";
-  const categoryTextColor = theme.categoryText ?? theme.primary ?? "#475569";
-  const priceTextColor = theme.priceText ?? theme.primary ?? "#111827";
+  const secondaryTextColor = theme.secondaryText ?? "#475569";
+  const headerTextColor = textColor;
+  const categoryTextColor = textColor;
+  const priceTextColor = textColor;
 
   return (
     <main
@@ -206,7 +208,7 @@ export default async function PublicWebsitePage({ params }: { params: Promise<{ 
             border: "none",
             borderRadius: 999,
             background: secondaryColor,
-            color: "#ffffff",
+            color: textColor,
             padding: "11px 18px",
             fontWeight: 700,
             cursor: "pointer",
@@ -243,7 +245,7 @@ export default async function PublicWebsitePage({ params }: { params: Promise<{ 
                       fontSize: 12,
                       letterSpacing: 2,
                       textTransform: "uppercase",
-                      color: "#475569",
+                      color: secondaryTextColor,
                       fontWeight: 800,
                     }}
                   >
@@ -262,7 +264,7 @@ export default async function PublicWebsitePage({ params }: { params: Promise<{ 
                   <p
                     style={{
                       margin: 0,
-                      color: "#374151",
+                      color: secondaryTextColor,
                       fontSize: 18,
                       lineHeight: 1.7,
                     }}
@@ -277,7 +279,7 @@ export default async function PublicWebsitePage({ params }: { params: Promise<{ 
                         alignItems: "center",
                         justifyContent: "center",
                         background: primaryColor,
-                        color: "#ffffff",
+                        color: textColor,
                         textDecoration: "none",
                         borderRadius: 999,
                         padding: "13px 22px",
@@ -352,7 +354,7 @@ export default async function PublicWebsitePage({ params }: { params: Promise<{ 
                           {product.category || "Catégorie"}
                         </div>
                         <h3 style={{ margin: "10px 0 8px", fontSize: 20, color: headerTextColor }}>{product.name}</h3>
-                        <p style={{ margin: 0, color: textColor, lineHeight: 1.6 }}>{product.description || "Produit disponible pour votre entreprise."}</p>
+                        <p style={{ margin: 0, color: secondaryTextColor, lineHeight: 1.6 }}>{product.description || "Produit disponible pour votre entreprise."}</p>
                         <strong style={{ display: "block", marginTop: 12, color: priceTextColor, fontSize: 18 }}>
                           {typeof product.price === "number" ? `${product.price.toFixed(2)} €` : product.price || "Prix sur demande"}
                         </strong>
@@ -370,7 +372,7 @@ export default async function PublicWebsitePage({ params }: { params: Promise<{ 
               style={{ padding: "18px 0", color: textColor }}
             >
               <h2 style={{ margin: "0 0 12px", color: headerTextColor, fontSize: 30 }}>{asText(content.title, "Section")}</h2>
-              <p style={{ margin: 0, color: "#374151", fontSize: 18, lineHeight: 1.8 }}>
+              <p style={{ margin: 0, color: secondaryTextColor, fontSize: 18, lineHeight: 1.8 }}>
                 {asText(content.text, asText(content.subtitle, "Contenu de cette section."))}
               </p>
             </section>

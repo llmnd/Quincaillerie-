@@ -64,10 +64,7 @@ type WebsiteTheme = {
   cardStyle?: string;
   headerStyle?: string;
   footerStyle?: string;
-  /* Couleurs granulaires */
-  headerText?: string;
-  categoryText?: string;
-  priceText?: string;
+  secondaryText?: string;
 };
 
 type OrganizationProfile = {
@@ -91,9 +88,7 @@ const defaultTheme: WebsiteTheme = {
   cardStyle: "soft",
   headerStyle: "minimal",
   footerStyle: "simple",
-  headerText: "#111827",
-  categoryText: "#475569",
-  priceText: "#111827",
+  secondaryText: "#475569",
 };
 
 const MAX_VISIBLE_SECTIONS_IN_PREVIEW = 6;
@@ -857,8 +852,8 @@ export default function WebsiteEditorPage() {
     const isButtonFocused = isTitleActive && selectedElementId === "button";
 
     const titleClass = `${previewStyles.editableText} ${isTitleFocused ? previewStyles.editableTextFocused : ""} ${isTitleActive ? previewStyles.editableTextActive : ""} ${hoveredElementId === "title" && isTitleActive ? previewStyles.editableTextHover : ""}`;
-    const subtitleClass = `${previewStyles.editableText} ${isSubtitleFocused ? previewStyles.editableTextFocused : ""} ${isTitleActive ? previewStyles.editableTextActive : ""} ${hoveredElementId === "subtitle" && isTitleActive ? previewStyles.editableTextHover : ""}`;
-    const textClass = `${previewStyles.editableText} ${isTextFocused ? previewStyles.editableTextFocused : ""} ${isTitleActive ? previewStyles.editableTextActive : ""} ${hoveredElementId === "text" && isTitleActive ? previewStyles.editableTextHover : ""}`;
+    const subtitleClass = `${previewStyles.editableText} ${previewStyles.editableSecondaryText} ${isSubtitleFocused ? previewStyles.editableTextFocused : ""} ${isTitleActive ? previewStyles.editableTextActive : ""} ${hoveredElementId === "subtitle" && isTitleActive ? previewStyles.editableTextHover : ""}`;
+    const textClass = `${previewStyles.editableText} ${previewStyles.editableSecondaryText} ${isTextFocused ? previewStyles.editableTextFocused : ""} ${isTitleActive ? previewStyles.editableTextActive : ""} ${hoveredElementId === "text" && isTitleActive ? previewStyles.editableTextHover : ""}`;
     const buttonClass = `${previewStyles.editableButton} ${isButtonFocused ? previewStyles.editableTextFocused : ""} ${isTitleActive ? previewStyles.editableTextActive : ""} ${hoveredElementId === "button" && isTitleActive ? previewStyles.editableTextHover : ""}`;
 
     const commitTitle = (next: string) => commitSectionElementValue(section.id ?? null, "title", next);
@@ -2173,23 +2168,10 @@ export default function WebsiteEditorPage() {
                     onCommit={(v) => void updateThemeValue("text", v)}
                   />
 
-                  {/* --- Couleurs granulaires --- */}
-                  <div className={styles.themeSubHeader}>Couleurs granulaires</div>
-
                   <ThemeColorInput
-                    label="Texte de l'en-tête"
-                    value={websiteTheme.headerText ?? websiteTheme.primary ?? "#111827"}
-                    onCommit={(v) => void updateThemeValue("headerText", v)}
-                  />
-                  <ThemeColorInput
-                    label="Catégorie produit"
-                    value={websiteTheme.categoryText ?? websiteTheme.primary ?? "#111827"}
-                    onCommit={(v) => void updateThemeValue("categoryText", v)}
-                  />
-                  <ThemeColorInput
-                    label="Prix produit"
-                    value={websiteTheme.priceText ?? websiteTheme.primary ?? "#111827"}
-                    onCommit={(v) => void updateThemeValue("priceText", v)}
+                    label="Texte secondaire"
+                    value={websiteTheme.secondaryText ?? "#475569"}
+                    onCommit={(v) => void updateThemeValue("secondaryText", v)}
                   />
 
                   <label className={styles.fieldLabel}>
@@ -2283,15 +2265,7 @@ export default function WebsiteEditorPage() {
                     "--editor-bg": websiteTheme.background,
                     "--editor-text": websiteTheme.text,
                     "--editor-font": websiteTheme.font,
-                    ...(websiteTheme.headerText
-                      ? { "--editor-header-text": websiteTheme.headerText }
-                      : {}),
-                    ...(websiteTheme.categoryText
-                      ? { "--editor-category-text": websiteTheme.categoryText }
-                      : {}),
-                    ...(websiteTheme.priceText
-                      ? { "--editor-price-text": websiteTheme.priceText }
-                      : {}),
+                    "--editor-secondary-text": websiteTheme.secondaryText,
                     fontFamily: websiteTheme.font,
                     maxWidth: previewMaxWidth,
                     width: "100%",
