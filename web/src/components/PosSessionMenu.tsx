@@ -66,7 +66,7 @@ export default function PosSessionMenu({ inline = false }: Readonly<{ inline?: b
 
   async function openClosingModal() {
     setIsOpen(false);
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "";
     const response = await fetch(`${apiUrl}/api/v1/cash/sessions`, {
       headers: authHeaders(),
       credentials: "include",

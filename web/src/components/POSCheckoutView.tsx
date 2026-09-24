@@ -36,7 +36,7 @@ type Customer = { id: number; name: string; email?: string | null };
 type Organization = { name?: string; logo?: string | null; email?: string | null; phone?: string | null; address?: string | null };
 type Step = "products" | "payment" | "success";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 const PAYMENT_METHODS: Array<{ id: PaymentMethod; label: string; icon: string; image?: string }> = [
   { id: "cash", label: "Espèces", icon: "💵" },

@@ -16,7 +16,7 @@ type JournalEntry = { id: number; reference: string; entry_date: string; journal
 type FinancialReports = { balance: { total_assets: number; total_liabilities: number }; income: { revenue_total: number; expense_total: number; net_result: number }; vat: { taxable_base: number; tax_amount: number; total_amount: number } };
 type ReportPeriod = "month" | "quarter" | "semester" | "year" | "all";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 const money = (value: number) => `${value.toLocaleString("fr-FR")} FCFA`;
 
 function toLocalDateTime(date: Date, endOfDay = false) {

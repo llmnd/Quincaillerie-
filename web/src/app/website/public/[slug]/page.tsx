@@ -5,6 +5,7 @@ import SiteSections from "../../_shared/SiteSections";
 import ScrollProgress from "../../../../components/ScrollProgress";
 import BackToTop from "../../../../components/BackToTop";
 import pageStyles from "./publicPage.module.css";
+import previewStyles from "../../_shared/preview.module.css";
 import { fetchPublicWebsite, type PublicWebsitePayload } from "../publicApi";
 
 type WebsiteTheme = Record<string, string | undefined>;
@@ -111,9 +112,9 @@ export default async function PublicWebsitePage({ params }: PageParams) {
     payload = await fetchPublicWebsite(slug);
   } catch (err) {
     console.error(`[public-site] fetch failed (${slug})`, err);
-    throw err; // laisse error.tsx gérer
+    return notFound();
   }
-  if (!payload) notFound();
+  if (!payload) return notFound();
 
   /* ---------- Données ---------- */
   const website = payload.website ?? {};
@@ -197,9 +198,22 @@ export default async function PublicWebsitePage({ params }: PageParams) {
           contact: theme.headerContact,
           cta: theme.headerCta,
         }}
+        labelColors={{
+          brand: theme.headerBrandColor,
+          home: theme.headerHomeColor,
+          about: theme.headerAboutColor,
+          products: theme.headerProductsColor,
+          services: theme.headerServicesColor,
+          contact: theme.headerContactColor,
+          cta: theme.headerCtaColor,
+        }}
       />
 
-      <div className={pageStyles.content}>
+      <div
+        className={`${pageStyles.content} ${previewStyles.themeRoot}`}
+        data-btn={theme.buttonStyle ?? "rounded"}
+        data-radius={theme.radius ?? "medium"}
+      >
         <SiteSections
           sections={sections}
           products={products}

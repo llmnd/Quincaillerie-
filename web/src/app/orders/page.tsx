@@ -6,7 +6,7 @@ import { authHeaders } from "../../lib/auth";
 import styles from "./page.module.css";
 
 type Sale = { id: number; customer_id: number | null; sale_date: string; total_amount: number; status: string };
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 const statusLabel = (status: string) => ({ pending: "En attente", paid: "Payée", completed: "Terminée", cancelled: "Annulée" }[status] ?? status);
 
 export default function OrdersPage() {

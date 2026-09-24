@@ -58,7 +58,7 @@ export default function WorkspacePage() {
     queryKey: ["organization", "profile"],
     queryFn: async () => {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/organization/profile`,
+        `${process.env.NEXT_PUBLIC_API_URL ?? ""}/api/v1/organization/profile`,
         {
           credentials: "include",
           headers: authHeaders(),
@@ -114,7 +114,7 @@ export default function WorkspacePage() {
   async function handleLogout() {
     try {
       await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/auth/logout`,
+        `${process.env.NEXT_PUBLIC_API_URL ?? ""}/api/v1/auth/logout`,
         {
           method: "POST",
           credentials: "include",

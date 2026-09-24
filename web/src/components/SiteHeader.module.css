@@ -18,9 +18,9 @@
 
 .previewHeader {
   position: relative;
-  min-height: 74px;
+  min-height: 72px;
   border-bottom-color: color-mix(in srgb, var(--text) 10%, transparent);
-  background: var(--background, #ffffff);
+  background: #ffffff;
   box-shadow: none;
 }
 
@@ -109,11 +109,24 @@
 .navigation a:focus-visible { background: color-mix(in srgb, var(--secondary) 10%, transparent); }
 
 .contactLink {
-  padding: 10px 15px;
-  border-radius: 999px;
-  background: var(--text);
+  min-width: clamp(150px, 11vw, 190px);
+  padding: clamp(12px, 0.8vw, 15px) clamp(18px, 1.4vw, 24px) !important;
+  border: 1px solid var(--secondary);
+  border-radius: 0;
+  background: var(--secondary);
   color: #ffffff !important;
-  box-shadow: none;
+  font-size: clamp(0.78rem, 0.68rem + 0.18vw, 0.9rem) !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.14em !important;
+  text-align: center;
+  text-transform: uppercase;
+  transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease;
+}
+
+.contactLink:hover {
+  border-color: var(--secondary);
+  background: var(--secondary);
+  color: #ffffff !important;
 }
 
 .menuButton { display: none; }

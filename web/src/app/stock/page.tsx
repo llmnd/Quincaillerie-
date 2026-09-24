@@ -7,7 +7,7 @@ import styles from "./page.module.css";
 
 type Product = { id: number; sku: string; name: string; image_url?: string | null; category?: string | null; unit_price: number; initial_stock_quantity: number; sold_quantity: number; remaining_stock: number; is_active: boolean };
 type Movement = { id: number; product_id: number; movement_type: string; quantity: number; reason?: string | null; created_at: string };
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 const movementTypeLabels: Record<string, string> = {
   sale: "Vente",
   purchase: "Achat",

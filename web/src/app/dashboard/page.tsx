@@ -34,7 +34,7 @@ type OrganizationProfile = { name: string; logo?: string | null };
 type ChartPeriod = "7d" | "30d" | "12m";
 type MetricKey = "sales" | "cash" | "stock" | "relations";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 const formatMoney = (value: number) => `${value.toLocaleString("fr-FR")} FCFA`;
 const formatDate = (value: string) =>

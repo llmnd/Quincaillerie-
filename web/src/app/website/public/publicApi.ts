@@ -1,4 +1,4 @@
-const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/+$/, "");
+const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/+$/, "") ?? "";
 const productionApiUrl = "https://quincaillerie-858p.onrender.com";
 
 const isLocalApiUrl = (url: string) =>
@@ -8,7 +8,7 @@ const apiUrls = Array.from(
   new Set(
     [configuredApiUrl, productionApiUrl].filter(
       (url): url is string =>
-        typeof url === "string" &&
+        Boolean(url) &&
         (process.env.NODE_ENV !== "production" || !isLocalApiUrl(url)),
     ),
   ),
@@ -20,6 +20,9 @@ export type PublicWebsiteTheme = {
   background?: string;
   text?: string;
   font?: string;
+  radius?: string;
+  buttonStyle?: string;
+  cardStyle?: string;
   secondaryText?: string;
   headerBrand?: string;
   headerHome?: string;
@@ -28,6 +31,13 @@ export type PublicWebsiteTheme = {
   headerServices?: string;
   headerContact?: string;
   headerCta?: string;
+  headerBrandColor?: string;
+  headerHomeColor?: string;
+  headerAboutColor?: string;
+  headerProductsColor?: string;
+  headerServicesColor?: string;
+  headerContactColor?: string;
+  headerCtaColor?: string;
   headerStyle?: string;
 };
 

@@ -13,7 +13,7 @@ type Profile = {
   role?: "admin" | "seller";
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 const EMPTY_PASSWORD_FORM = {
   current_password: "",

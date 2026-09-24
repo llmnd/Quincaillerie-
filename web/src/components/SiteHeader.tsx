@@ -14,6 +14,8 @@ type SiteHeaderProps = Readonly<{
   textColor: string;
   headerStyle?: string;
   backHref?: string;
+  preview?: boolean;
+  showCart?: boolean;
   labels?: Partial<{
     home: string;
     about: string;
@@ -22,16 +24,31 @@ type SiteHeaderProps = Readonly<{
     contact: string;
     cta: string;
   }>;
+  labelColors?: Partial<Record<"brand" | "home" | "about" | "products" | "services" | "contact" | "cta", string>>;
 }>;
 
-export default function SiteHeader({ slug, siteName, logo, primaryColor, secondaryColor, textColor, headerStyle, backHref, labels }: SiteHeaderProps) {
+export default function SiteHeader({
+  slug,
+  siteName,
+  logo,
+  primaryColor,
+  secondaryColor,
+  textColor,
+  headerStyle,
+  backHref,
+  labels,
+  preview = false,
+  showCart = true,
+  labelColors,
+}: SiteHeaderProps) {
   const [open, setOpen] = useState(false);
+  const base = preview ? "#": `/site/${slug}`;
   const links = [
-    { label: labels?.home || "Accueil", href: `/site/${slug}#accueil` },
-    { label: labels?.about || "À propos", href: `/site/${slug}#apropos` },
-    { label: labels?.products || "Produits", href: `/site/${slug}/produits` },
-    { label: labels?.services || "Services", href: `/site/${slug}#services` },
-    { label: labels?.contact || "Contact", href: `/site/${slug}#contact` },
+    { label: labels?.home || "Accueil", href: preview ? "#accueil" : `${base}#accueil` },
+    { label: labels?.about || "À propos", href: preview ? "#apropos" : `${base}#apropos` },
+    { label: labels?.products || "Produits", href: preview ? "#produits" : `${base}/produits` },
+    { label: labels?.services || "Services", href: preview ? "#services" : `${base}#services` },
+    { label: labels?.contact || "Contact", href: preview ? "#contact" : `${base}#contact` },
   ];
 
   useEffect(() => {
@@ -68,13 +85,13 @@ export default function SiteHeader({ slug, siteName, logo, primaryColor, seconda
   }, []);
 
   return (
-    <header className={`${styles.header} ${headerStyle === "centered" ? styles.headerCentered : ""}`} style={{ "--primary": primaryColor, "--secondary": secondaryColor, "--text": textColor } as React.CSSProperties}>
+    <header className={`${styles.header} ${preview ? styles.previewHeader : ""} ${headerStyle === "centered" ? styles.headerCentered : ""}`} style={{ "--primary": primaryColor, "--secondary": secondaryColor, "--text": textColor } as React.CSSProperties}>
       <a href={backHref ?? `/site/${slug}`} className={styles.brand} onClick={() => setOpen(false)}>
         {logo ? <img src={logo} alt="" className={styles.logo} /> : <span className={styles.initials}>{siteName.slice(0, 2).toUpperCase()}</span>}
-        <span className={styles.siteName}>{siteName}</span>
+        <span className={styles.siteName} style={labelColors?.brand ? { color: labelColors.brand } : undefined}>{siteName}</span>
       </a>
 
-      <CartBadge slug={slug} textColor={textColor} secondaryColor={secondaryColor} />
+      {showCart && <CartBadge slug={slug} textColor={textColor} secondaryColor={secondaryColor} />}
 
       <button
         type="button"
@@ -93,10 +110,13 @@ export default function SiteHeader({ slug, siteName, logo, primaryColor, seconda
       </button>
 
       <nav id="site-navigation" className={`${styles.navigation} ${open ? styles.navigationOpen : ""}`} aria-label="Navigation principale">
-        {links.map((link) => (
-          <a key={link.label} href={link.href} onClick={() => setOpen(false)}>{link.label}</a>
-        ))}
-        <a href={`/site/${slug}#contact`} className={styles.contactLink} onClick={() => setOpen(false)}>{labels?.cta || "Contactez-nous"}</a>
+        {links.map((link, index) => {
+          const colorKey = ["home", "about", "products", "services", "contact"][index] as keyof typeof labelColors;
+          return (
+          <a key={link.label} href={link.href} onClick={() => setOpen(false)} style={labelColors?.[colorKey] ? { color: labelColors[colorKey] } : undefined}>{link.label}</a>
+          );
+        })}
+        <a href={preview ? "#contact" : `${base}#contact`} className={styles.contactLink} onClick={() => setOpen(false)} style={labelColors?.cta ? { color: labelColors.cta } : undefined}>{labels?.cta || "Contactez-nous"}</a>
       </nav>
     </header>
   );

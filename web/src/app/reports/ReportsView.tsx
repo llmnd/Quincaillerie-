@@ -10,7 +10,7 @@ type Product = { id: number; name: string; image_url?: string | null };
 type Customer = { id: number; name: string };
 type ReportPeriod = "month" | "quarter" | "semester" | "year" | "all";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 const money = (value: number) => `${value.toLocaleString("fr-FR")} FCFA`;
 const statusLabel = (status: string) =>
   ({ pending: "En attente", paid: "Payée", completed: "Terminée", cancelled: "Annulée" }[status] ?? status);

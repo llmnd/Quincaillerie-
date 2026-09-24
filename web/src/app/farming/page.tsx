@@ -23,7 +23,7 @@ type HealthEvent = { id: number; batch_id: number; event_date: string; event_typ
 type EggProduction = { id: number; batch_id: number; production_date: string; quantity: number; damaged_quantity: number };
 
 const DECOR_FARM_IMAGE = "https://i.pinimg.com/736x/35/c9/c6/35c9c61b569fd8f5a560c960c2325c56.jpg";
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 async function readJsonSafely<T>(response: Response): Promise<T | null> {
   if (response.status === 204) return null;

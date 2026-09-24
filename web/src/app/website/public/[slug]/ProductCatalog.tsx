@@ -2,7 +2,6 @@
 
 import type {
   CSSProperties,
-  MouseEvent as ReactMouseEvent,
   PointerEvent as ReactPointerEvent,
 } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -30,7 +29,20 @@ type SortKey = "default" | "price-asc" | "price-desc" | "name";
 type ProductCatalogProps = Readonly<{
   slug: string;
   products: Product[];
+  eyebrowText?: string;
+  title?: string;
   introText?: string;
+  categoryLabel?: string;
+  allCategoriesLabel?: string;
+  searchPlaceholder?: string;
+  resetLabel?: string;
+  noResultsTitle?: string;
+  noResultsText?: string;
+  editable?: boolean;
+  sectionId?: string | number;
+  fieldStyles?: Partial<Record<string, CSSProperties>>;
+  onTextChange?: (field: string, value: string) => void;
+  onSelectField?: (field: string) => void;
   showPrices?: boolean;
   showDescriptions?: boolean;
   showCategories?: boolean;
@@ -74,7 +86,20 @@ function productImage(product: Product): string {
 export default function ProductCatalog({
   slug,
   products,
+  eyebrowText = "Catalogue",
+  title = "Nos produits",
   introText = "Choisissez vos produits et envoyez votre demande directement à l'entreprise.",
+  categoryLabel = "Catégorie",
+  allCategoriesLabel = "Toutes",
+  searchPlaceholder = "Rechercher un produit",
+  resetLabel = "Réinitialiser les filtres",
+  noResultsTitle = "Aucun produit trouvé",
+  noResultsText = "Essayez d'autres mots-clés ou parcourez toutes les catégories pour découvrir l'ensemble du catalogue.",
+  editable = false,
+  sectionId,
+  fieldStyles,
+  onTextChange,
+  onSelectField,
   showPrices = true,
   showDescriptions = true,
   showCategories = true,
@@ -95,26 +120,40 @@ export default function ProductCatalog({
   fontFamily,
 }: ProductCatalogProps) {
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState("Toutes");
+  const [category, setCategory] = useState(allCategoriesLabel);
   const [sortBy, setSortBy] = useState<SortKey>("default");
   const [selected, setSelected] = useState<Product | null>(null);
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [cart, setCart] = useState<CartLine[]>([]);
+  const [cart, setCart] = useState<CartLine[]>(() => readCart(slug));
   const [pulseKey, setPulseKey] = useState<string | number | null>(null);
+  const [drafts, setDrafts] = useState({
+    eyebrow: eyebrowText,
+    title: title,
+    introText: introText,
+    categoryLabel,
+    allCategoriesLabel,
+    searchPlaceholder,
+    resetLabel,
+    noResultsTitle,
+    noResultsText,
+  });
 
   const cartRef = useRef<CartLine[]>([]);
   const categoryRef = useRef<HTMLDivElement>(null);
+  const productPointerRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    moved: boolean;
+  } | null>(null);
+  const suppressProductClickRef = useRef(false);
 
   useEffect(() => {
     cartRef.current = cart;
   }, [cart]);
 
-  useEffect(() => {
-    const initial = readCart(slug);
-    cartRef.current = initial;
-    setCart(initial);
-  }, [slug]);
+  const catalogAllCategoriesLabel = drafts.allCategoriesLabel || allCategoriesLabel;
 
   const categories = useMemo(() => {
     const counts = new Map<string, number>();
@@ -123,18 +162,18 @@ export default function ProductCatalog({
       if (cat) counts.set(cat, (counts.get(cat) ?? 0) + 1);
     });
     return [
-      { name: "Toutes", count: products.length },
+      { name: catalogAllCategoriesLabel, count: products.length },
       ...Array.from(counts.entries())
         .sort(([a], [b]) => a.localeCompare(b, "fr"))
         .map(([name, count]) => ({ name, count })),
     ];
-  }, [products]);
+  }, [catalogAllCategoriesLabel, products]);
 
   const filteredProducts = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     const list = products.filter(
       (product) =>
-        (category === "Toutes" || product.category?.trim() === category) &&
+        (category === catalogAllCategoriesLabel || product.category?.trim() === category) &&
         (!normalized ||
           [product.name, product.category, product.description]
             .filter(Boolean)
@@ -154,7 +193,7 @@ export default function ProductCatalog({
       const pb = numericPrice(b.price);
       return sortBy === "price-asc" ? pa - pb : pb - pa;
     });
-  }, [category, products, query, sortBy]);
+  }, [catalogAllCategoriesLabel, category, products, query, sortBy]);
 
   useEffect(() => {
     if (!selected) return;
@@ -238,32 +277,41 @@ export default function ProductCatalog({
     setSelected(product);
   }
 
-  function openProductOnTouch(
+  function handleProductPointerDown(event: ReactPointerEvent<HTMLButtonElement>) {
+    if (event.pointerType !== "touch") return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    productPointerRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      moved: false,
+    };
+  }
+
+  function handleProductPointerMove(event: ReactPointerEvent<HTMLButtonElement>) {
+    const gesture = productPointerRef.current;
+    if (gesture?.pointerId !== event.pointerId) return;
+    if (Math.hypot(event.clientX - gesture.startX, event.clientY - gesture.startY) > 8) {
+      gesture.moved = true;
+    }
+  }
+
+  function handleProductPointerUp(
     event: ReactPointerEvent<HTMLButtonElement>,
     product: Product,
   ) {
-    const imageArea = (event.target as Element | null)?.closest(
-      "[data-product-image]",
-    );
-    if (event.pointerType === "touch" && !imageArea) {
+    const gesture = productPointerRef.current;
+    if (gesture?.pointerId !== event.pointerId) return;
+    productPointerRef.current = null;
+    event.currentTarget.releasePointerCapture(event.pointerId);
+    if (!gesture.moved) {
+      suppressProductClickRef.current = true;
       openProduct(product);
     }
   }
 
-  function openProductFromCard(
-    event: ReactMouseEvent<HTMLButtonElement>,
-    product: Product,
-  ) {
-    const imageArea = (event.target as Element | null)?.closest(
-      "[data-product-image]",
-    );
-    if (
-      imageArea &&
-      window.matchMedia("(max-width: 720px)").matches
-    ) {
-      return;
-    }
-    openProduct(product);
+  function handleProductPointerCancel() {
+    productPointerRef.current = null;
   }
 
   function resetQuery() {
@@ -272,7 +320,7 @@ export default function ProductCatalog({
 
   function resetFilters() {
     setQuery("");
-    setCategory("Toutes");
+    setCategory(catalogAllCategoriesLabel);
   }
 
   const themeVars = {
@@ -282,7 +330,58 @@ export default function ProductCatalog({
     "--muted": secondaryTextColor,
   } as React.CSSProperties;
 
-  const hasActiveFilters = query || category !== "Toutes";
+  const displayCategoryLabel = drafts.categoryLabel || categoryLabel;
+  const displayAllCategoriesLabel = drafts.allCategoriesLabel || allCategoriesLabel;
+  const displaySearchPlaceholder = drafts.searchPlaceholder || searchPlaceholder;
+  const displayResetLabel = drafts.resetLabel || resetLabel;
+  const displayNoResultsTitle = drafts.noResultsTitle || noResultsTitle;
+  const displayNoResultsText = drafts.noResultsText || noResultsText;
+  const hasActiveFilters = query || category !== displayAllCategoriesLabel;
+
+  const applyTextValue = (field: string, nextValue: string) => {
+    const normalizedField = field === "introText" ? "subtitle" : field;
+    const previousLabel = drafts.allCategoriesLabel || allCategoriesLabel;
+    setDrafts((previous) => ({ ...previous, [field]: nextValue }));
+    if (field === "allCategoriesLabel" && category === previousLabel) {
+      setCategory(nextValue);
+    }
+    onTextChange?.(normalizedField, nextValue);
+  };
+
+  const editableText = (field: string, value: string) => {
+    if (!editable) return undefined;
+    return {
+      contentEditable: true,
+      suppressContentEditableWarning: true,
+      spellCheck: false,
+      style: fieldStyles?.[field] ?? undefined,
+      "data-section-id": String(sectionId ?? `catalog-${field}`),
+      "data-element-id": field,
+      "data-editor-type": "text",
+      onMouseDown: (event: React.MouseEvent<HTMLElement>) => {
+        event.stopPropagation();
+        onSelectField?.(field);
+      },
+      onFocus: (event: React.FocusEvent<HTMLElement>) => {
+        event.stopPropagation();
+        onSelectField?.(field);
+      },
+      onClick: (event: React.MouseEvent<HTMLElement>) => {
+        event.stopPropagation();
+        onSelectField?.(field);
+      },
+      onInput: (event: React.FormEvent<HTMLElement>) => {
+        const nextValue = (event.currentTarget.textContent ?? "").trim();
+        if (!nextValue) return;
+        onTextChange?.((field === "introText" ? "subtitle" : field), nextValue);
+      },
+      onBlur: (event: React.FocusEvent<HTMLElement>) => {
+        const nextValue = (event.currentTarget.textContent ?? "").trim() || value;
+        setDrafts((previous) => ({ ...previous, [field]: nextValue }));
+        onTextChange?.((field === "introText" ? "subtitle" : field), nextValue);
+      },
+    };
+  };
 
   return (
     <section
@@ -302,9 +401,9 @@ export default function ProductCatalog({
       {/* ============================= EN-TÊTE ============================= */}
       <header className={styles.header}>
         <div className={styles.headerInfo}>
-          <p className={styles.eyebrow}>Catalogue</p>
-          <h2 className={styles.title}>Nos produits</h2>
-          <p className={styles.subtitle}>{introText}</p>
+          <p className={styles.eyebrow} {...editableText("eyebrow", drafts.eyebrow)}>{drafts.eyebrow}</p>
+          <h2 className={styles.title} {...editableText("title", drafts.title)}>{drafts.title}</h2>
+          <p className={styles.subtitle} {...editableText("introText", drafts.introText)}>{drafts.introText}</p>
         </div>
 
         {showSearch && (
@@ -320,8 +419,8 @@ export default function ProductCatalog({
                   autoFocus
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Rechercher un produit"
-                  aria-label="Rechercher un produit"
+                  placeholder={displaySearchPlaceholder}
+                  aria-label={displaySearchPlaceholder}
                   className={styles.searchInput}
                   type="search"
                 />
@@ -361,9 +460,9 @@ export default function ProductCatalog({
             aria-expanded={categoryOpen}
             onClick={() => setCategoryOpen((open) => !open)}
           >
-            <span className={styles.categorySelectLabel}>Catégorie</span>
+            <span className={styles.categorySelectLabel} {...editableText("categoryLabel", displayCategoryLabel)}>{drafts.categoryLabel}</span>
             <span className={styles.categorySelectValue}>
-              {category}
+              {category === catalogAllCategoriesLabel ? displayAllCategoriesLabel : category}
               <span className={styles.categoryFilterCount}>
                 {categories.find((item) => item.name === category)?.count ?? 0}
               </span>
@@ -398,7 +497,7 @@ export default function ProductCatalog({
                     setCategoryOpen(false);
                   }}
                 >
-                  <span>{name}</span>
+                  <span>{name === catalogAllCategoriesLabel ? displayAllCategoriesLabel : name}</span>
                   <span className={styles.categoryFilterCount}>{count}</span>
                 </button>
               ))}
@@ -411,13 +510,13 @@ export default function ProductCatalog({
         <span>
           <strong>{filteredProducts.length}</strong> produit
           {filteredProducts.length > 1 ? "s" : ""}
-          {category !== "Toutes" ? ` dans ${category}` : ""}
+          {category !== catalogAllCategoriesLabel ? ` dans ${category === catalogAllCategoriesLabel ? displayAllCategoriesLabel : category}` : ""}
         </span>
 
         <div className={styles.resultsMetaActions}>
           {hasActiveFilters && (
             <button type="button" onClick={resetFilters}>
-              Réinitialiser les filtres
+              {displayResetLabel}
             </button>
           )}
 
@@ -443,14 +542,11 @@ export default function ProductCatalog({
           <div className={styles.emptyIcon}>
             <Search size={22} aria-hidden="true" />
           </div>
-          <h3>Aucun produit trouvé</h3>
-          <p>
-            Essayez d&apos;autres mots-clés ou parcourez toutes les catégories
-            pour découvrir l&apos;ensemble du catalogue.
-          </p>
+          <h3 {...editableText("noResultsTitle", displayNoResultsTitle)}>{drafts.noResultsTitle}</h3>
+          <p {...editableText("noResultsText", displayNoResultsText)}>{drafts.noResultsText}</p>
           {hasActiveFilters && (
             <button type="button" onClick={resetFilters}>
-              Réinitialiser la recherche
+              {displayResetLabel}
             </button>
           )}
         </div>
@@ -482,13 +578,7 @@ export default function ProductCatalog({
 
             return (
               <article key={key} className={styles.card}>
-                <button
-                  type="button"
-                  className={styles.cardMain}
-                  onPointerDown={(event) => openProductOnTouch(event, product)}
-                  onClick={(event) => openProductFromCard(event, product)}
-                  aria-label={`Voir ${product.name ?? "le produit"}`}
-                >
+                <div className={styles.cardMain}>
                   <div className={styles.cardImageWrap} data-product-image>
                     {showCategories && product.category && (
                       <span className={styles.cardCategory}>
@@ -531,14 +621,23 @@ export default function ProductCatalog({
                       </strong>
                     )}
                   </div>
-                </button>
+                </div>
 
                 <div className={styles.cardActions}>
                   <button
                     type="button"
                     className={styles.btnOutline}
-                    onPointerDown={(event) => openProductOnTouch(event, product)}
-                    onClick={() => openProduct(product)}
+                    onPointerDown={handleProductPointerDown}
+                    onPointerMove={handleProductPointerMove}
+                    onPointerUp={(event) => handleProductPointerUp(event, product)}
+                    onPointerCancel={handleProductPointerCancel}
+                    onClick={() => {
+                      if (suppressProductClickRef.current) {
+                        suppressProductClickRef.current = false;
+                        return;
+                      }
+                      openProduct(product);
+                    }}
                   >
                     Voir
                   </button>

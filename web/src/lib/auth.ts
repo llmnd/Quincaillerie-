@@ -9,7 +9,7 @@ export type AuthUser = {
 
 const AUTH_STORAGE_KEY = "quincaillerie_user";
 const AUTH_TOKEN_KEY = "quincaillerie_access_token";
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 function getAccessTokenFromUser(user: unknown): string | null {
   if (!user || typeof user !== "object") return null;

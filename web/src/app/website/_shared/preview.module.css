@@ -6,6 +6,7 @@
 
 /* ---------- Shell ---------- */
 .sitePreviewShell {
+  position: relative;
   container-type: inline-size;
   container-name: site-preview;
   background: #ffffff;
@@ -393,7 +394,7 @@
 .heroPreviewContent > div:first-child .previewEyebrow,
 .heroPreviewContent > div:first-child h3,
 .heroPreviewContent > div:first-child p {
-  color: #ffffff !important;
+  color: inherit;
 }
 
 .heroPreviewContent h3 {
@@ -606,8 +607,8 @@
 .themeRoot[data-header="bold"] .siteHeader,
 .themeRoot[data-header="bold"] .siteHeader * { color: var(--site-header-text) !important; }
 .themeRoot[data-header="bold"] .siteHeaderButton {
-  background: var(--site-bg) !important;
-  color: var(--site-text) !important;
+  background: var(--site-secondary) !important;
+  color: #ffffff !important;
 }
 .themeRoot[data-header="bold"] .companyBrand,
 .themeRoot[data-header="bold"] .companyBrand span,
@@ -632,5 +633,61 @@
 @container site-preview (max-width: 640px) {
   .productGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Keep the editable shell visually aligned with the public header. */
+.siteHeader {
+  min-height: 72px;
+  padding: 14px max(20px, calc((100% - 1180px) / 2));
+  gap: clamp(14px, 2vw, 28px);
+  justify-content: space-between;
+  box-shadow: none;
+}
+
+.companyBrand {
+  gap: 11px;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.companyLogo,
+.companyLogoFallback {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+}
+
+.siteNav {
+  justify-content: flex-end;
+  gap: 24px;
+  font-size: 13px;
+  font-weight: 500;
+  flex-wrap: nowrap;
+}
+
+.siteHeaderButton {
+  border-radius: 999px;
+  background: var(--site-secondary);
+  color: #ffffff;
+  padding: 10px 15px;
+}
+
+@container site-preview (max-width: 640px) {
+  .siteHeader {
+    min-height: 64px;
+    padding: 10px 16px;
+  }
+
+  .companyBrand {
+    gap: 8px;
+    font-size: 15px;
+  }
+
+  .companyLogo,
+  .companyLogoFallback {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
   }
 }

@@ -250,7 +250,7 @@ export default function AppShell({
     enabled: Boolean(user),
     queryFn: async () => {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/organization/modules`,
+        `${process.env.NEXT_PUBLIC_API_URL ?? ""}/api/v1/organization/modules`,
         {
           credentials: "include",
           headers: { Accept: "application/json", ...authHeaders() },
@@ -266,7 +266,7 @@ export default function AppShell({
     enabled: Boolean(user),
     queryFn: async () => {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/organization/profile`,
+        `${process.env.NEXT_PUBLIC_API_URL ?? ""}/api/v1/organization/profile`,
         {
           credentials: "include",
           headers: authHeaders(),
@@ -451,7 +451,7 @@ export default function AppShell({
 
   function handleLogout() {
     setIsLoggingOut(true);
-    fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/auth/logout`, {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL ?? ""}/api/v1/auth/logout`, {
       method: "POST",
       credentials: "include",
     }).catch(() => undefined);

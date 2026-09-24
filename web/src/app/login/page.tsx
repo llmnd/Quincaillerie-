@@ -5,7 +5,7 @@ import { FormEvent, useState } from "react";
 import { setStoredUser } from "../../lib/auth";
 import styles from "./page.module.css";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");

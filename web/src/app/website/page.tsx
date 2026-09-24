@@ -24,12 +24,17 @@ import {
   X,
 } from "lucide-react";
 import AppShell from "../../components/AppShell";
+import SiteHeader from "../../components/SiteHeader";
 import { authHeaders } from "../../lib/auth";
 import styles from "./page.module.css";
 import previewStyles from "./_shared/preview.module.css";
-import SiteSections from "./_shared/SiteSections";
+import SiteSections, { getDefaultSectionsForTemplate } from "./_shared/SiteSections";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim().replace(/\/+$/, "") ?? "";
+const API_URL =
+  process.env.NODE_ENV === "production"
+    ? "https://quincaillerie-858p.onrender.com"
+    : configuredApiUrl || "http://localhost:8000";
 const MAX_VISIBLE_SECTIONS = 6;
 
 /* ---------- Types ---------- */
@@ -74,6 +79,12 @@ type Theme = {
   headerText?: string;
   categoryText?: string;
   priceText?: string;
+  headerHome?: string;
+  headerAbout?: string;
+  headerProducts?: string;
+  headerServices?: string;
+  headerContact?: string;
+  headerCta?: string;
 };
 
 type PageItem = {
@@ -862,7 +873,10 @@ export default function WebsiteConfigPage() {
   }
 
   const orgName = organization?.name?.trim() || form.name || "Votre entreprise";
-  const visibleSections = sections.slice(0, MAX_VISIBLE_SECTIONS);
+  const resolvedSections = (sections.length > 0 ? sections : getDefaultSectionsForTemplate(form.template || website?.template || "commerce"))
+    .filter((section) => section.visible !== false)
+    .slice(0, MAX_VISIBLE_SECTIONS);
+  const previewSlug = form.slug || website?.slug || "preview";
 
   return (
     <AppShell>
@@ -1171,49 +1185,38 @@ export default function WebsiteConfigPage() {
               } as React.CSSProperties}
             >
               <div className={previewStyles.sitePreviewShell}>
-                <header className={previewStyles.siteHeader}>
-                  <div className={previewStyles.companyBrand}>
-                    {form.logo ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={form.logo} alt={form.name || orgName} className={previewStyles.companyLogo} />
-                    ) : (
-                      <div className={previewStyles.companyLogoFallback}>
-                        {(form.name || orgName).slice(0, 1).toUpperCase()}
-                      </div>
-                    )}
-                    <span>{form.name || orgName}</span>
-                  </div>
-                  <nav className={previewStyles.siteNav}>
-                    <a href="#">Accueil</a>
-                    <a href="#">À propos</a>
-                    <a href="#">Produits</a>
-                    <a href="#contact">Contact</a>
-                  </nav>
-                  <button type="button" className={previewStyles.siteHeaderButton}>
-                    Contactez-nous
-                  </button>
-                </header>
+                <SiteHeader
+                  slug="preview"
+                  siteName={form.name || orgName}
+                  logo={form.logo || undefined}
+                  primaryColor={theme.primary}
+                  secondaryColor={theme.secondary}
+                  textColor={theme.text}
+                  headerStyle={theme.headerStyle}
+                  labels={{
+                    home: theme.headerHome,
+                    about: theme.headerAbout,
+                    products: theme.headerProducts,
+                    services: theme.headerServices,
+                    contact: theme.headerContact,
+                    cta: theme.headerCta,
+                  }}
+                  preview
+                  showCart={false}
+                />
 
                 <main className={previewStyles.siteBody}>
                   <div className={previewStyles.siteMainContent}>
-                    {visibleSections.length === 0 ? (
-                      <div
-                        className={`${previewStyles.previewSiteBlock} ${previewStyles.heroBlock}`}
-                        style={{ textAlign: "center", opacity: 0.7 }}
-                      >
-                        <p>Aucune section visible. Ouvrez l'éditeur pour ajouter du contenu.</p>
-                      </div>
-                    ) : (
-                      <SiteSections
-                        sections={visibleSections}
-                        products={products}
-                        siteName={form.name || orgName}
-                        textColor={theme.text}
-                        secondaryTextColor={theme.secondaryText ?? "#475569"}
-                        primaryColor={theme.primary}
-                        secondaryColor={theme.secondary}
-                      />
-                    )}
+                    <SiteSections
+                      sections={resolvedSections}
+                      products={products}
+                      siteName={form.name || orgName}
+                      textColor={theme.text}
+                      secondaryTextColor={theme.secondaryText ?? "#475569"}
+                      primaryColor={theme.primary}
+                      secondaryColor={theme.secondary}
+                      slug={previewSlug}
+                    />
                   </div>
                 </main>
 

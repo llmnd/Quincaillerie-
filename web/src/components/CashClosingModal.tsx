@@ -35,7 +35,7 @@ export default function CashClosingModal({ session, balance, onDismiss, onClosed
     setIsClosing(true);
     setError("");
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/cash/sessions/${session.id}/close`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? ""}/api/v1/cash/sessions/${session.id}/close`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders() },
         credentials: "include",
