@@ -42,6 +42,7 @@ import {
   X,
 } from "lucide-react";
 import AppShell from "../../../components/AppShell";
+import CartBadge from "../public/[slug]/CartBadge";
 import { authHeaders } from "../../../lib/auth";
 import styles from "./page.module.css";
 import previewStyles from "../_shared/preview.module.css";
@@ -183,6 +184,7 @@ export default function WebsiteEditorPage() {
     const activeElement = document.activeElement;
     if (!(activeElement instanceof HTMLElement)) return null;
     const activeId = activeElement.getAttribute("data-element-id");
+    if (activeId === "headerCartCount") return "headerCartCount";
     if (!activeId || !HEADER_THEME_KEYS.includes(activeId as (typeof HEADER_THEME_KEYS)[number])) return null;
     return activeId as keyof WebsiteTheme;
   }
@@ -505,6 +507,7 @@ export default function WebsiteEditorPage() {
     (selectedElementId && HEADER_THEME_KEYS.includes(selectedElementId as (typeof HEADER_THEME_KEYS)[number])
       ? (selectedElementId as keyof WebsiteTheme)
       : null)
+    ?? (selectedElementId === "headerCartCount" ? "headerCartCount" : null)
     ?? getActiveHeaderThemeKey();
 
   function selectedTextKey(suffix: string) {
@@ -652,7 +655,7 @@ export default function WebsiteEditorPage() {
      ============================================================ */
   function updateInlineTextStyle(suffix: string, value: string) {
     const selectedHeaderKey =
-      (selectedElementId && HEADER_THEME_KEYS.includes(selectedElementId as (typeof HEADER_THEME_KEYS)[number])
+      (selectedElementId && (HEADER_THEME_KEYS.includes(selectedElementId as (typeof HEADER_THEME_KEYS)[number]) || selectedElementId === "headerCartCount")
         ? (selectedElementId as keyof WebsiteTheme)
         : null)
       ?? selectedThemeField;
@@ -2476,7 +2479,7 @@ export default function WebsiteEditorPage() {
                     </button>
                     <button type="button" className={styles.inlineToolbarClose} onClick={() => setToolbarVisible(false)} aria-label="Fermer la barre d’édition" title="Fermer la barre d’édition (Esc)">×</button>
                     <span className={styles.inlineToolbarLabel}>Texte</span>
-                    {selectedThemeField && (
+                    {selectedThemeField && HEADER_THEME_KEYS.includes(selectedThemeField as (typeof HEADER_THEME_KEYS)[number]) && (
                       <input
                         type="text"
                         className={styles.inlineTextInput}
@@ -2657,6 +2660,28 @@ export default function WebsiteEditorPage() {
                       </a>
                     ))}
                   </nav>
+                  <CartBadge
+                    slug={currentSiteSlug}
+                    textColor={websiteTheme.text ?? "#111827"}
+                    secondaryColor={websiteTheme.secondary ?? "#714B67"}
+                    editable={editorMode === "edit"}
+                    style={headerStyleFor("headerCart")}
+                    countStyle={headerStyleFor("headerCartCount")}
+                    onSelect={() => {
+                      setEditorMode("edit");
+                      setSelectedSectionId(null);
+                      setSelectedElementId("headerCart");
+                      setToolbarVisible(true);
+                      alignToolbarToSelection("headerCart");
+                    }}
+                    onSelectCount={() => {
+                      setEditorMode("edit");
+                      setSelectedSectionId(null);
+                      setSelectedElementId("headerCartCount");
+                      setToolbarVisible(true);
+                      alignToolbarToSelection("headerCartCount");
+                    }}
+                  />
                   <button type="button" className={previewStyles.siteHeaderButton} onClick={() => setPreviewMenuOpen(false)}>
                     {editorMode === "edit" ? (
                       <EditableText

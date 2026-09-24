@@ -24,7 +24,7 @@ type SiteHeaderProps = Readonly<{
     contact: string;
     cta: string;
   }>;
-  labelColors?: Partial<Record<"brand" | "home" | "about" | "products" | "services" | "contact" | "cta", string>>;
+  labelColors?: Partial<Record<"brand" | "home" | "about" | "products" | "services" | "contact" | "cta" | "cart" | "cartCount", string>>;
 }>;
 
 export default function SiteHeader({
@@ -91,7 +91,7 @@ export default function SiteHeader({
         <span className={styles.siteName} style={labelColors?.brand ? { color: labelColors.brand } : undefined}>{siteName}</span>
       </a>
 
-      {showCart && <CartBadge slug={slug} textColor={textColor} secondaryColor={secondaryColor} />}
+      {showCart && <CartBadge slug={slug} textColor={labelColors?.cart ?? textColor} secondaryColor={secondaryColor} countStyle={labelColors?.cartCount ? { color: labelColors.cartCount } : undefined} />}
 
       <button
         type="button"

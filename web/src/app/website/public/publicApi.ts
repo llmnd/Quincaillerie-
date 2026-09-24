@@ -38,6 +38,8 @@ export type PublicWebsiteTheme = {
   headerServicesColor?: string;
   headerContactColor?: string;
   headerCtaColor?: string;
+  headerCartColor?: string;
+  headerCartCountColor?: string;
   headerStyle?: string;
 };
 

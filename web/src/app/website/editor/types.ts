@@ -55,6 +55,10 @@ export type WebsiteTheme = {
   headerServicesColor?: string;
   headerContactColor?: string;
   headerCtaColor?: string;
+  headerCartColor?: string;
+  headerCartCountColor?: string;
+  headerCart?: string;
+  headerCartCount?: string;
 };
 
 export type OrganizationProfile = {

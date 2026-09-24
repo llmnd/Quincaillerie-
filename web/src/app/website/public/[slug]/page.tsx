@@ -206,6 +206,8 @@ export default async function PublicWebsitePage({ params }: PageParams) {
           services: theme.headerServicesColor,
           contact: theme.headerContactColor,
           cta: theme.headerCtaColor,
+          cart: theme.headerCartColor,
+          cartCount: theme.headerCartCountColor,
         }}
       />
 

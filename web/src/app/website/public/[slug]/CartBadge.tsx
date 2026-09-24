@@ -2,6 +2,7 @@
 
 import { ShoppingBag } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { CSSProperties, MouseEvent } from "react";
 import { readCart } from "./cart";
 import styles from "./productCatalog.module.css";
 
@@ -9,6 +10,11 @@ type CartBadgeProps = Readonly<{
   slug: string;
   textColor: string;
   secondaryColor: string;
+  editable?: boolean;
+  onSelect?: () => void;
+  onSelectCount?: () => void;
+  style?: CSSProperties;
+  countStyle?: CSSProperties;
 }>;
 
 const CART_EVENTS = [
@@ -21,6 +27,11 @@ export default function CartBadge({
   slug,
   textColor,
   secondaryColor,
+  editable = false,
+  onSelect,
+  onSelectCount,
+  style,
+  countStyle,
 }: CartBadgeProps) {
   const [count, setCount] = useState(0);
   const [pulse, setPulse] = useState(false);
@@ -88,8 +99,14 @@ export default function CartBadge({
     <a
       href={`/site/${slug}/panier`}
       className={styles.headerCart}
-      style={{ color: textColor, borderColor: secondaryColor }}
+      style={{ color: textColor, borderColor: secondaryColor, ...style }}
+      data-element-id={editable ? "headerCart" : undefined}
       aria-label={label}
+      onClick={(event: MouseEvent<HTMLAnchorElement>) => {
+        if (!editable) return;
+        event.preventDefault();
+        onSelect?.();
+      }}
     >
       <ShoppingBag size={17} aria-hidden="true" />
       <span>Panier</span>
@@ -97,7 +114,14 @@ export default function CartBadge({
         className={`${styles.headerCartCount} ${
           pulse ? styles.headerCartCountPulse : ""
         }`}
-        style={{ background: secondaryColor, color: textColor }}
+        style={{ background: secondaryColor, color: textColor, ...countStyle }}
+        data-element-id={editable ? "headerCartCount" : undefined}
+        onClick={(event) => {
+          if (!editable) return;
+          event.preventDefault();
+          event.stopPropagation();
+          onSelectCount?.();
+        }}
         aria-hidden="true"
       >
         {count}
