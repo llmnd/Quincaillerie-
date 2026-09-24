@@ -28,28 +28,39 @@ export type PublicWebsiteTheme = {
   headerServices?: string;
   headerContact?: string;
   headerCta?: string;
+  headerStyle?: string;
+};
+
+export type PublicWebsiteOrganization = {
+  name?: string;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  description?: string | null;
+};
+
+export type PublicWebsiteInfo = {
+  name?: string;
+  description?: string | null;
+  logo?: string | null;
+  favicon?: string | null;
+  theme?: PublicWebsiteTheme;
+  facebook?: string | null;
+  instagram?: string | null;
+  linkedin?: string | null;
+  twitter?: string | null;
 };
 
 export type PublicWebsitePayload = {
-  website?: {
-    name?: string;
-    description?: string | null;
-    logo?: string | null;
-    favicon?: string | null;
-    theme?: PublicWebsiteTheme;
-  };
-  organization?: {
-    name?: string;
-    phone?: string | null;
-    email?: string | null;
-  };
+  website?: PublicWebsiteInfo;
+  organization?: PublicWebsiteOrganization;
   page?: {
     title?: string | null;
     meta_title?: string | null;
     meta_description?: string | null;
   };
   sections?: Array<{
-    id?: number;
+    id: string | number;
     type?: string;
     visible?: boolean;
     content?: Record<string, unknown>;

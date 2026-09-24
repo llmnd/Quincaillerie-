@@ -431,6 +431,18 @@
 .inlineToolbarButton:hover,
 .inlineToolbarSelect:hover,
 .inlineColorButton:hover { border-color: #64748b; background: #374151; }
+.inlineLinkForm { display: inline-flex; align-items: center; gap: 4px; }
+.inlineLinkInput {
+  width: 190px;
+  height: 28px;
+  padding: 0 7px;
+  border: 1px solid #64748b;
+  border-radius: 5px;
+  background: #f8fafc;
+  color: #0f172a;
+  font: inherit;
+  font-size: 11px;
+}
 .inlineColorButton { position: relative; cursor: pointer; }
 .inlineColorButton span { text-decoration: underline; text-decoration-color: #14b8a6; text-decoration-thickness: 3px; }
 .inlineColorButton input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
@@ -758,6 +770,105 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: #94a3b8;
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  color: #cbd5e1;
+  font-size: 12px;
+}
+
+.checkboxRow input {
+  accent-color: #14b8a6;
+}
+
+.mediaLibrary {
+  display: grid;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.mediaGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.mediaThumb {
+  aspect-ratio: 1;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 7px;
+  background: #0f172a;
+  cursor: pointer;
+}
+
+.mediaThumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mediaThumbActive {
+  border-color: #14b8a6;
+  box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.25);
+}
+
+.templateGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  margin-bottom: 12px;
+}
+
+.templateCard {
+  display: grid;
+  gap: 3px;
+  padding: 9px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #e2e8f0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.templateCard:hover {
+  border-color: rgba(20, 184, 166, 0.65);
+  background: rgba(20, 184, 166, 0.1);
+}
+
+.templateCard strong { font-size: 11px; }
+.templateCard span { color: #94a3b8; font-size: 10px; line-height: 1.3; }
+
+.rangeField {
+  display: grid;
+  gap: 5px;
+  margin-top: 8px;
+  color: #cbd5e1;
+  font-size: 11px;
+}
+
+.rangeRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rangeRow input {
+  flex: 1;
+  accent-color: #14b8a6;
+}
+
+.rangeRow output {
+  min-width: 42px;
+  color: #5fe2dd;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 .styleGroupRow {
   display: grid;

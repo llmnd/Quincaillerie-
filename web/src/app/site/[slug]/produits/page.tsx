@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import type { CSSProperties } from "react";
 import ProductCatalog from "../../../website/public/[slug]/productCatalog";
 import { fetchPublicWebsite } from "../../../website/public/publicApi";
 import SiteHeader from "../../../../components/SiteHeader";
@@ -36,7 +37,7 @@ export default async function ProductsPage({ params }: Readonly<{ params: Promis
   }));
 
   return (
-    <main className={styles.page} style={{ background: theme.background ?? "#fff", color: textColor, fontFamily: theme.font ?? "Inter, sans-serif", "--secondary": secondaryColor, "--muted": secondaryTextColor } as React.CSSProperties}>
+    <main className={styles.page} style={{ background: theme.background ?? "#fff", color: textColor, fontFamily: theme.font ?? "Inter, sans-serif", "--secondary": secondaryColor, "--muted": secondaryTextColor, "--primary": primaryColor } as CSSProperties}>
       <SiteHeader
         slug={slug}
         siteName={theme.headerBrand ?? siteName}
@@ -56,11 +57,26 @@ export default async function ProductsPage({ params }: Readonly<{ params: Promis
       />
       <div className={styles.container}>
         <header className={styles.catalogIntro}>
-          <p className={styles.catalogEyebrow}>Boutique en ligne</p>
-          <h1 className={styles.catalogTitle}>{siteName}</h1>
-          <p className={styles.catalogLead}>Découvrez notre catalogue et envoyez votre demande de commande directement à l&apos;équipe.</p>
+          <a className={styles.backLink} href={`/site/${slug}`}>
+            ← Retour à l&apos;accueil
+          </a>
+          <div className={styles.introGrid}>
+            <div>
+              <p className={styles.catalogEyebrow}>Catalogue · {siteName}</p>
+              <h1 className={styles.catalogTitle}>La sélection.</h1>
+              <p className={styles.catalogLead}>
+                Des références choisies pour vos projets. Consultez les détails,
+                ajoutez vos articles et envoyez votre demande directement à
+                l&apos;équipe.
+              </p>
+            </div>
+            <div className={styles.catalogCount}>
+              <strong>{products.length}</strong>
+              <span>références disponibles</span>
+            </div>
+          </div>
         </header>
-        <ProductCatalog slug={slug} products={products} primaryColor={primaryColor} secondaryColor={secondaryColor} textColor={textColor} secondaryTextColor={secondaryTextColor} />
+        <ProductCatalog slug={slug} products={products} columnsMobile={2} primaryColor={primaryColor} secondaryColor={secondaryColor} textColor={textColor} secondaryTextColor={secondaryTextColor} />
       </div>
     </main>
   );

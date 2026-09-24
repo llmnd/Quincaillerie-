@@ -52,6 +52,8 @@ def _serialize_website(website: Website) -> dict[str, Any]:
     if primary_domain is None:
         primary_domain = next((item for item in domains if item.type == "subdomain" and item.active), None)
     primary_host = primary_domain.domain if primary_domain else f"{website.organization.slug}.{settings.public_site_base_domain}"
+    website_settings = website.settings or {}
+    social_links = website_settings.get("social_links") if isinstance(website_settings.get("social_links"), dict) else {}
     return {
         "id": website.id,
         "organization_id": website.organization_id,
@@ -63,7 +65,11 @@ def _serialize_website(website: Website) -> dict[str, Any]:
         "template": website.template,
         "published": website.published,
         "theme": {**DEFAULT_THEME, **(website.theme or {})},
-        "settings": website.settings or {},
+        "settings": website_settings,
+        "facebook": social_links.get("facebook"),
+        "instagram": social_links.get("instagram"),
+        "linkedin": social_links.get("linkedin"),
+        "twitter": social_links.get("twitter"),
         "domains": [
             {
                 "id": item.id,
@@ -274,7 +280,11 @@ def update_current_website(
         website.slug = slug
     if "theme" in update_data and update_data["theme"] is not None:
         website.theme = {**(website.theme or DEFAULT_THEME), **update_data["theme"]}
+    if "settings" in update_data and update_data["settings"] is not None:
+        website.settings = {**(website.settings or {}), **update_data["settings"]}
     for field in ["name", "description", "logo", "favicon", "template", "published", "settings"]:
+        if field == "settings":
+            continue
         if field in update_data and update_data[field] is not None:
             setattr(website, field, update_data[field])
     db.commit()
@@ -570,6 +580,7 @@ def public_website(
             "name": organization.name if organization else None,
             "phone": organization_settings.get("phone"),
             "email": organization_settings.get("email"),
+            "address": organization_settings.get("address"),
         },
         "page": _serialize_page(page),
         "sections": [_serialize_section(section) for section in sections],

@@ -12,12 +12,10 @@ import {
   ExternalLink,
   Globe,
   ImageIcon,
-  LayoutGrid,
   Loader2,
   Mail,
   MapPin,
   Menu,
-  Palette,
   Phone,
   Save,
   Trash2,
@@ -104,7 +102,7 @@ type Product = {
   category?: string | null;
 };
 
-type SectionKey = "identity" | "template" | "theme" | null;
+type SectionKey = "identity" | null;
 
 const defaultTheme: Theme = {
   primary: "#111827",
@@ -122,20 +120,6 @@ const defaultTheme: Theme = {
   priceText: "#111827",
 };
 
-const templates = [
-  { key: "commerce",      label: "Commerce",     description: "Boutique en ligne, panier et fiches produits.",  accent: "#14b8a6" },
-  { key: "quincaillerie", label: "Quincaillerie", description: "Matériel, outillage et références techniques.", accent: "#f59e0b" },
-  { key: "services",      label: "Entreprise",    description: "Site corporate, services et contact.",          accent: "#8b5cf6" },
-];
-
-const presets = [
-  { key: "teal",    label: "Teal",    primary: "#0f172a", secondary: "#14b8a6", background: "#ffffff", text: "#0f172a" },
-  { key: "violet",  label: "Violet",  primary: "#1e1b4b", secondary: "#8b5cf6", background: "#faf5ff", text: "#1e1b4b" },
-  { key: "sunset",  label: "Sunset",  primary: "#7c2d12", secondary: "#ea580c", background: "#fffbeb", text: "#7c2d12" },
-  { key: "forest",  label: "Forest",  primary: "#14532d", secondary: "#16a34a", background: "#f0fdf4", text: "#14532d" },
-  { key: "ocean",   label: "Ocean",   primary: "#0c4a6e", secondary: "#0ea5e9", background: "#f0f9ff", text: "#0c4a6e" },
-  { key: "midnight",label: "Midnight",primary: "#f8fafc", secondary: "#14b8a6", background: "#0f172a", text: "#f8fafc" },
-];
 
 function slugify(value: string) {
   return value
@@ -215,75 +199,6 @@ function Section({
         <div className={styles.sectionBodyInner}>
           <div className={styles.sectionContent}>{children}</div>
         </div>
-      </div>
-    </div>
-  );
-}
-
-/* ============================================================
-   ColorInput
-   ============================================================ */
-function ColorInput({
-  label,
-  value,
-  onCommit,
-}: {
-  label: string;
-  value: string;
-  onCommit: (next: string) => void;
-}) {
-  const [local, setLocal] = useState(value);
-  const timerRef = useRef<number | null>(null);
-  const lastSentRef = useRef(value);
-
-  useEffect(() => {
-    if (value !== lastSentRef.current) {
-      setLocal(value);
-      lastSentRef.current = value;
-    }
-  }, [value]);
-
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) window.clearTimeout(timerRef.current);
-    };
-  }, []);
-
-  function schedule(next: string) {
-    if (timerRef.current) window.clearTimeout(timerRef.current);
-    timerRef.current = window.setTimeout(() => {
-      lastSentRef.current = next;
-      onCommit(next);
-    }, 180);
-  }
-
-  return (
-    <div className={styles.colorField}>
-      <span className={styles.colorFieldLabel}>{label}</span>
-      <div className={styles.colorRow}>
-        <input
-          type="color"
-          value={local}
-          onChange={(event) => {
-            const next = event.target.value;
-            setLocal(next);
-            schedule(next);
-          }}
-          className={styles.colorSwatch}
-          aria-label={label}
-        />
-        <input
-          type="text"
-          value={local}
-          onChange={(event) => {
-            const next = event.target.value;
-            setLocal(next);
-            if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(next)) schedule(next);
-          }}
-          className={styles.colorHex}
-          spellCheck={false}
-          maxLength={7}
-        />
       </div>
     </div>
   );
@@ -567,16 +482,6 @@ export default function WebsiteConfigPage() {
     }));
     setSlugTouched(true);
     showToast("info", "Infos entreprise appliquées");
-  }
-
-  function applyPreset(preset: (typeof presets)[number]) {
-    setTheme((current) => ({
-      ...current,
-      primary: preset.primary,
-      secondary: preset.secondary,
-      background: preset.background,
-      text: preset.text,
-    }));
   }
 
   async function handleSave() {
@@ -1203,204 +1108,6 @@ export default function WebsiteConfigPage() {
               />
             </Section>
 
-            <Section
-              id="template"
-              title="Template"
-              icon={<LayoutGrid size={14} />}
-              meta={form.template}
-              open={openSection === "template"}
-              onToggle={() => setOpenSection((c) => (c === "template" ? null : "template"))}
-            >
-              <div className={styles.templateList}>
-                {templates.map((tpl) => {
-                  const active = form.template === tpl.key;
-                  return (
-                    <button
-                      key={tpl.key}
-                      type="button"
-                      className={`${styles.templateRow} ${active ? styles.templateRowActive : ""}`}
-                      onClick={() => setForm((c) => ({ ...c, template: tpl.key }))}
-                    >
-                      <span className={styles.templateDot} style={{ background: tpl.accent }}>
-                        {tpl.label.slice(0, 1)}
-                      </span>
-                      <span className={styles.templateText}>
-                        <strong>{tpl.label}</strong>
-                        <span>{tpl.description}</span>
-                      </span>
-                      {active && <Check size={14} className={styles.templateCheck} />}
-                    </button>
-                  );
-                })}
-              </div>
-            </Section>
-
-            <Section
-              id="theme"
-              title="Thème"
-              icon={<Palette size={14} />}
-              open={openSection === "theme"}
-              onToggle={() => setOpenSection((c) => (c === "theme" ? null : "theme"))}
-            >
-              <div className={styles.field}>
-                <span className={styles.fieldLabel}>Palettes rapides</span>
-                <div className={styles.presetsGrid}>
-                  {presets.map((preset) => {
-                    const active =
-                      theme.primary === preset.primary &&
-                      theme.secondary === preset.secondary &&
-                      theme.background === preset.background;
-                    return (
-                      <button
-                        key={preset.key}
-                        type="button"
-                        className={`${styles.presetChip} ${active ? styles.presetChipActive : ""}`}
-                        onClick={() => applyPreset(preset)}
-                        title={preset.label}
-                      >
-                        <span
-                          className={styles.presetChipPreview}
-                          style={{ background: preset.background, color: preset.text }}
-                        >
-                          <span
-                            style={{
-                              width: "100%",
-                              height: 4,
-                              borderRadius: 3,
-                              background: preset.secondary,
-                            }}
-                          />
-                        </span>
-                        <span className={styles.presetChipName}>{preset.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <ColorInput
-                label="Couleur principale"
-                value={theme.primary}
-                onCommit={(v) => setTheme((c) => ({ ...c, primary: v }))}
-              />
-              <ColorInput
-                label="Couleur secondaire"
-                value={theme.secondary}
-                onCommit={(v) => setTheme((c) => ({ ...c, secondary: v }))}
-              />
-              <ColorInput
-                label="Arrière-plan"
-                value={theme.background}
-                onCommit={(v) => setTheme((c) => ({ ...c, background: v }))}
-              />
-              <ColorInput
-                label="Couleur du texte"
-                value={theme.text}
-                onCommit={(v) => setTheme((c) => ({ ...c, text: v }))}
-              />
-
-              {/* --- Couleurs granulaires --- */}
-              <div className={styles.themeSubHeader}>Couleurs granulaires</div>
-
-              <ColorInput
-                label="Texte de l'en-tête"
-                value={theme.headerText ?? theme.primary ?? "#111827"}
-                onCommit={(v) => setTheme((c) => ({ ...c, headerText: v }))}
-              />
-              <ColorInput
-                label="Catégorie produit"
-                value={theme.categoryText ?? theme.primary ?? "#111827"}
-                onCommit={(v) => setTheme((c) => ({ ...c, categoryText: v }))}
-              />
-              <ColorInput
-                label="Prix produit"
-                value={theme.priceText ?? theme.primary ?? "#111827"}
-                onCommit={(v) => setTheme((c) => ({ ...c, priceText: v }))}
-              />
-
-              <label className={styles.field}>
-                <span className={styles.fieldLabel}>Police</span>
-                <select
-                  className={styles.select}
-                  value={theme.font}
-                  onChange={(e) => setTheme((c) => ({ ...c, font: e.target.value }))}
-                >
-                  <option value="Inter, sans-serif">Inter</option>
-                  <option value="Georgia, serif">Georgia</option>
-                  <option value="'Times New Roman', serif">Times New Roman</option>
-                  <option value="system-ui, -apple-system, sans-serif">Système</option>
-                  <option value="'Courier New', monospace">Courier New</option>
-                </select>
-              </label>
-
-              <div className={styles.twoCols}>
-                <label className={styles.field}>
-                  <span className={styles.fieldLabel}>Rayon</span>
-                  <select
-                    className={styles.select}
-                    value={theme.radius}
-                    onChange={(e) => setTheme((c) => ({ ...c, radius: e.target.value }))}
-                  >
-                    <option value="none">Aucun</option>
-                    <option value="small">Petit</option>
-                    <option value="medium">Moyen</option>
-                    <option value="large">Grand</option>
-                  </select>
-                </label>
-                <label className={styles.field}>
-                  <span className={styles.fieldLabel}>Boutons</span>
-                  <select
-                    className={styles.select}
-                    value={theme.buttonStyle}
-                    onChange={(e) => setTheme((c) => ({ ...c, buttonStyle: e.target.value }))}
-                  >
-                    <option value="square">Carré</option>
-                    <option value="rounded">Arrondi</option>
-                    <option value="pill">Pilule</option>
-                  </select>
-                </label>
-              </div>
-
-              <div className={styles.twoCols}>
-                <label className={styles.field}>
-                  <span className={styles.fieldLabel}>Cartes</span>
-                  <select
-                    className={styles.select}
-                    value={theme.cardStyle}
-                    onChange={(e) => setTheme((c) => ({ ...c, cardStyle: e.target.value }))}
-                  >
-                    <option value="flat">Plat</option>
-                    <option value="soft">Doux</option>
-                    <option value="elevated">Élevé</option>
-                  </select>
-                </label>
-                <label className={styles.field}>
-                  <span className={styles.fieldLabel}>En-tête</span>
-                  <select
-                    className={styles.select}
-                    value={theme.headerStyle}
-                    onChange={(e) => setTheme((c) => ({ ...c, headerStyle: e.target.value }))}
-                  >
-                    <option value="minimal">Minimal</option>
-                    <option value="centered">Centré</option>
-                    <option value="bold">Audacieux</option>
-                  </select>
-                </label>
-              </div>
-
-              <label className={styles.field}>
-                <span className={styles.fieldLabel}>Pied de page</span>
-                <select
-                  className={styles.select}
-                  value={theme.footerStyle}
-                  onChange={(e) => setTheme((c) => ({ ...c, footerStyle: e.target.value }))}
-                >
-                  <option value="simple">Simple</option>
-                  <option value="columns">Colonnes</option>
-                  <option value="minimal">Minimal</option>
-                </select>
-              </label>
-            </Section>
           </div>
         </aside>
 
@@ -1491,7 +1198,7 @@ export default function WebsiteConfigPage() {
                   <div className={previewStyles.siteMainContent}>
                     {visibleSections.length === 0 ? (
                       <div
-                        className={previewStyles.previewSiteBlock}
+                        className={`${previewStyles.previewSiteBlock} ${previewStyles.heroBlock}`}
                         style={{ textAlign: "center", opacity: 0.7 }}
                       >
                         <p>Aucune section visible. Ouvrez l'éditeur pour ajouter du contenu.</p>

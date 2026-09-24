@@ -902,32 +902,30 @@ export default function ERPPage() {
           className={styles.printHeader}
           aria-label="Identité de l'entreprise pour impression"
         >
-          <div className={styles.printBrand}>
-            {organization.logo ? (
-              <img
-                src={organization.logo}
-                alt="Logo de l'entreprise"
-                className={styles.printLogo}
-              />
-            ) : (
-              <div className={styles.printLogoFallback}>
-                {organization.name?.slice(0, 1).toUpperCase() || "E"}
-              </div>
-            )}
-
-            <div className={styles.printBrandCopy}>
-              <p className={styles.printEyebrow}>MIZAN ERP</p>
-              <h2>{organization.name || "Ma société"}</h2>
-              <p className={styles.printContact}>
-                {[
-                  organization.email,
-                  organization.phone,
-                  organization.address,
-                ]
-                  .filter(Boolean)
-                  .join(" · ") || "contact@entreprise.com"}
-              </p>
+          {organization.logo ? (
+            <img
+              src={organization.logo}
+              alt="Logo de l'entreprise"
+              className={styles.printLogo}
+            />
+          ) : (
+            <div className={styles.printLogoFallback}>
+              {organization.name?.slice(0, 1).toUpperCase() || "E"}
             </div>
+          )}
+
+          <div className={styles.printBrandCopy}>
+            <p className={styles.printEyebrow}>MIZAN ERP</p>
+            <h2>{organization.name || "Ma société"}</h2>
+            <p className={styles.printContact}>
+              {[
+                organization.email,
+                organization.phone,
+                organization.address,
+              ]
+                .filter(Boolean)
+                .join(" · ") || "contact@entreprise.com"}
+            </p>
           </div>
 
           <div className={styles.printMeta}>

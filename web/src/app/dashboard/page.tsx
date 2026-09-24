@@ -15,6 +15,7 @@ import {
   ShoppingCart,
   Users,
   WalletCards,
+  X,
 } from "lucide-react";
 import AppShell from "../../components/AppShell";
 import { authHeaders } from "../../lib/auth";
@@ -31,6 +32,7 @@ type EggProduction = { id: number; batch_id: number; production_date: string; qu
 type ActivityItem = { id: string; label: string; detail: string; time: string; kind: "sale" | "stock" | "cash" | "farm" };
 type OrganizationProfile = { name: string; logo?: string | null };
 type ChartPeriod = "7d" | "30d" | "12m";
+type MetricKey = "sales" | "cash" | "stock" | "relations";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -82,6 +84,7 @@ export default function DashboardPage() {
   const [archivedActivityIds, setArchivedActivityIds] = useState<string[]>([]);
   const [chartPeriod, setChartPeriod] = useState<ChartPeriod>("7d");
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const [activeMetric, setActiveMetric] = useState<MetricKey | null>(null);
 
   async function fetchJson<T>(path: string): Promise<T | null> {
     try {
@@ -365,6 +368,16 @@ export default function DashboardPage() {
     rawTooltipX !== null ? Math.max(15, Math.min(85, rawTooltipX)) : null;
 
   const activityIcon = { sale: ShoppingCart, stock: Package, cash: WalletCards, farm: Bird };
+  const closeMetric = () => setActiveMetric(null);
+
+  useEffect(() => {
+    if (!activeMetric) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeMetric();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeMetric]);
 
   return (
     <AppShell>
@@ -447,7 +460,12 @@ export default function DashboardPage() {
         </header>
 
         <section className={styles.metricGrid} aria-label="Indicateurs de l'organisation">
-          <article className={`${styles.metricCard} ${styles.metricAccent}`}>
+          <button
+            type="button"
+            className={`${styles.metricCard} ${styles.metricAccent}`}
+            onClick={() => setActiveMetric("sales")}
+            aria-label="Voir le détail des ventes du jour"
+          >
             <span>Ventes du jour</span>
             <div className={styles.metricValue}>
               <strong className={!isLoading && todayRevenue === 0 ? styles.zeroValue : undefined}>
@@ -473,18 +491,28 @@ export default function DashboardPage() {
               {todaySales.length > 1 ? "s" : ""}
               {salesDelta !== null ? " · vs hier" : ""}
             </small>
-          </article>
+          </button>
 
-          <article className={styles.metricCard}>
+          <button
+            type="button"
+            className={styles.metricCard}
+            onClick={() => setActiveMetric("cash")}
+            aria-label="Voir le détail de l'état de la caisse"
+          >
             <span>État de la caisse</span>
             <strong>{openSession ? "ACTIVE" : "FERMÉE"}</strong>
             <small className={openSession ? styles.good : styles.muted}>
               <WalletCards size={13} />{" "}
               {openSession ? `Caisse #${openSession.register_id}` : "Aucune session ouverte"}
             </small>
-          </article>
+          </button>
 
-          <article className={styles.metricCard}>
+          <button
+            type="button"
+            className={styles.metricCard}
+            onClick={() => setActiveMetric("stock")}
+            aria-label="Voir le détail du stock à surveiller"
+          >
             <span>Stock à surveiller</span>
             <strong className={lowStockProducts.length === 0 ? styles.zeroValue : undefined}>
               {lowStockProducts.length}
@@ -493,9 +521,14 @@ export default function DashboardPage() {
               <Boxes size={13} /> référence{lowStockProducts.length > 1 ? "s" : ""} concernée
               {lowStockProducts.length > 1 ? "s" : ""}
             </small>
-          </article>
+          </button>
 
-          <article className={styles.metricCard}>
+          <button
+            type="button"
+            className={styles.metricCard}
+            onClick={() => setActiveMetric("relations")}
+            aria-label="Voir le détail de l'équipe et des relations"
+          >
             <span>Équipe &amp; relations</span>
             <strong className={customerCount === 0 ? styles.zeroValue : undefined}>
               {customerCount}
@@ -505,7 +538,7 @@ export default function DashboardPage() {
               {activeBatches.length > 1 ? "s" : ""} active
               {activeBatches.length > 1 ? "s" : ""}
             </small>
-          </article>
+          </button>
         </section>
 
         <section className={styles.salesTrendPanel} aria-labelledby="sales-trend-title">
@@ -765,6 +798,110 @@ export default function DashboardPage() {
           </aside>
         </div>
       </div>
+
+      {activeMetric && (
+        <div
+          className={styles.metricModalOverlay}
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) closeMetric();
+          }}
+        >
+          <section
+            className={styles.metricModal}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="metric-modal-title"
+          >
+            <div className={styles.metricModalHeader}>
+              <div>
+                <span className={styles.sectionKicker}>Détail de l&apos;indicateur</span>
+                <h2 id="metric-modal-title">
+                  {activeMetric === "sales" && "Ventes du jour"}
+                  {activeMetric === "cash" && "État de la caisse"}
+                  {activeMetric === "stock" && "Stock à surveiller"}
+                  {activeMetric === "relations" && "Équipe & relations"}
+                </h2>
+              </div>
+              <button type="button" className={styles.modalCloseButton} onClick={closeMetric} aria-label="Fermer">
+                <X size={18} />
+              </button>
+            </div>
+
+            {activeMetric === "sales" && (
+              <div className={styles.metricModalContent}>
+                <div className={styles.modalSummary}>
+                  <strong>{formatMoney(todayRevenue)}</strong>
+                  <span>{todaySales.length} vente{todaySales.length > 1 ? "s" : ""} aujourd&apos;hui</span>
+                </div>
+                {todaySales.length ? (
+                  <div className={styles.metricDetailList}>
+                    {todaySales.map((sale) => (
+                      <div className={styles.metricDetailRow} key={sale.id}>
+                        <span>Vente #{sale.id}<small>{formatDate(sale.sale_date)} · {sale.payment_method}</small></span>
+                        <strong>{formatMoney(sale.total_amount)}</strong>
+                      </div>
+                    ))}
+                  </div>
+                ) : <p className={styles.modalEmpty}>Aucune vente enregistrée aujourd&apos;hui.</p>}
+              </div>
+            )}
+
+            {activeMetric === "cash" && (
+              <div className={styles.metricModalContent}>
+                <div className={styles.modalSummary}>
+                  <strong>{openSession ? "ACTIVE" : "FERMÉE"}</strong>
+                  <span>{openSession ? `Caisse #${openSession.register_id}` : "Aucune session ouverte"}</span>
+                </div>
+                {openSession ? (
+                  <div className={styles.metricDetailList}>
+                    <div className={styles.metricDetailRow}><span>Ouverture<small>{formatDate(openSession.opened_at)}</small></span><strong>{formatMoney(openSession.actual_opening_amount)}</strong></div>
+                    <div className={styles.metricDetailRow}><span>Identifiant session</span><strong>#{openSession.id}</strong></div>
+                  </div>
+                ) : <p className={styles.modalEmpty}>Ouvrez une session pour commencer les ventes.</p>}
+              </div>
+            )}
+
+            {activeMetric === "stock" && (
+              <div className={styles.metricModalContent}>
+                <div className={styles.modalSummary}>
+                  <strong>{lowStockProducts.length}</strong>
+                  <span>référence{lowStockProducts.length > 1 ? "s" : ""} sous le seuil de 5 unités</span>
+                </div>
+                {lowStockProducts.length ? (
+                  <div className={styles.metricDetailList}>
+                    {lowStockProducts.map((product) => (
+                      <div className={styles.metricDetailRow} key={product.id}>
+                        <span>{product.name}<small>Stock actuel · seuil d&apos;alerte 5</small></span>
+                        <strong className={product.remaining_stock === 0 ? styles.danger : styles.warning}>{product.remaining_stock}</strong>
+                      </div>
+                    ))}
+                  </div>
+                ) : <p className={styles.modalEmpty}>Toutes les références ont un stock suffisant.</p>}
+              </div>
+            )}
+
+            {activeMetric === "relations" && (
+              <div className={styles.metricModalContent}>
+                <div className={styles.relationSummaryGrid}>
+                  <div><strong>{customerCount}</strong><span>clients enregistrés</span></div>
+                  <div><strong>{activeBatches.length}</strong><span>bande{activeBatches.length > 1 ? "s" : ""} active{activeBatches.length > 1 ? "s" : ""}</span></div>
+                </div>
+                {activeBatches.length ? (
+                  <div className={styles.metricDetailList}>
+                    {activeBatches.map((batch) => (
+                      <div className={styles.metricDetailRow} key={batch.id}>
+                        <span>{batch.reference}<small>{batch.production_type} · créée le {formatDate(batch.created_at)}</small></span>
+                        <strong>{batch.current_count} sujets</strong>
+                      </div>
+                    ))}
+                  </div>
+                ) : <p className={styles.modalEmpty}>Aucune bande active pour le moment.</p>}
+              </div>
+            )}
+          </section>
+        </div>
+      )}
     </AppShell>
   );
 }

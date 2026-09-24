@@ -1,8 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import type {
+  CSSProperties,
+  MouseEvent as ReactMouseEvent,
+  PointerEvent as ReactPointerEvent,
+} from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Search, X } from "lucide-react";
-import { readCart, writeCart, type CartLine } from "./cart";
+import {
+  readCart,
+  writeCart,
+  notifyCartUpdated,
+  type CartLine,
+} from "./cart";
 import styles from "./productCatalog.module.css";
 
 type Product = {
@@ -15,18 +25,42 @@ type Product = {
   category?: string | null;
 };
 
+type SortKey = "default" | "price-asc" | "price-desc" | "name";
+
 type ProductCatalogProps = Readonly<{
   slug: string;
   products: Product[];
+  introText?: string;
+  showPrices?: boolean;
+  showDescriptions?: boolean;
+  showCategories?: boolean;
+  showSearch?: boolean;
+  showFilters?: boolean;
+  showSort?: boolean;
+  columns?: number;
+  columnsTablet?: number;
+  columnsMobile?: number;
+  spacingDesktop?: number;
+  spacingTablet?: number;
+  spacingMobile?: number;
+  elementGap?: number;
   primaryColor: string;
   secondaryColor: string;
   textColor: string;
   secondaryTextColor: string;
+  fontFamily?: string;
 }>;
 
 function formatPrice(value: Product["price"]): string {
-  if (typeof value === "number") return `${value.toLocaleString("fr-FR")} FCFA`;
+  if (typeof value === "number")
+    return `${value.toLocaleString("fr-FR")} FCFA`;
   return value ? String(value) : "Prix sur demande";
+}
+
+function numericPrice(value: Product["price"]): number {
+  if (typeof value === "number") return value;
+  const parsed = parseFloat(String(value ?? "").replace(/[^\d.-]/g, ""));
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function productKey(product: Product, index: number): string | number {
@@ -40,42 +74,92 @@ function productImage(product: Product): string {
 export default function ProductCatalog({
   slug,
   products,
+  introText = "Choisissez vos produits et envoyez votre demande directement à l'entreprise.",
+  showPrices = true,
+  showDescriptions = true,
+  showCategories = true,
+  showSearch = true,
+  showFilters = true,
+  showSort = true,
+  columns = 3,
+  columnsTablet = 2,
+  columnsMobile = 2,
+  spacingDesktop = 20,
+  spacingTablet = 16,
+  spacingMobile = 14,
+  elementGap = 12,
   primaryColor,
   secondaryColor,
   textColor,
   secondaryTextColor,
+  fontFamily,
 }: ProductCatalogProps) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("Toutes");
+  const [sortBy, setSortBy] = useState<SortKey>("default");
   const [selected, setSelected] = useState<Product | null>(null);
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [cart, setCart] = useState<CartLine[]>([]);
+  const [pulseKey, setPulseKey] = useState<string | number | null>(null);
+
+  const cartRef = useRef<CartLine[]>([]);
+  const categoryRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setCart(readCart(slug));
+    cartRef.current = cart;
+  }, [cart]);
+
+  useEffect(() => {
+    const initial = readCart(slug);
+    cartRef.current = initial;
+    setCart(initial);
   }, [slug]);
 
-  const categories = useMemo(() => [
-    "Toutes",
-    ...Array.from(new Set(products.map((product) => product.category?.trim()).filter(Boolean) as string[])).sort((a, b) => a.localeCompare(b, "fr")),
-  ], [products]);
+  const categories = useMemo(() => {
+    const counts = new Map<string, number>();
+    products.forEach((product) => {
+      const cat = product.category?.trim();
+      if (cat) counts.set(cat, (counts.get(cat) ?? 0) + 1);
+    });
+    return [
+      { name: "Toutes", count: products.length },
+      ...Array.from(counts.entries())
+        .sort(([a], [b]) => a.localeCompare(b, "fr"))
+        .map(([name, count]) => ({ name, count })),
+    ];
+  }, [products]);
 
   const filteredProducts = useMemo(() => {
     const normalized = query.trim().toLowerCase();
-    return products.filter((product) =>
-      (category === "Toutes" || product.category?.trim() === category) &&
-      (!normalized || [product.name, product.category, product.description]
-        .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(normalized)))
+    const list = products.filter(
+      (product) =>
+        (category === "Toutes" || product.category?.trim() === category) &&
+        (!normalized ||
+          [product.name, product.category, product.description]
+            .filter(Boolean)
+            .some((value) =>
+              String(value).toLowerCase().includes(normalized)
+            ))
     );
-  }, [category, products, query]);
 
-  /* ---------- Fermer les modales à l'Escape ---------- */
+    if (sortBy === "default") return list;
+
+    return [...list].sort((a, b) => {
+      if (sortBy === "name")
+        return (a.name ?? "").localeCompare(b.name ?? "", "fr", {
+          sensitivity: "base",
+        });
+      const pa = numericPrice(a.price);
+      const pb = numericPrice(b.price);
+      return sortBy === "price-asc" ? pa - pb : pb - pa;
+    });
+  }, [category, products, query, sortBy]);
+
   useEffect(() => {
     if (!selected) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setSelected(null);
-      }
+      if (e.key === "Escape") setSelected(null);
     };
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -86,18 +170,100 @@ export default function ProductCatalog({
     };
   }, [selected]);
 
-  /* ---------- Actions panier ---------- */
+  useEffect(() => {
+    if (!categoryOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setCategoryOpen(false);
+    };
+    const handlePointerDown = (event: PointerEvent) => {
+      if (
+        categoryRef.current &&
+        event.target instanceof Node &&
+        !categoryRef.current.contains(event.target)
+      ) {
+        setCategoryOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [categoryOpen]);
+
+  useEffect(() => {
+    if (!searchOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSearchOpen(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [searchOpen]);
+
   function addToRequest(product: Product) {
-    setCart((current) => {
-      const cartProduct = { ...product, image: productImage(product) || null };
-      const index = current.findIndex((line) => line.product.id === product.id || line.product.name === product.name);
-      const next = index >= 0
-        ? current.map((line, i) => i === index ? { ...line, quantity: line.quantity + 1 } : line)
+    const current = cartRef.current;
+    const cartProduct = { ...product, image: productImage(product) || null };
+
+    const index = current.findIndex(
+      (line) =>
+        line.product.id === product.id || line.product.name === product.name
+    );
+
+    const next: CartLine[] =
+      index >= 0
+        ? current.map((line, i) =>
+            i === index ? { ...line, quantity: line.quantity + 1 } : line
+          )
         : [...current, { product: cartProduct, quantity: 1 }];
-      writeCart(slug, next);
-      window.dispatchEvent(new CustomEvent("website-cart-added", { detail: { slug } }));
-      return next;
+
+    cartRef.current = next;
+    setCart(next);
+    writeCart(slug, next);
+
+    // Feedback visuel
+    const key = product.id ?? product.name ?? "x";
+    setPulseKey(key);
+    window.setTimeout(() => setPulseKey(null), 420);
+
+    queueMicrotask(() => {
+      notifyCartUpdated(slug, "added");
+      notifyCartUpdated(slug, "updated");
     });
+  }
+
+  function openProduct(product: Product) {
+    setSelected(product);
+  }
+
+  function openProductOnTouch(
+    event: ReactPointerEvent<HTMLButtonElement>,
+    product: Product,
+  ) {
+    const imageArea = (event.target as Element | null)?.closest(
+      "[data-product-image]",
+    );
+    if (event.pointerType === "touch" && !imageArea) {
+      openProduct(product);
+    }
+  }
+
+  function openProductFromCard(
+    event: ReactMouseEvent<HTMLButtonElement>,
+    product: Product,
+  ) {
+    const imageArea = (event.target as Element | null)?.closest(
+      "[data-product-image]",
+    );
+    if (
+      imageArea &&
+      window.matchMedia("(max-width: 720px)").matches
+    ) {
+      return;
+    }
+    openProduct(product);
   }
 
   function resetQuery() {
@@ -116,103 +282,223 @@ export default function ProductCatalog({
     "--muted": secondaryTextColor,
   } as React.CSSProperties;
 
+  const hasActiveFilters = query || category !== "Toutes";
+
   return (
-    <section id="produits" className={styles.section} style={themeVars}>
+    <section
+      id="produits"
+      className={`${styles.section} ${styles.catalogSection} siteCatalogSection`}
+      style={
+        {
+          ...themeVars,
+          "--catalog-padding-desktop": `${spacingDesktop}px`,
+          "--catalog-padding-tablet": `${spacingTablet}px`,
+          "--catalog-padding-mobile": `${spacingMobile}px`,
+          "--catalog-gap": `${elementGap}px`,
+          "--catalog-font-family": fontFamily || "inherit",
+        } as CSSProperties
+      }
+    >
       {/* ============================= EN-TÊTE ============================= */}
       <header className={styles.header}>
         <div className={styles.headerInfo}>
           <p className={styles.eyebrow}>Catalogue</p>
           <h2 className={styles.title}>Nos produits</h2>
-          <p className={styles.subtitle}>
-            Choisissez vos produits et envoyez votre demande directement à
-            l&apos;entreprise.
-          </p>
+          <p className={styles.subtitle}>{introText}</p>
         </div>
 
-        <div className={styles.headerActions}>
-          <div className={styles.searchWrap}>
-            <Search size={15} className={styles.searchIcon} aria-hidden="true" />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Rechercher un produit"
-              aria-label="Rechercher un produit"
-              className={styles.searchInput}
-            />
-            {query && (
+        {showSearch && (
+          <div className={styles.headerActions}>
+            {searchOpen ? (
+              <div className={styles.searchWrap}>
+                <Search
+                  size={15}
+                  className={styles.searchIcon}
+                  aria-hidden="true"
+                />
+                <input
+                  autoFocus
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Rechercher un produit"
+                  aria-label="Rechercher un produit"
+                  className={styles.searchInput}
+                  type="search"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    resetQuery();
+                    setSearchOpen(false);
+                  }}
+                  className={styles.searchClose}
+                  aria-label="Fermer la recherche"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ) : (
               <button
                 type="button"
-                onClick={resetQuery}
-                className={styles.searchClear}
-                aria-label="Effacer la recherche"
+                className={styles.searchTrigger}
+                onClick={() => setSearchOpen(true)}
+                aria-label="Rechercher un produit"
               >
-                <X size={12} />
+                <Search size={17} strokeWidth={1.6} aria-hidden="true" />
               </button>
             )}
           </div>
-
-        </div>
+        )}
       </header>
 
-      <div className={styles.categoryFilters} aria-label="Filtrer par catégorie">
-        {categories.map((item) => (
+      {/* ============================= FILTRES ============================= */}
+      {showFilters && (
+        <div className={styles.categorySelect} ref={categoryRef}>
           <button
-            key={item}
             type="button"
-            className={`${styles.categoryFilter} ${category === item ? styles.categoryFilterActive : ""}`}
-            onClick={() => setCategory(item)}
-            aria-pressed={category === item}
+            className={styles.categorySelectTrigger}
+            aria-haspopup="listbox"
+            aria-expanded={categoryOpen}
+            onClick={() => setCategoryOpen((open) => !open)}
           >
-            {item}
+            <span className={styles.categorySelectLabel}>Catégorie</span>
+            <span className={styles.categorySelectValue}>
+              {category}
+              <span className={styles.categoryFilterCount}>
+                {categories.find((item) => item.name === category)?.count ?? 0}
+              </span>
+            </span>
+            <span
+              className={`${styles.categorySelectChevron} ${
+                categoryOpen ? styles.categorySelectChevronOpen : ""
+              }`}
+              aria-hidden="true"
+            >
+              ↓
+            </span>
           </button>
-        ))}
-      </div>
+
+          {categoryOpen && (
+            <div
+              className={styles.categorySelectMenu}
+              role="listbox"
+              aria-label="Catégories"
+            >
+              {categories.map(({ name, count }) => (
+                <button
+                  key={name}
+                  type="button"
+                  role="option"
+                  aria-selected={category === name}
+                  className={`${styles.categorySelectOption} ${
+                    category === name ? styles.categorySelectOptionActive : ""
+                  }`}
+                  onClick={() => {
+                    setCategory(name);
+                    setCategoryOpen(false);
+                  }}
+                >
+                  <span>{name}</span>
+                  <span className={styles.categoryFilterCount}>{count}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className={styles.resultsMeta} aria-live="polite">
         <span>
-          {filteredProducts.length} produit{filteredProducts.length > 1 ? "s" : ""}
+          <strong>{filteredProducts.length}</strong> produit
+          {filteredProducts.length > 1 ? "s" : ""}
           {category !== "Toutes" ? ` dans ${category}` : ""}
         </span>
-        {(query || category !== "Toutes") && (
-          <button type="button" onClick={resetFilters}>
-            Réinitialiser les filtres
-          </button>
-        )}
+
+        <div className={styles.resultsMetaActions}>
+          {hasActiveFilters && (
+            <button type="button" onClick={resetFilters}>
+              Réinitialiser les filtres
+            </button>
+          )}
+
+          {showSort && (
+            <select
+              className={styles.sortSelect}
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortKey)}
+              aria-label="Trier les produits"
+            >
+              <option value="default">Par défaut</option>
+              <option value="price-asc">Prix croissant</option>
+              <option value="price-desc">Prix décroissant</option>
+              <option value="name">Nom (A-Z)</option>
+            </select>
+          )}
+        </div>
       </div>
 
       {/* ============================= GRILLE ============================= */}
       {filteredProducts.length === 0 ? (
         <div className={styles.empty}>
-          <p>Aucun produit ne correspond à votre recherche.</p>
-          {(query || category !== "Toutes") && (
+          <div className={styles.emptyIcon}>
+            <Search size={22} aria-hidden="true" />
+          </div>
+          <h3>Aucun produit trouvé</h3>
+          <p>
+            Essayez d&apos;autres mots-clés ou parcourez toutes les catégories
+            pour découvrir l&apos;ensemble du catalogue.
+          </p>
+          {hasActiveFilters && (
             <button type="button" onClick={resetFilters}>
               Réinitialiser la recherche
             </button>
           )}
         </div>
       ) : (
-        <div className={styles.grid}>
+        <div
+          className={styles.grid}
+          style={
+            {
+              "--catalog-columns": Math.max(1, Math.min(4, columns)),
+              "--catalog-columns-tablet": Math.max(
+                1,
+                Math.min(3, columnsTablet)
+              ),
+              "--catalog-columns-mobile": Math.max(
+                1,
+                Math.min(2, columnsMobile)
+              ),
+            } as CSSProperties
+          }
+        >
           {filteredProducts.map((product, index) => {
-            const inCart = cart.find((line) => line.product.id === product.id || line.product.name === product.name);
+            const key = productKey(product, index);
+            const inCart = cart.find(
+              (line) =>
+                line.product.id === product.id ||
+                line.product.name === product.name
+            );
+            const isPulsing = pulseKey === (product.id ?? product.name ?? "x");
+
             return (
-              <article
-                key={productKey(product, index)}
-                className={styles.card}
-              >
+              <article key={key} className={styles.card}>
                 <button
                   type="button"
                   className={styles.cardMain}
-                  onClick={() => setSelected(product)}
+                  onPointerDown={(event) => openProductOnTouch(event, product)}
+                  onClick={(event) => openProductFromCard(event, product)}
                   aria-label={`Voir ${product.name ?? "le produit"}`}
                 >
-                  <div className={styles.cardImageWrap}>
-                    {product.category && (
+                  <div className={styles.cardImageWrap} data-product-image>
+                    {showCategories && product.category && (
                       <span className={styles.cardCategory}>
                         {product.category}
                       </span>
                     )}
                     {inCart && (
-                      <span className={styles.cardBadge}>{inCart.quantity}</span>
+                      <span className={styles.cardBadge}>
+                        {inCart.quantity}
+                      </span>
                     )}
                     {productImage(product) ? (
                       <img
@@ -233,12 +519,17 @@ export default function ProductCatalog({
                     <h3 className={styles.cardTitle}>
                       {product.name || "Produit"}
                     </h3>
-                    <p className={styles.cardDescription}>
-                      {product.description || "Produit disponible sur demande."}
-                    </p>
-                    <strong className={styles.cardPrice}>
-                      {formatPrice(product.price)}
-                    </strong>
+                    {showDescriptions && (
+                      <p className={styles.cardDescription}>
+                        {product.description ||
+                          "Produit disponible sur demande."}
+                      </p>
+                    )}
+                    {showPrices && (
+                      <strong className={styles.cardPrice}>
+                        {formatPrice(product.price)}
+                      </strong>
+                    )}
                   </div>
                 </button>
 
@@ -246,18 +537,23 @@ export default function ProductCatalog({
                   <button
                     type="button"
                     className={styles.btnOutline}
-                    onClick={() => setSelected(product)}
+                    onPointerDown={(event) => openProductOnTouch(event, product)}
+                    onClick={() => openProduct(product)}
                   >
                     Voir
                   </button>
                   <button
                     type="button"
-                    className={styles.btnSolid}
+                    className={`${styles.btnSolid} ${
+                      isPulsing ? styles.btnSolidPulse : ""
+                    }`}
                     onClick={() => addToRequest(product)}
-                    aria-label={`Ajouter ${product.name ?? "le produit"} au panier`}
+                    aria-label={`Ajouter ${
+                      product.name ?? "le produit"
+                    } au panier`}
                     title="Ajouter au panier"
                   >
-                    <Plus size={13} aria-hidden="true" />
+                    <Plus size={14} aria-hidden="true" />
                   </button>
                 </div>
               </article>
@@ -270,7 +566,9 @@ export default function ProductCatalog({
       {selected && (
         <div
           className={styles.modalBackdrop}
-          onClick={() => setSelected(null)}
+          onClick={(event) => {
+            if (event.target === event.currentTarget) setSelected(null);
+          }}
           role="presentation"
         >
           <div
@@ -300,36 +598,43 @@ export default function ProductCatalog({
             </header>
 
             <div className={styles.modalBody}>
-              {productImage(selected) && (
-                <img
-                  src={productImage(selected)}
-                  alt={selected.name ?? "Produit"}
-                  className={styles.modalImage}
-                />
-              )}
-              <p className={styles.modalDescription}>
-                {selected.description || "Produit disponible sur demande."}
-              </p>
-              <strong className={styles.modalPrice}>
-                {formatPrice(selected.price)}
-              </strong>
-              <button
-                type="button"
-                className={styles.btnSolid}
-                style={{ width: "100%" }}
-                onClick={() => {
-                  addToRequest(selected);
-                  setSelected(null);
-                }}
-              >
-                <Plus size={14} aria-hidden="true" />
-                Ajouter au panier
-              </button>
+              <div className={styles.modalMedia}>
+                {productImage(selected) ? (
+                  <img
+                    src={productImage(selected)}
+                    alt={selected.name ?? "Produit"}
+                    className={styles.modalImage}
+                  />
+                ) : (
+                  <div className={styles.modalMediaFallback}>
+                    {selected.name?.slice(0, 1).toUpperCase() ?? "?"}
+                  </div>
+                )}
+              </div>
+              <div className={styles.modalContent}>
+                <p className={styles.modalDescription}>
+                  {selected.description || "Produit disponible sur demande."}
+                </p>
+                <strong className={styles.modalPrice}>
+                  {formatPrice(selected.price)}
+                </strong>
+                <button
+                  type="button"
+                  className={styles.btnSolid}
+                  style={{ width: "100%" }}
+                  onClick={() => {
+                    addToRequest(selected);
+                    setSelected(null);
+                  }}
+                >
+                  <Plus size={14} aria-hidden="true" />
+                  Ajouter au panier
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
-
     </section>
   );
 }

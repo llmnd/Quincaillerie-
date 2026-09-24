@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import PosSessionMenu from "../../components/PosSessionMenu";
 import { authHeaders } from "../../lib/auth";
+import { openSalesReceipt } from "../../lib/salesReceipt";
 import styles from "./page.module.css";
 
 type Product = {
@@ -32,6 +33,7 @@ type Draft = {
 };
 type OrderTab = { id: number; draft: Draft };
 type Customer = { id: number; name: string; email?: string | null };
+type Organization = { name?: string; logo?: string | null; email?: string | null; phone?: string | null; address?: string | null };
 type Step = "products" | "payment" | "success";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -71,6 +73,8 @@ export default function CheckoutPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [productsLoading, setProductsLoading] = useState(true);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [organization, setOrganization] = useState<Organization | null>(null);
+  const [seller, setSeller] = useState<{ full_name?: string; role?: string } | null>(null);
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("");
   const [customerQuery, setCustomerQuery] = useState("");
@@ -153,6 +157,22 @@ export default function CheckoutPage() {
       .then((r) => (r.ok ? (r.json() as Promise<Customer[]>) : []))
       .then(setCustomers)
       .catch(() => setCustomers([]));
+  }, []);
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/v1/organization/profile`, { headers: authHeaders(), credentials: "include" })
+      .then((response) => (response.ok ? (response.json() as Promise<Organization>) : null))
+      .then(setOrganization)
+      .catch(() => undefined);
+    try {
+      const stored = window.localStorage.getItem("quincaillerie_user");
+      if (stored) {
+        const parsed = JSON.parse(stored) as { full_name?: string; role?: string; user?: { full_name?: string; role?: string } };
+        setSeller(parsed.user ?? parsed);
+      }
+    } catch {
+      setSeller(null);
+    }
   }, []);
 
   /* ---------- Calculs ---------- */
@@ -332,36 +352,18 @@ export default function CheckoutPage() {
 
   function printReceipt() {
     if (!completedSale) return;
-    const w = window.open("", "_blank", "width=420,height=640");
-    if (!w) return;
-    const esc = (s: string) =>
-      s.replace(/[&<>'"]/g, (c) =>
-        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[c] ?? c));
-    const rows = completedSale.lines.map((l) =>
-      `<tr><td>${esc(l.name)}<br><small>${esc(l.sku)}</small></td><td>${l.quantity}</td><td>${l.unit_price.toLocaleString("fr-FR")}</td><td>${(l.unit_price * l.quantity).toLocaleString("fr-FR")}</td></tr>`
-    ).join("");
-    w.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Reçu #${completedSale.saleId}</title><style>
-      @page{margin:12mm}body{font-family:Arial,sans-serif;color:#111;max-width:400px;margin:0 auto;padding:16px}
-      h1{font-size:16px;margin:0 0 4px;text-align:center}
-      .muted{text-align:center;color:#666;font-size:11px;margin-bottom:14px}
-      table{width:100%;border-collapse:collapse;font-size:12px}
-      th,td{padding:6px 4px;text-align:left;border-bottom:1px solid #eee}
-      th:nth-child(n+2),td:nth-child(n+2){text-align:right}
-      .total{display:flex;justify-content:space-between;font-size:16px;font-weight:700;padding:12px 0;border-top:2px solid #111;margin-top:8px}
-      .small{font-size:11px;color:#444;padding:3px 0;display:flex;justify-content:space-between}
-      .center{text-align:center;margin-top:16px;font-size:12px;color:#555}
-    </style></head><body>
-      <h1>Reçu de vente</h1>
-      <p class="muted">Vente #${completedSale.saleId} · ${new Date().toLocaleString("fr-FR")}</p>
-      <table><thead><tr><th>Produit</th><th>Qté</th><th>PU</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table>
-      ${completedSale.discount > 0 ? `<div class="small"><span>Remise</span><strong>- ${completedSale.discount.toLocaleString("fr-FR")} FCFA</strong></div>` : ""}
-      <div class="total"><span>Total</span><strong>${completedSale.total.toLocaleString("fr-FR")} FCFA</strong></div>
-      <div class="small"><span>Mode</span><strong>${PAYMENT_LABELS[completedSale.method]}</strong></div>
-      ${completedSale.method === "cash" ? `<div class="small"><span>Reçu</span><strong>${completedSale.given.toLocaleString("fr-FR")} FCFA</strong></div><div class="small"><span>Monnaie</span><strong>${completedSale.change.toLocaleString("fr-FR")} FCFA</strong></div>` : ""}
-      <p class="center">Merci pour votre achat.</p>
-      <script>window.onload=()=>{window.print();setTimeout(()=>window.close(),400)}</script>
-    </body></html>`);
-    w.document.close();
+    openSalesReceipt({
+      ...completedSale,
+      methodLabel: PAYMENT_LABELS[completedSale.method],
+      companyName: organization?.name ?? "MIZAN ERP",
+      companyLogo: organization?.logo,
+      companyEmail: organization?.email,
+      companyPhone: organization?.phone,
+      companyAddress: organization?.address,
+      sellerName: seller?.full_name ?? "Vendeur",
+      sellerRole: seller?.role,
+      customerName: customers.find((customer) => String(customer.id) === draft?.selectedCustomer)?.name,
+    });
   }
 
   function startNewSale() {

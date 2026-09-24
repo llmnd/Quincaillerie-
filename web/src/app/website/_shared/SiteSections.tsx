@@ -3,7 +3,7 @@ import ProductCatalog from "../public/[slug]/productCatalog";
 import styles from "./preview.module.css";
 
 type Section = Readonly<{
-  id?: number;
+  id?: string | number;
   type: string;
   visible?: boolean;
   content?: Record<string, unknown>;
@@ -29,6 +29,7 @@ type SiteSectionsProps = Readonly<{
   primaryColor: string;
   secondaryColor: string;
   slug?: string;
+  fontFamily?: string;
   editable?: boolean;
 }>;
 
@@ -39,14 +40,43 @@ function text(value: unknown, fallback = ""): string {
   return typeof value === "string" || typeof value === "number" || typeof value === "boolean" ? String(value) : fallback;
 }
 
+function enabled(value: unknown): boolean {
+  return value !== false && value !== "false";
+}
+
+function spacingStyle(content: Record<string, unknown>): CSSProperties {
+  const value = (key: string, fallback: number) => {
+    const parsed = Number(content[key]);
+    return Number.isFinite(parsed) ? Math.max(0, Math.min(96, parsed)) : fallback;
+  };
+  return {
+    "--section-padding-desktop": `${value("spacingDesktop", 20)}px ${value("spacingHorizontal", 22)}px`,
+    "--section-padding-tablet": `${value("spacingTablet", 16)}px ${value("spacingHorizontalTablet", 18)}px`,
+    "--section-padding-mobile": `${value("spacingMobile", 14)}px ${value("spacingHorizontalMobile", 14)}px`,
+    "--section-gap": `${value("elementGap", 12)}px`,
+  } as CSSProperties;
+}
+
 function rich(value: unknown, fallback: string): string {
   const html = text(value);
   return html ? sanitizeInlineHtml(html) : fallback;
 }
 
+function publicLink(value: unknown, slug?: string): string | undefined {
+  const link = text(value).trim();
+  if (!link) return slug ? `/site/${slug}` : undefined;
+  if (!slug || link.startsWith("#") || /^(?:https?:|mailto:|tel:)/i.test(link)) return link;
+  if (link === "/" || link === "/accueil" || link === "accueil") return `/site/${slug}`;
+  if (link === `/site/${slug}` || link.startsWith(`/site/${slug}/`)) return link;
+  const path = link.replace(/^\/+/, "");
+  return `/site/${slug}/${path}`;
+}
+
 export function sanitizeInlineHtml(value: string): string {
   return value
-    .replace(/<(?!\/?(?:strong|em|u|a)(?:\s[^>]*)?>)[^>]*>/gi, "")
+    .replace(/<div(?:\s[^>]*)?>/gi, "<br>")
+    .replace(/<\/div>/gi, "")
+    .replace(/<(?!\/?(?:strong|em|u|a|br)(?:\s[^>]*)?>)[^>]*>/gi, "")
     .replace(/\s(?:style|class|id|target|rel)\s*=\s*(["']).*?\1/gi, "")
     .replace(/href\s*=\s*(["'])\s*(?:javascript:|data:).*?\1/gi, 'href="#"')
     .trim();
@@ -93,7 +123,7 @@ function ProductCards({ products, gallery = false }: { products: Product[]; gall
   );
 }
 
-export default function SiteSections({ sections, products, siteName, textColor, secondaryTextColor, primaryColor, secondaryColor, slug }: SiteSectionsProps) {
+export default function SiteSections({ sections, products, siteName, textColor, secondaryTextColor, primaryColor, secondaryColor, slug, fontFamily }: SiteSectionsProps) {
   return <>{sections.filter((section) => section.visible !== false).map((section, index) => {
     const content = section.content ?? {};
     const key = section.id ?? `${section.type}-${index}`;
@@ -102,25 +132,53 @@ export default function SiteSections({ sections, products, siteName, textColor, 
     const body = text(content.text, text(content.subtitle, "Contenu de cette section."));
     const titleHtml = rich(content.titleHtml, title);
     const bodyHtml = rich(content.textHtml, body);
-    const buttonHtml = rich(content.buttonTextHtml, text(content.buttonText));
+    const buttonText = text(content.buttonText, "Découvrir");
+    const storedButtonHtml = text(content.buttonTextHtml);
+    const buttonHtml = rich(
+      storedButtonHtml.includes(buttonText) ? storedButtonHtml : buttonText,
+      buttonText,
+    );
+    const hasButton = Boolean(text(content.buttonText) || storedButtonHtml);
 
     if (section.type === "products" && slug) {
       const catalogProducts = products.map((product) => ({ ...product, image: imageOf(product), price: product.price ?? product.unit_price ?? null }));
-      return <ProductCatalog key={key} slug={slug} products={catalogProducts} primaryColor={primaryColor} secondaryColor={secondaryColor} textColor={textColor} secondaryTextColor={secondaryTextColor} />;
+      return <ProductCatalog
+        key={key}
+        slug={slug}
+        products={catalogProducts}
+        introText={text(content.subtitle, text(content.text, "Choisissez vos produits et envoyez votre demande directement à l'entreprise."))}
+        showPrices={enabled(content.show_price) && enabled(content.showPrices)}
+        showDescriptions={enabled(content.show_description) && enabled(content.showDescriptions)}
+        showCategories={enabled(content.show_category) && enabled(content.showCategories)}
+        showSearch={enabled(content.show_search) && enabled(content.showSearch)}
+        showFilters={enabled(content.show_filters) && enabled(content.showFilters)}
+        columns={Number(content.columns ?? 3) || 3}
+        columnsTablet={Number(content.columns_tablet ?? 2) || 2}
+        columnsMobile={Number(content.columns_mobile ?? 2) || 2}
+        spacingDesktop={Number(content.spacingDesktop ?? 20) || 20}
+        spacingTablet={Number(content.spacingTablet ?? 16) || 16}
+        spacingMobile={Number(content.spacingMobile ?? 14) || 14}
+        elementGap={Number(content.elementGap ?? 12) || 12}
+        primaryColor={primaryColor}
+        secondaryColor={secondaryColor}
+        textColor={textColor}
+        secondaryTextColor={secondaryTextColor}
+        fontFamily={fontFamily}
+      />;
     }
 
     if (section.type === "hero") {
-      return <section key={key} className={styles.previewSiteBlock}><div className={styles.heroPreviewContent}><div><p className={styles.previewEyebrow}>{siteName}</p><h3 style={styleFor(content, "title")} dangerouslySetInnerHTML={{ __html: titleHtml }} /><p style={{ color: secondaryTextColor, ...styleFor(content, "text") }} dangerouslySetInnerHTML={{ __html: bodyHtml }} />{text(content.buttonText) && <a href={slug ? text(content.buttonLink, "#contact") : undefined} className={styles.editableButton} style={styleFor(content, "button")} dangerouslySetInnerHTML={{ __html: buttonHtml }} />}</div>{imageUrl ? <div className={styles.previewHeroImage}><img src={imageUrl} alt={title} loading="lazy" decoding="async" /></div> : <div className={styles.heroPreviewVisual}>Image</div>}</div></section>;
+      return <section key={key} className={`${styles.previewSiteBlock} ${styles.heroBlock} siteHeroBlock`} style={{ ...spacingStyle(content), "--site-primary": primaryColor, "--site-secondary": secondaryColor, "--site-text": textColor, "--site-secondary-text": secondaryTextColor, fontFamily } as CSSProperties}><div className={styles.heroPreviewContent}><div><p className={styles.previewEyebrow}>{siteName}</p><h3 style={styleFor(content, "title")} dangerouslySetInnerHTML={{ __html: titleHtml }} /><p style={{ color: secondaryTextColor, ...styleFor(content, "text") }} dangerouslySetInnerHTML={{ __html: bodyHtml }} />{hasButton && <a href={publicLink(content.buttonLink, slug)} className={styles.editableButton} style={styleFor(content, "button")} dangerouslySetInnerHTML={{ __html: buttonHtml }} />}</div>{imageUrl ? <div className={styles.previewHeroImage}><img src={imageUrl} alt={title} loading="lazy" decoding="async" /></div> : <div className={styles.heroPreviewVisual}>Image</div>}</div></section>;
     }
 
     if (section.type === "banner") {
-      return <section key={key} className={styles.previewSiteBlock}>{imageUrl && <div className={styles.previewBannerImage}><img src={imageUrl} alt={title} loading="lazy" decoding="async" /></div>}<h3 style={styleFor(content, "title")} dangerouslySetInnerHTML={{ __html: titleHtml }} /><p style={{ color: secondaryTextColor, ...styleFor(content, "text") }} dangerouslySetInnerHTML={{ __html: bodyHtml }} /></section>;
+      return <section key={key} className={styles.previewSiteBlock} style={spacingStyle(content)}>{imageUrl && <div className={styles.previewBannerImage}><img src={imageUrl} alt={title} loading="lazy" decoding="async" /></div>}<h3 style={styleFor(content, "title")} dangerouslySetInnerHTML={{ __html: titleHtml }} /><p style={{ color: secondaryTextColor, ...styleFor(content, "text") }} dangerouslySetInnerHTML={{ __html: bodyHtml }} /></section>;
     }
 
     if (section.type === "gallery") {
-      return <section key={key} className={styles.previewSiteBlock}><h3 style={styleFor(content, "title")}>{title}</h3><ProductCards products={products} gallery /></section>;
+      return <section key={key} className={styles.previewSiteBlock} style={spacingStyle(content)}><h3 style={styleFor(content, "title")}>{title}</h3><ProductCards products={products} gallery /></section>;
     }
 
-    return <section key={key} className={styles.previewSiteBlock}>{imageUrl && <div className={styles.previewSectionImage}><img src={imageUrl} alt={title} loading="lazy" decoding="async" /></div>}<h3 style={styleFor(content, "title")} dangerouslySetInnerHTML={{ __html: titleHtml }} /><p style={{ color: secondaryTextColor, ...styleFor(content, "text") }} dangerouslySetInnerHTML={{ __html: bodyHtml }} /></section>;
+    return <section key={key} className={styles.previewSiteBlock} style={spacingStyle(content)}>{imageUrl && <div className={styles.previewSectionImage}><img src={imageUrl} alt={title} loading="lazy" decoding="async" /></div>}<h3 style={styleFor(content, "title")} dangerouslySetInnerHTML={{ __html: titleHtml }} /><p style={{ color: secondaryTextColor, ...styleFor(content, "text") }} dangerouslySetInnerHTML={{ __html: bodyHtml }} /></section>;
   })}</>;
 }

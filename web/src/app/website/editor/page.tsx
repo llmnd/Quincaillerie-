@@ -12,6 +12,7 @@ import {
   EyeOff,
   FileText,
   FolderPlus,
+  Globe,
   ImageIcon,
   LayoutGrid,
   Menu,
@@ -92,7 +93,20 @@ type OrganizationProfile = {
   address?: string | null;
 };
 
-type AccordionKey = "pages" | "blocks" | "style" | "theme" | null;
+type SocialLinks = {
+  facebook: string;
+  instagram: string;
+  linkedin: string;
+  twitter: string;
+};
+
+type MediaItem = {
+  id?: number;
+  name?: string;
+  url: string;
+};
+
+type AccordionKey = "pages" | "blocks" | "style" | "contact" | "theme" | null;
 
 const defaultTheme: WebsiteTheme = {
   primary: "#111827",
@@ -118,6 +132,10 @@ const library = [
   { type: "about", label: "À propos", icon: <FolderPlus size={20} /> },
   { type: "contact", label: "Contact", icon: <Phone size={20} /> },
   { type: "gallery", label: "Images", icon: <ImageIcon size={20} /> },
+  { type: "testimonials", label: "Avis", icon: <Type size={20} /> },
+  { type: "features", label: "Services", icon: <LayoutGrid size={20} /> },
+  { type: "faq", label: "FAQ", icon: <FileText size={20} /> },
+  { type: "map", label: "Carte", icon: <Globe size={20} /> },
   { type: "footer", label: "Pied de page", icon: <Settings2 size={20} /> },
 ];
 
@@ -128,6 +146,13 @@ const themePresets = [
   { name: "Forest",   primary: "#14532d", secondary: "#16a34a", background: "#f0fdf4", text: "#14532d" },
   { name: "Ocean",    primary: "#0c4a6e", secondary: "#0ea5e9", background: "#f0f9ff", text: "#0c4a6e" },
   { name: "Midnight", primary: "#f8fafc", secondary: "#0ea5a4", background: "#0f172a", text: "#f8fafc" },
+];
+
+const siteTemplates = [
+  { key: "commerce", name: "Boutique", description: "Catalogue et demandes de panier", theme: themePresets[0] },
+  { key: "services", name: "Services", description: "Présentation d'une activité", theme: themePresets[3] },
+  { key: "portfolio", name: "Portfolio", description: "Images et réalisations", theme: themePresets[4] },
+  { key: "restaurant", name: "Restaurant", description: "Menu et contact rapide", theme: themePresets[2] },
 ];
 
 /* ============================================================
@@ -156,6 +181,19 @@ function sizeToCss(key: string | undefined, fallback: string | number = ""): str
 function weightToCss(key: string | undefined, fallback: string | number = ""): string | number {
   const found = WEIGHT_OPTIONS.find((w) => w.key === key);
   return found?.css ?? fallback;
+}
+
+function sectionSpacingStyle(content: Record<string, unknown>): React.CSSProperties {
+  const value = (key: string, fallback: number) => {
+    const parsed = Number(content[key]);
+    return Number.isFinite(parsed) ? Math.max(0, Math.min(96, parsed)) : fallback;
+  };
+  return {
+    "--section-padding-desktop": `${value("spacingDesktop", 20)}px ${value("spacingHorizontal", 22)}px`,
+    "--section-padding-tablet": `${value("spacingTablet", 16)}px ${value("spacingHorizontalTablet", 18)}px`,
+    "--section-padding-mobile": `${value("spacingMobile", 14)}px ${value("spacingHorizontalMobile", 14)}px`,
+    "--section-gap": `${value("elementGap", 12)}px`,
+  } as React.CSSProperties;
 }
 
 /* ============================================================
@@ -292,23 +330,15 @@ function EditableText({
         const raw = event.currentTarget.innerHTML;
         const next = raw.trim() ? sanitizeInlineHtml(raw) : value;
         if (next !== value) onCommit?.(next);
-        if (htmlValue && event.currentTarget.innerHTML !== next) {
-          event.currentTarget.innerHTML = next;
-        } else if (!htmlValue && event.currentTarget.textContent !== next) {
-          event.currentTarget.textContent = next;
-        }
+        if (event.currentTarget.innerHTML !== next) event.currentTarget.innerHTML = next;
       }}
       onInput={(event: React.FormEvent<HTMLElement>) => {
         const next = sanitizeInlineHtml(event.currentTarget.innerHTML);
         onCommit?.(next);
       }}
       onKeyDown={(event: React.KeyboardEvent<HTMLElement>) => {
-        if (event.key === "Enter" && !event.shiftKey) {
-          event.preventDefault();
-          event.currentTarget.blur();
-        }
         if (event.key === "Escape") {
-          event.currentTarget.textContent = value;
+          event.currentTarget.innerHTML = htmlValue ? sanitizeInlineHtml(htmlValue) : sanitizeInlineHtml(value);
           event.currentTarget.blur();
         }
       }}
@@ -616,10 +646,18 @@ export default function WebsiteEditorPage() {
   const [websiteTheme, setWebsiteTheme] = useState<WebsiteTheme>(defaultTheme);
   const [pageDraft, setPageDraft] = useState({ name: "", slug: "" });
   const [organizationProfile, setOrganizationProfile] = useState<OrganizationProfile | null>(null);
+  const [socialLinks, setSocialLinks] = useState<SocialLinks>({
+    facebook: "",
+    instagram: "",
+    linkedin: "",
+    twitter: "",
+  });
+  const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
   const [editorMode, setEditorMode] = useState<"edit" | "preview">("edit");
   const [deviceMode, setDeviceMode] = useState<"desktop" | "tablet" | "mobile">("desktop");
   const [hoveredElementId, setHoveredElementId] = useState<string | null>(null);
   const [inlineTextColor, setInlineTextColor] = useState("#111827");
+  const [inlineLinkDraft, setInlineLinkDraft] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [savingPage, setSavingPage] = useState(false);
   const [savingSite, setSavingSite] = useState(false);
@@ -635,6 +673,7 @@ export default function WebsiteEditorPage() {
   const undoStack = useRef<EditorSnapshot[]>([]);
   const redoStack = useRef<EditorSnapshot[]>([]);
   const lastHistoryAt = useRef(0);
+  const inlineSelection = useRef<Range | null>(null);
 
   /* ---------- Data fetching ---------- */
   async function fetchWebsiteTheme() {
@@ -644,8 +683,17 @@ export default function WebsiteEditorPage() {
       cache: "no-store",
     });
     if (!response.ok) return;
-    const data = (await response.json()) as { theme?: WebsiteTheme };
+    const data = (await response.json()) as {
+      theme?: WebsiteTheme;
+      settings?: { social_links?: Partial<SocialLinks> };
+    };
     setWebsiteTheme({ ...defaultTheme, ...(data.theme ?? {}) });
+    setSocialLinks({
+      facebook: data.settings?.social_links?.facebook ?? "",
+      instagram: data.settings?.social_links?.instagram ?? "",
+      linkedin: data.settings?.social_links?.linkedin ?? "",
+      twitter: data.settings?.social_links?.twitter ?? "",
+    });
   }
 
   async function fetchPages() {
@@ -695,11 +743,23 @@ export default function WebsiteEditorPage() {
     setCompanyProducts(data.filter((product) => product && typeof product.name === "string"));
   }
 
+  async function fetchMedia() {
+    const response = await fetch(`${API_URL}/api/v1/websites/current/media`, {
+      credentials: "include",
+      headers: { Accept: "application/json", ...authHeaders() },
+      cache: "no-store",
+    });
+    if (!response.ok) return;
+    const data = (await response.json()) as { media?: MediaItem[] };
+    setMediaItems(Array.isArray(data.media) ? data.media.filter((item) => item?.url) : []);
+  }
+
   useEffect(() => {
     void (async () => {
       await fetchWebsiteTheme();
       await fetchPages();
       await fetchProducts();
+      await fetchMedia();
       try {
         const response = await fetch(`${API_URL}/api/v1/organization/profile`, {
           credentials: "include",
@@ -901,8 +961,21 @@ export default function WebsiteEditorPage() {
   function insertInlineLink() {
     if (!selectedElementId) return;
     const current = String(selectedSection?.content?.[selectedTextKey("Link")] ?? "");
-    const next = window.prompt("Adresse du lien", current || "https://");
-    if (next !== null) updateInlineTextStyle("Link", next.trim());
+    const selection = window.getSelection();
+    inlineSelection.current = selection?.rangeCount ? selection.getRangeAt(0).cloneRange() : null;
+    setInlineLinkDraft(current || "https://");
+  }
+
+  function applyInlineLink() {
+    if (inlineLinkDraft === null) return;
+    const selection = window.getSelection();
+    if (inlineSelection.current && selection) {
+      selection.removeAllRanges();
+      selection.addRange(inlineSelection.current);
+    }
+    formatInline("createLink", inlineLinkDraft.trim());
+    updateInlineTextStyle("Link", inlineLinkDraft.trim());
+    setInlineLinkDraft(null);
   }
 
   function formatInline(command: "bold" | "italic" | "underline" | "createLink", value?: string) {
@@ -966,6 +1039,7 @@ export default function WebsiteEditorPage() {
       tabIndex: isEditable ? 0 : undefined,
       "data-section-id": previewSectionId,
       "data-editor-type": "section" as const,
+      style: sectionSpacingStyle(content),
     };
 
     const isTitleActive = selectedSectionId === section.id;
@@ -1006,7 +1080,7 @@ export default function WebsiteEditorPage() {
       return (
         <section
           key={sectionKey}
-          className={`${previewStyles.previewSiteBlock} ${isSectionSelected ? previewStyles.previewSiteBlockSelected : ""}`}
+          className={`${previewStyles.previewSiteBlock} ${previewStyles.heroBlock} ${isSectionSelected ? previewStyles.previewSiteBlockSelected : ""}`}
           {...sectionWrapperProps}
         >
           <div className={previewStyles.heroPreviewContent}>
@@ -1074,9 +1148,12 @@ export default function WebsiteEditorPage() {
               >
                 <EditableText
                   value={String(content.buttonText ?? "Découvrir")}
-                  htmlValue={String(content.buttonTextHtml ?? "")}
+                  htmlValue={
+                    String(content.buttonTextHtml ?? "").includes(String(content.buttonText ?? "Découvrir"))
+                      ? String(content.buttonTextHtml ?? "")
+                      : ""
+                  }
                   editable={isEditable}
-                  link={String(content.buttonLink ?? "")}
                   active={isTitleActive}
                   focused={isButtonFocused}
                   hovered={hoveredElementId === "button" && isTitleActive}
@@ -1109,7 +1186,7 @@ export default function WebsiteEditorPage() {
       return (
         <section
           key={sectionKey}
-          className={`${previewStyles.previewSiteBlock} ${isSectionSelected ? previewStyles.previewSiteBlockSelected : ""}`}
+          className={`${previewStyles.previewSiteBlock} ${previewStyles.heroBlock} ${isSectionSelected ? previewStyles.previewSiteBlockSelected : ""}`}
           {...sectionWrapperProps}
         >
           {imageUrl ? (
@@ -1195,6 +1272,29 @@ export default function WebsiteEditorPage() {
             onCommit={commitTitle}
             onHoverChange={(hovering) =>
               setHoveredElementId((c) => (hovering ? "title" : c === "title" ? null : c))
+            }
+          />
+          <EditableText
+            as="p"
+            value={String(content.subtitle ?? "Choisissez vos produits et envoyez votre demande directement à l'entreprise.")}
+            htmlValue={String(content.textHtml ?? "")}
+            editable={isEditable}
+            link={String(content.textLink ?? "")}
+            active={isTitleActive}
+            focused={isSubtitleFocused}
+            hovered={hoveredElementId === "subtitle" && isTitleActive}
+            className={subtitleClass}
+            style={{
+              ...inlineStyle("subtitle"),
+              fontSize: sizeToCss(String(content.textSize ?? ""), ""),
+              fontWeight: weightToCss(String(content.textWeight ?? ""), "") as React.CSSProperties["fontWeight"],
+            }}
+            data-section-id={previewSectionId}
+            data-element-id="subtitle"
+            onSelect={() => selectSectionElement(section, "subtitle")}
+            onCommit={(next) => commitSectionElementValue(section.id ?? null, "subtitle", next)}
+            onHoverChange={(hovering) =>
+              setHoveredElementId((c) => (hovering ? "subtitle" : c === "subtitle" ? null : c))
             }
           />
           <div className={previewStyles.productGrid}>
@@ -1414,6 +1514,21 @@ export default function WebsiteEditorPage() {
     }).catch((error) => console.error("Theme preset failed", error));
   }
 
+  async function applySiteTemplate(template: (typeof siteTemplates)[number]) {
+    await applyThemePreset(template.theme);
+    const response = await fetch(`${API_URL}/api/v1/websites/current`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { Accept: "application/json", "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ template: template.key }),
+    });
+    if (!response.ok) {
+      showToast("Le modèle n'a pas pu être appliqué");
+      return;
+    }
+    showToast(`Modèle « ${template.name} » appliqué`);
+  }
+
   function extractErrorMessage(value: unknown): string {
     if (typeof value === "string") return value.trim();
     if (Array.isArray(value)) return value.map((item) => extractErrorMessage(item)).filter(Boolean).join(" ");
@@ -1506,6 +1621,13 @@ export default function WebsiteEditorPage() {
       showToast("Sélectionnez d'abord une page");
       return;
     }
+    const sectionDefaults: Record<string, Record<string, unknown>> = {
+      products: { title: "Nos produits", subtitle: "Choisissez vos produits et envoyez votre demande directement à l'entreprise.", show_price: true, show_description: true, show_category: true, show_search: true, show_filters: true, columns: 3, columns_tablet: 2, columns_mobile: 1 },
+      testimonials: { title: "Ils nous font confiance", subtitle: "Découvrez les retours de nos clients." },
+      features: { title: "Nos services", subtitle: "Des solutions pensées pour votre activité." },
+      faq: { title: "Questions fréquentes", subtitle: "Les réponses aux questions les plus courantes." },
+      map: { title: "Nous trouver", subtitle: "Retrouvez-nous facilement." },
+    };
     const response = await fetch(`${API_URL}/api/v1/websites/pages/${selectedPageId}/sections`, {
       method: "POST",
       credentials: "include",
@@ -1513,7 +1635,7 @@ export default function WebsiteEditorPage() {
       body: JSON.stringify({
         type,
         position: sections.length,
-        content: { title: `Nouvelle section ${sections.length + 1}` },
+        content: sectionDefaults[type] ?? { title: `Nouvelle section ${sections.length + 1}` },
         settings: {},
         visible: true,
       }),
@@ -1713,11 +1835,41 @@ export default function WebsiteEditorPage() {
           "Content-Type": "application/json",
           ...authHeaders(),
         },
-        body: JSON.stringify({ theme: websiteTheme }),
+        body: JSON.stringify({
+          theme: websiteTheme,
+          settings: {
+            social_links: Object.fromEntries(
+              Object.entries(socialLinks).map(([key, value]) => [key, value.trim() || null]),
+            ),
+          },
+        }),
       });
       if (!currentWebsiteResponse.ok) {
         const payload = await currentWebsiteResponse.json().catch(() => null);
         throw new Error(extractErrorMessage(payload) || "Impossible de sauvegarder le thème");
+      }
+
+      if (organizationProfile) {
+        const organizationResponse = await fetch(`${API_URL}/api/v1/organization/profile`, {
+          method: "PUT",
+          credentials: "include",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            ...authHeaders(),
+          },
+          body: JSON.stringify({
+            name: organizationProfile.name?.trim() || "Votre entreprise",
+            logo: organizationProfile.logo ?? null,
+            email: organizationProfile.email?.trim() || null,
+            phone: organizationProfile.phone?.trim() || null,
+            address: organizationProfile.address?.trim() || null,
+          }),
+        });
+        if (!organizationResponse.ok) {
+          const payload = await organizationResponse.json().catch(() => null);
+          throw new Error(extractErrorMessage(payload) || "Impossible de sauvegarder les coordonnées");
+        }
       }
 
       const pagePromises = pages
@@ -2060,6 +2212,37 @@ export default function WebsiteEditorPage() {
                     </button>
                   )}
                 </div>
+                {selectedPage && (
+                  <div className={styles.styleGroup}>
+                    <span className={styles.styleGroupTitle}>SEO de la page</span>
+                    <label className={styles.fieldLabel}>
+                      <span>Titre SEO</span>
+                      <input
+                        className={styles.input}
+                        maxLength={255}
+                        value={selectedPage.meta_title ?? ""}
+                        onChange={(event) => void updatePageMetadata({ meta_title: event.target.value })}
+                      />
+                    </label>
+                    <label className={styles.fieldLabel}>
+                      <span>Description SEO</span>
+                      <textarea
+                        className={styles.textarea}
+                        maxLength={500}
+                        value={selectedPage.meta_description ?? ""}
+                        onChange={(event) => void updatePageMetadata({ meta_description: event.target.value })}
+                      />
+                    </label>
+                    <label className={styles.checkboxRow}>
+                      <input
+                        type="checkbox"
+                        checked={selectedPage.published !== false}
+                        onChange={(event) => void updatePageMetadata({ published: event.target.checked })}
+                      />
+                      <span>Page publiée</span>
+                    </label>
+                  </div>
+                )}
               </Accordion>
 
               <Accordion
@@ -2186,41 +2369,91 @@ export default function WebsiteEditorPage() {
                       {selectedSection.id ? <span>#{selectedSection.id}</span> : null}
                     </div>
 
-                    <label className={styles.fieldLabel}>
-                      <span>Titre</span>
-                      <input
-                        className={styles.input}
-                        value={String(selectedSection.content?.title ?? "")}
-                        onChange={(e) => updateSelectedSectionField("title", e.target.value)}
-                      />
-                    </label>
-
-                    {(selectedSection.type === "hero" ||
-                      selectedSection.type === "banner" ||
-                      selectedSection.type === "text" ||
-                      selectedSection.type === "about" ||
-                      selectedSection.type === "contact" ||
-                      selectedSection.type === "footer") && (
-                      <label className={styles.fieldLabel}>
-                        <span>Sous-titre / texte</span>
-                        <textarea
-                          className={styles.textarea}
-                          value={String(
-                            selectedSection.content?.subtitle ??
-                              selectedSection.content?.text ??
-                              "",
-                          )}
-                          onChange={(e) =>
-                            updateSelectedSectionField(
-                              selectedSection.type === "hero" || selectedSection.type === "banner"
-                                ? "subtitle"
-                                : "text",
-                              e.target.value,
-                            )
-                          }
-                        />
-                      </label>
+                    {selectedSection.type === "products" && (
+                      <div className={styles.styleGroup}>
+                        <span className={styles.styleGroupTitle}>Options du catalogue</span>
+                        {[
+                          ["show_price", "Afficher les prix"],
+                          ["show_category", "Afficher les catégories"],
+                          ["show_description", "Afficher les descriptions"],
+                          ["show_search", "Afficher la recherche"],
+                          ["show_filters", "Afficher les filtres"],
+                        ].map(([key, label]) => {
+                          const value = selectedSection.content?.[key];
+                          return (
+                            <label key={key} className={styles.checkboxRow}>
+                              <input
+                                type="checkbox"
+                                checked={value !== false && value !== "false"}
+                                onChange={(event) => updateSelectedSectionField(key, String(event.target.checked))}
+                              />
+                              <span>{label}</span>
+                            </label>
+                          );
+                        })}
+                        <label className={styles.fieldLabel}>
+                          <span>Colonnes sur ordinateur</span>
+                          <select
+                            className={styles.select}
+                            value={String(selectedSection.content?.columns ?? "3")}
+                            onChange={(event) => updateSelectedSectionField("columns", event.target.value)}
+                          >
+                            <option value="1">1 colonne</option>
+                            <option value="2">2 colonnes</option>
+                            <option value="3">3 colonnes</option>
+                            <option value="4">4 colonnes</option>
+                          </select>
+                        </label>
+                        <label className={styles.fieldLabel}>
+                          <span>Colonnes sur tablette</span>
+                          <select
+                            className={styles.select}
+                            value={String(selectedSection.content?.columns_tablet ?? "2")}
+                            onChange={(event) => updateSelectedSectionField("columns_tablet", event.target.value)}
+                          >
+                            <option value="1">1 colonne</option>
+                            <option value="2">2 colonnes</option>
+                            <option value="3">3 colonnes</option>
+                          </select>
+                        </label>
+                        <label className={styles.fieldLabel}>
+                          <span>Colonnes sur mobile</span>
+                          <select
+                            className={styles.select}
+                            value={String(selectedSection.content?.columns_mobile ?? "1")}
+                            onChange={(event) => updateSelectedSectionField("columns_mobile", event.target.value)}
+                          >
+                            <option value="1">1 colonne</option>
+                            <option value="2">2 colonnes</option>
+                          </select>
+                        </label>
+                      </div>
                     )}
+
+                    <div className={styles.styleGroup}>
+                      <span className={styles.styleGroupTitle}>Espacement</span>
+                      {[
+                        ["spacingDesktop", "Intérieur ordinateur", "20"],
+                        ["spacingTablet", "Intérieur tablette", "16"],
+                        ["spacingMobile", "Intérieur mobile", "14"],
+                        ["elementGap", "Entre les éléments", "12"],
+                      ].map(([key, label, fallback]) => (
+                        <label key={key} className={styles.rangeField}>
+                          <span>{label}</span>
+                          <div className={styles.rangeRow}>
+                            <input
+                              type="range"
+                              min="0"
+                              max="64"
+                              step="1"
+                              value={String(selectedSection.content?.[key] ?? fallback)}
+                              onChange={(event) => updateSelectedSectionField(key, event.target.value)}
+                            />
+                            <output>{String(selectedSection.content?.[key] ?? fallback)} px</output>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
 
                     <div className={styles.styleGroup}>
                       <span className={styles.styleGroupTitle}>Titre</span>
@@ -2271,20 +2504,36 @@ export default function WebsiteEditorPage() {
                       <ImagePicker
                         label="Image de la section"
                         value={String(selectedSection.content?.image ?? "")}
-                        onChange={(url) => updateSelectedSectionField("image", url)}
+                        onChange={(url) => {
+                          updateSelectedSectionField("image", url);
+                          if (url && !mediaItems.some((item) => item.url === url)) {
+                            void fetchMedia();
+                          }
+                        }}
                       />
+                      {mediaItems.length > 0 && (
+                        <div className={styles.mediaLibrary}>
+                          <span className={styles.styleMiniLabel}>Bibliothèque</span>
+                          <div className={styles.mediaGrid}>
+                            {mediaItems.slice(-12).map((item) => (
+                              <button
+                                key={`${item.id ?? item.url}-${item.url}`}
+                                type="button"
+                                className={`${styles.mediaThumb} ${String(selectedSection.content?.image ?? "") === item.url ? styles.mediaThumbActive : ""}`}
+                                title={item.name ?? "Image"}
+                                onClick={() => updateSelectedSectionField("image", item.url)}
+                              >
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={item.url} alt={item.name ?? "Image"} />
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {selectedSection.type === "hero" && (
                       <>
-                        <label className={styles.fieldLabel}>
-                          <span>Texte du bouton</span>
-                          <input
-                            className={styles.input}
-                            value={String(selectedSection.content?.buttonText ?? "")}
-                            onChange={(e) => updateSelectedSectionField("buttonText", e.target.value)}
-                          />
-                        </label>
                         <label className={styles.fieldLabel}>
                           <span>Lien du bouton</span>
                           <input
@@ -2322,6 +2571,56 @@ export default function WebsiteEditorPage() {
               </Accordion>
 
               <Accordion
+                id="contact"
+                title="Coordonnées & réseaux"
+                icon={<Globe size={14} />}
+                open={openAccordion === "contact"}
+                onToggle={() => setOpenAccordion((c) => (c === "contact" ? null : "contact"))}
+              >
+                <div className={styles.stylePanel}>
+                  <p className={styles.emptyHint}>
+                    Ces informations seront utilisées dans la section contact et le pied de page de votre site.
+                  </p>
+                  <label className={styles.fieldLabel}>
+                    <span>Adresse</span>
+                    <input
+                      className={styles.input}
+                      value={organizationProfile?.address ?? ""}
+                      placeholder="Adresse de l’entreprise"
+                      onChange={(event) =>
+                        setOrganizationProfile((current) => ({
+                          ...(current ?? {}),
+                          address: event.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                  {([
+                    ["facebook", "Facebook", "https://facebook.com/..."],
+                    ["instagram", "Instagram", "https://instagram.com/..."],
+                    ["linkedin", "LinkedIn", "https://linkedin.com/in/..."],
+                    ["twitter", "X / Twitter", "https://x.com/..."],
+                  ] as const).map(([key, label, placeholder]) => (
+                    <label key={key} className={styles.fieldLabel}>
+                      <span>{label}</span>
+                      <input
+                        className={styles.input}
+                        type="url"
+                        value={socialLinks[key]}
+                        placeholder={placeholder}
+                        onChange={(event) =>
+                          setSocialLinks((current) => ({
+                            ...current,
+                            [key]: event.target.value,
+                          }))
+                        }
+                      />
+                    </label>
+                  ))}
+                </div>
+              </Accordion>
+
+              <Accordion
                 id="theme"
                 title="Thème"
                 icon={<Palette size={14} />}
@@ -2329,6 +2628,20 @@ export default function WebsiteEditorPage() {
                 onToggle={() => setOpenAccordion((c) => (c === "theme" ? null : "theme"))}
               >
                 <div className={styles.themePanel}>
+                  <div className={styles.themePresetHeader}>Modèles de site</div>
+                  <div className={styles.templateGrid}>
+                    {siteTemplates.map((template) => (
+                      <button
+                        key={template.key}
+                        type="button"
+                        className={styles.templateCard}
+                        onClick={() => void applySiteTemplate(template)}
+                      >
+                        <strong>{template.name}</strong>
+                        <span>{template.description}</span>
+                      </button>
+                    ))}
+                  </div>
                   <div className={styles.themePresetHeader}>Palettes rapides</div>
                   <div className={styles.themePresets}>
                     {themePresets.map((preset) => {
@@ -2540,10 +2853,27 @@ export default function WebsiteEditorPage() {
                     <button type="button" className={styles.inlineToolbarButton} onClick={() => updateInlineTextStyle("Align", "left")} aria-label="Aligner à gauche"><AlignLeft size={14} /></button>
                     <button type="button" className={styles.inlineToolbarButton} onClick={() => updateInlineTextStyle("Align", "center")} aria-label="Centrer"><AlignCenter size={14} /></button>
                     <button type="button" className={styles.inlineToolbarButton} onClick={() => updateInlineTextStyle("Align", "right")} aria-label="Aligner à droite"><AlignRight size={14} /></button>
-                    <button type="button" className={styles.inlineToolbarButton} onMouseDown={(event) => event.preventDefault()} onClick={() => {
-                      const current = window.prompt("Adresse du lien", "https://");
-                      if (current) formatInline("createLink", current.trim());
-                    }} aria-label="Insérer un lien">↗</button>
+                    {inlineLinkDraft === null ? (
+                      <button type="button" className={styles.inlineToolbarButton} onMouseDown={(event) => event.preventDefault()} onClick={insertInlineLink} aria-label="Insérer un lien">↗</button>
+                    ) : (
+                      <form
+                        className={styles.inlineLinkForm}
+                        onSubmit={(event) => {
+                          event.preventDefault();
+                          applyInlineLink();
+                        }}
+                      >
+                        <input
+                          className={styles.inlineLinkInput}
+                          value={inlineLinkDraft}
+                          onChange={(event) => setInlineLinkDraft(event.target.value)}
+                          aria-label="Adresse du lien"
+                          autoFocus
+                        />
+                        <button type="submit" className={styles.inlineToolbarButton} aria-label="Appliquer le lien">OK</button>
+                        <button type="button" className={styles.inlineToolbarButton} onClick={() => setInlineLinkDraft(null)} aria-label="Annuler">×</button>
+                      </form>
+                    )}
                   </div>
                 )}
                 <header className={previewStyles.siteHeader}>
@@ -2565,7 +2895,9 @@ export default function WebsiteEditorPage() {
                     aria-expanded={previewMenuOpen}
                     onClick={() => setPreviewMenuOpen((open) => !open)}
                   >
-                    {previewMenuOpen ? <X size={18} /> : <Menu size={18} />}
+                    {previewMenuOpen ? <X size={18} strokeWidth={1.35} /> : (
+                      <span className={previewStyles.menuLines} aria-hidden="true"><span /><span /></span>
+                    )}
                   </button>
                   <nav className={`${previewStyles.siteNav} ${previewMenuOpen ? previewStyles.siteNavOpen : ""}`}>
                     <a href="#">{websiteTheme.headerHome || "Accueil"}</a>

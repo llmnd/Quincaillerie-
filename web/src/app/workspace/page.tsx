@@ -32,7 +32,7 @@ const modules = [
   { name: "Clients", href: "/clients", icon: Users, image: "https://i.pinimg.com/1200x/6d/6e/98/6d6e98e8fd33d1b657418c65eb5600d0.jpg" },
   { name: "Stock", href: "/stock", icon: Boxes, image: "https://i.pinimg.com/736x/71/16/ba/7116bafcb4ae414d6fd8c74a8cd2a46b.jpg" },
   { name: "Élevage", href: "/farming", icon: Bird, image: "https://i.pinimg.com/originals/6e/cd/13/6ecd136e249649f0ba8452d13613bcfd.gif" },
-  { name: "Website", href: "/website", icon: Settings, image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=900&q=80" },
+  { name: "Website", href: "/website", icon: Settings, image: "https://i.pinimg.com/736x/fd/3d/63/fd3d63be7d641568898e7bfefdaff288.jpg" },
   { name: "Admin", href: "/admin", icon: Settings, image: "https://i.pinimg.com/1200x/8b/a4/80/8ba4808a95e33280a92660249a971bbd.jpg", adminOnly: true },
 ];
 
