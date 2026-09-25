@@ -10,7 +10,7 @@ MODULE_CATALOG: tuple[dict[str, object], ...] = (
     {"key": "cash", "label": "Caisse", "description": "Sessions et clôtures", "href": "/cash", "required": False},
     {"key": "products", "label": "Produits", "description": "Catalogue et tarifs", "href": "/products", "required": True},
     {"key": "users", "label": "Utilisateurs", "description": "Comptes et droits", "href": "/settings/users", "required": True},
-    {"key": "customers", "label": "Clients", "description": "Contacts et comptes clients", "href": "/clients", "required": False},
+    {"key": "customers", "label": "Clients", "description": "Contacts et comptes clients", "href": "/clients", "required": True},
     {"key": "suppliers", "label": "Fournisseurs", "description": "Fournisseurs et approvisionnements", "href": "/suppliers", "required": False},
     {"key": "stock", "label": "Stock", "description": "Inventaire et mouvements", "href": "/stock", "required": False},
     {"key": "accounting", "label": "Comptabilité", "description": "Taxes, factures et journaux", "href": "/accounting", "required": False},

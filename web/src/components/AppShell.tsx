@@ -36,6 +36,15 @@ type Application = {
   roles: string[];
   moduleKey?: string;
 };
+type NavigationItem = {
+  label: string;
+  href: string;
+  icon: typeof ShoppingCart;
+  image?: string;
+  roles?: string[];
+  moduleKey?: string;
+};
+type NavigationGroup = { label: string; items: NavigationItem[] };
 type BreadcrumbItem = { href: string; label: string };
 
 const breadcrumbLabels: Record<string, string> = {
@@ -65,6 +74,7 @@ const breadcrumbLabels: Record<string, string> = {
 };
 
 const breadcrumbStorageKey = "quincaillerie_breadcrumbs";
+const sidebarScrollStorageKey = "quincaillerie_sidebar_scroll";
 
 function BreadcrumbTrail({
   items,
@@ -163,18 +173,50 @@ const applications: Application[] = [
   { label: "Administration", description: "Utilisateurs, rapports et comptabilité", href: "/admin", icon: Settings, roles: ["admin"], moduleKey: "users" },
 ];
 
-const sidebarItems = [
-  { label: "Apps", href: "/workspace", icon: LayoutGrid, image: "https://i.pinimg.com/1200x/98/ed/1c/98ed1c73a25c35145917f361dd010358.jpg" },
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, image: "https://i.pinimg.com/1200x/a8/13/3f/a8133f8bcfac2c7f80958f5aeb31c574.jpg" },
-  { label: "Ventes", href: "/sales", icon: ShoppingCart, image: "https://i.pinimg.com/1200x/cf/f9/34/cff9349aa326663fdbff5b863c4c3a72.jpg", moduleKey: "sales" },
-  { label: "Caisse", href: "/cash", icon: WalletCards, image: "https://i.pinimg.com/736x/8c/33/e3/8c33e3983e190056f12c75841a8ecdd0.jpg", moduleKey: "cash" },
-  { label: "Finances", href: "/erp", icon: Calculator, image: "https://i.pinimg.com/1200x/98/ed/1c/98ed1c73a25c35145917f361dd010358.jpg", roles: ["admin"], moduleKey: "accounting" },
-  { label: "Produits", href: "/products", icon: Package, image: "https://i.pinimg.com/1200x/06/a0/80/06a080194e88100b55e25cdfdf51d7f4.jpg", moduleKey: "products" },
-  { label: "Clients", href: "/clients", icon: Users, image: "https://i.pinimg.com/1200x/6d/6e/98/6d6e98e8fd33d1b657418c65eb5600d0.jpg", moduleKey: "customers" },
-  { label: "Stock", href: "/stock", icon: Boxes, image: "https://i.pinimg.com/736x/71/16/ba/7116bafcb4ae414d6fd8c74a8cd2a46b.jpg", roles: ["admin"], moduleKey: "stock" },
-  { label: "Élevage", href: "/farming", icon: Bird, image: "https://i.pinimg.com/originals/6e/cd/13/6ecd136e249649f0ba8452d13613bcfd.gif", moduleKey: "farming" },
-  { label: "Website", href: "/website", icon: LayoutGrid, image: "https://i.pinimg.com/736x/fd/3d/63/fd3d63be7d641568898e7bfefdaff288.jpg", moduleKey: "website" },
-  { label: "Admin", href: "/admin", icon: Settings, image: "https://i.pinimg.com/1200x/8b/a4/80/8ba4808a95e33280a92660249a971bbd.jpg", roles: ["admin"], moduleKey: "users" },
+const dashboardItem: NavigationItem = { label: "Tableau de bord", href: "/dashboard", icon: LayoutDashboard };
+
+const navigationGroups: NavigationGroup[] = [
+  {
+    label: "Ventes",
+    items: [
+      { label: "Ventes", href: "/sales", icon: ShoppingCart, image: "https://i.pinimg.com/1200x/cf/f9/34/cff9349aa326663fdbff5b863c4c3a72.jpg", roles: ["admin", "seller"], moduleKey: "sales" },
+      { label: "Produits", href: "/products", icon: Package, image: "https://i.pinimg.com/1200x/06/a0/80/06a080194e88100b55e25cdfdf51d7f4.jpg", roles: ["admin", "seller"], moduleKey: "products" },
+      { label: "Point de vente", href: "/cash", icon: WalletCards, image: "https://i.pinimg.com/736x/8c/33/e3/8c33e3983e190056f12c75841a8ecdd0.jpg", roles: ["admin", "seller"], moduleKey: "cash" },
+      { label: "Clients", href: "/clients", icon: Users, image: "https://i.pinimg.com/1200x/24/66/1a/24661a325c83c8d64a022e85c6178dc5.jpg", roles: ["admin", "seller"], moduleKey: "customers" },
+    ],
+  },
+  {
+    label: "Finance",
+    items: [
+      { label: "Finances", href: "/erp", icon: WalletCards, image: "https://i.pinimg.com/1200x/98/ed/1c/98ed1c73a25c35145917f361dd010358.jpg", roles: ["admin"], moduleKey: "accounting" },
+      { label: "Comptabilité", href: "/accounting", icon: Calculator, image: "https://i.pinimg.com/1200x/66/11/f0/6611f0185c4505a4cebc10c4d6a0ed4c.jpg", roles: ["admin"], moduleKey: "accounting" },
+      { label: "Facturation", href: "/erp", icon: Calculator, image: "https://i.pinimg.com/1200x/5c/b8/ca/5cb8ca17d7ec1740b18e66a93eea677f.jpg", roles: ["admin"], moduleKey: "accounting" },
+      { label: "Rapports", href: "/reports", icon: LayoutGrid, image: "https://i.pinimg.com/736x/9b/b1/98/9bb198d2773dd86500af0a77df6b4631.jpg", roles: ["admin"], moduleKey: "accounting" },
+    ],
+  },
+  {
+    label: "Logistique",
+    items: [
+      { label: "Opérations quotidiennes", href: "/orders", icon: ShoppingCart, image: "https://i.pinimg.com/1200x/cf/f9/34/cff9349aa326663fdbff5b863c4c3a72.jpg", roles: ["admin", "seller"], moduleKey: "sales" },
+      { label: "Analyse des opérations", href: "/reports", icon: LayoutGrid, image: "https://i.pinimg.com/1200x/e3/d5/9d/e3d59d60c2891e39457dc635b6fc89ab.jpg", roles: ["admin"], moduleKey: "accounting" },
+      { label: "Métriques d'entreprise", href: "/dashboard", icon: LayoutDashboard, image: "https://i.pinimg.com/1200x/a8/13/3f/a8133f8bcfac2c7f80958f5aeb31c574.jpg" },
+      { label: "Stock", href: "/stock", icon: Boxes, image: "https://i.pinimg.com/736x/71/16/ba/7116bafcb4ae414d6fd8c74a8cd2a46b.jpg", roles: ["admin"], moduleKey: "stock" },
+    ],
+  },
+  {
+    label: "Site web",
+    items: [
+      { label: "eCommerce", href: "/website", icon: LayoutGrid, image: "https://i.pinimg.com/736x/fd/3d/63/fd3d63be7d641568898e7bfefdaff288.jpg", roles: ["admin", "seller"], moduleKey: "website" },
+    ],
+  },
+  {
+    label: "Administration",
+    items: [
+      { label: "Utilisateurs", href: "/settings/users", icon: Users, roles: ["admin"], moduleKey: "users" },
+      { label: "Modules", href: "/settings/modules", icon: Settings, roles: ["admin"], moduleKey: "users" },
+      { label: "Support", href: "/settings/support", icon: Settings, roles: ["admin"], moduleKey: "users" },
+    ],
+  },
 ];
 
 export default function AppShell({
@@ -183,12 +225,14 @@ export default function AppShell({
   hideSidebar = false,
   hideContentPadding = false,
   showBreadcrumbWhenHidden = false,
+  minimalSidebar = false,
 }: Readonly<{
   children: React.ReactNode;
   hideTopbar?: boolean;
   hideSidebar?: boolean;
   hideContentPadding?: boolean;
   showBreadcrumbWhenHidden?: boolean;
+  minimalSidebar?: boolean;
 }>) {
   const router = useRouter();
   const pathname = usePathname();
@@ -206,6 +250,7 @@ export default function AppShell({
   const [breadcrumbsReady, setBreadcrumbsReady] = useState(false);
   const navigationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const sidebarRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     setIsHydrated(true);
@@ -242,7 +287,7 @@ export default function AppShell({
     (route) => pathname === route || pathname.startsWith(`${route}/`)
   );
   const allModuleKeys = new Set(
-    sidebarItems.flatMap((item) => (item.moduleKey ? [item.moduleKey] : []))
+    navigationGroups.flatMap((group) => group.items.flatMap((item) => (item.moduleKey ? [item.moduleKey] : [])))
   );
 
   const modulesQuery = useQuery<ModuleState[]>({
@@ -303,6 +348,16 @@ export default function AppShell({
     if (navigationTimerRef.current) clearTimeout(navigationTimerRef.current);
     navigationTimerRef.current = null;
     setIsNavigating(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    const savedScroll = window.sessionStorage.getItem(sidebarScrollStorageKey);
+    if (!savedScroll) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      if (sidebarRef.current) sidebarRef.current.scrollTop = Number(savedScroll) || 0;
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, [pathname]);
 
   useEffect(
@@ -398,7 +453,7 @@ export default function AppShell({
     };
   }, [isUserMenuOpen]);
 
-  const shouldHideSidebar = hideSidebar || isSidebarCollapsed;
+  const shouldHideSidebar = hideSidebar || minimalSidebar || isSidebarCollapsed;
   const enabledModuleKeys = new Set(
     (modulesQuery.data ?? [])
       .filter((module) => module.enabled)
@@ -410,14 +465,15 @@ export default function AppShell({
     breadcrumbs.length > 0
       ? breadcrumbs
       : [{ href: pathname, label: breadcrumbLabels[pathname] ?? pathname }];
-  const visibleSidebar = isHydrated
-    ? sidebarItems.filter((item) => {
-        const allowedByRole = !item.roles || (role ? item.roles.includes(role) : false);
-        if (!allowedByRole) return false;
-        const moduleKey = item.moduleKey ?? "";
-        return moduleKey.length === 0 || safeEnabledModules.has(moduleKey);
-      })
-    : sidebarItems;
+  const isVisibleItem = (item: NavigationItem) => {
+    const allowedByRole = !isHydrated || !item.roles || (role ? item.roles.includes(role) : false);
+    if (!allowedByRole) return false;
+    const moduleKey = item.moduleKey ?? "";
+    return !isHydrated || moduleKey.length === 0 || safeEnabledModules.has(moduleKey);
+  };
+  const visibleGroups = navigationGroups
+    .map((group) => ({ ...group, items: group.items.filter(isVisibleItem) }))
+    .filter((group) => group.items.length > 0);
   const safeUser = isHydrated
     ? effectiveUser
     : { full_name: "Utilisateur", email: "", role: undefined };
@@ -432,10 +488,20 @@ export default function AppShell({
     router.prefetch(route);
   }
 
+  function isNavigationItemActive(route: string) {
+    return pathname === route || (route !== "/" && pathname.startsWith(`${route}/`));
+  }
+
   function startNavigation(route: string) {
     if (route === pathname) return;
     if (navigationTimerRef.current) clearTimeout(navigationTimerRef.current);
     navigationTimerRef.current = setTimeout(() => setIsNavigating(true), 250);
+  }
+
+  function preserveSidebarScroll() {
+    if (sidebarRef.current) {
+      window.sessionStorage.setItem(sidebarScrollStorageKey, String(sidebarRef.current.scrollTop));
+    }
   }
 
   function handleBack() {
@@ -468,19 +534,54 @@ export default function AppShell({
     router.replace("/");
   }
 
+  function renderSidebarToggleIcon() {
+    if (hideSidebar) return <ArrowLeft size={14} />;
+    if (isSidebarCollapsed) return <PanelLeftOpen size={14} />;
+    return <PanelLeftClose size={14} />;
+  }
+
+  let sidebarToggleLabel = "Masquer";
+  let sidebarToggleAriaLabel = "Masquer le menu";
+  if (hideSidebar) {
+    sidebarToggleLabel = "Retour";
+    sidebarToggleAriaLabel = "Retour";
+  } else if (isSidebarCollapsed) {
+    sidebarToggleLabel = "Menu";
+    sidebarToggleAriaLabel = "Afficher le menu";
+  }
+
   return (
     <div
       className={styles.shell}
       aria-busy={sessionQuery.isPending || isNavigating ? "true" : undefined}
     >
+      <a className={styles.skipLink} href="#app-main-content">
+        Aller au contenu
+      </a>
+
       {isNavigating && (
         <output className={styles.navigationLoading} aria-label="Chargement de la page">
           <span />
         </output>
       )}
 
-      {!shouldHideSidebar && (
-        <aside className={styles.sidebar}>
+      {minimalSidebar && (
+        <button
+          type="button"
+          className={`${styles.backButton} ${styles.backButtonPrimary} ${styles.floatingBackButton}`}
+          onClick={handleBack}
+          aria-label="Retour"
+          title="Retour"
+        >
+          <span className={styles.backIcon} aria-hidden="true">
+            <ArrowLeft size={15} strokeWidth={2.2} />
+          </span>
+          <span className={styles.backLabel}>Retour</span>
+        </button>
+      )}
+
+      {!shouldHideSidebar && !minimalSidebar && (
+        <aside ref={sidebarRef} className={styles.sidebar}>
           <div className={styles.sidebarTop}>
             <button
               type="button"
@@ -511,32 +612,59 @@ export default function AppShell({
             className={menuOpen ? styles.sidebarNavOpen : styles.sidebarNav}
             aria-label="Navigation"
           >
-            {visibleSidebar.map((item) => (
-              <Link
-                key={`${item.href}-${item.label}`}
-                href={item.href}
-                onClick={() => {
-                  setMenuOpen(false);
-                  startNavigation(item.href);
-                }}
-                onMouseEnter={() => prefetchRoute(item.href)}
-                onFocus={() => prefetchRoute(item.href)}
-                className={pathname === item.href ? styles.navActive : styles.navItem}
-              >
-                {item.image ? (
-                  <img
-                    src={item.image}
-                    alt=""
-                    className={styles.navImage}
-                    onError={(event) => {
-                      event.currentTarget.style.display = "none";
-                    }}
-                  />
-                ) : (
-                  <item.icon size={17} strokeWidth={1.8} aria-hidden="true" />
-                )}
-                {item.label}
-              </Link>
+            <Link
+              href={dashboardItem.href}
+              onClick={() => {
+                preserveSidebarScroll();
+                setMenuOpen(false);
+                startNavigation(dashboardItem.href);
+              }}
+              onMouseEnter={() => prefetchRoute(dashboardItem.href)}
+              onFocus={() => prefetchRoute(dashboardItem.href)}
+              className={isNavigationItemActive(dashboardItem.href) ? styles.navActive : styles.navItem}
+              aria-current={isNavigationItemActive(dashboardItem.href) ? "page" : undefined}
+            >
+              <dashboardItem.icon size={17} strokeWidth={1.8} aria-hidden="true" />
+              {dashboardItem.label}
+            </Link>
+
+            <div className={styles.navDivider} aria-hidden="true" />
+
+            {visibleGroups.map((group) => (
+              <section key={group.label} className={styles.navSection} aria-labelledby={`nav-${group.label}`}>
+                <h2 id={`nav-${group.label}`} className={styles.navLabel}>{group.label}</h2>
+                <div className={styles.navSectionItems}>
+                  {group.items.map((item) => (
+                    <Link
+                      key={`${item.href}-${item.label}`}
+                      href={item.href}
+                      onClick={() => {
+                        preserveSidebarScroll();
+                        setMenuOpen(false);
+                        startNavigation(item.href);
+                      }}
+                      onMouseEnter={() => prefetchRoute(item.href)}
+                      onFocus={() => prefetchRoute(item.href)}
+                      className={isNavigationItemActive(item.href) ? styles.navActive : styles.navItem}
+                      aria-current={isNavigationItemActive(item.href) ? "page" : undefined}
+                    >
+                      {item.image ? (
+                        <img
+                          src={item.image}
+                          alt=""
+                          className={styles.navImage}
+                          onError={(event) => {
+                            event.currentTarget.style.display = "none";
+                          }}
+                        />
+                      ) : (
+                        <item.icon size={16} strokeWidth={1.8} aria-hidden="true" />
+                      )}
+                      <span>{item.label}</span>
+                    </Link>
+                  ))}
+                </div>
+              </section>
             ))}
           </nav>
 
@@ -558,7 +686,11 @@ export default function AppShell({
         </aside>
       )}
 
-      <main className={shouldHideSidebar ? styles.mainAreaFull : styles.mainArea}>
+      <main
+        id="app-main-content"
+        className={`${shouldHideSidebar ? styles.mainAreaFull : styles.mainArea} ${minimalSidebar ? styles.mainAreaMinimal : ""}`}
+        tabIndex={-1}
+      >
         {hideTopbar && showBreadcrumbWhenHidden && (
           <BreadcrumbTrail items={visibleBreadcrumbs} className={styles.breadcrumbOverlay} />
         )}
@@ -566,19 +698,21 @@ export default function AppShell({
         {!hideTopbar && (
           <header className={styles.topbar}>
             <div className={styles.topbarLeft}>
-              {!hideSidebar && (
+              {!hideSidebar && !minimalSidebar && (
                 <button
                   type="button"
                   className={styles.backButton}
-                  onClick={() => setIsSidebarCollapsed((value) => !value)}
-                  aria-label={isSidebarCollapsed ? "Afficher le menu" : "Masquer le menu"}
+                  onClick={() => {
+                    if (hideSidebar) {
+                      handleBack();
+                    } else {
+                      setIsSidebarCollapsed((value) => !value);
+                    }
+                  }}
+                  aria-label={sidebarToggleAriaLabel}
                 >
-                  {isSidebarCollapsed ? (
-                    <PanelLeftOpen size={14} />
-                  ) : (
-                    <PanelLeftClose size={14} />
-                  )}
-                  <span>{isSidebarCollapsed ? "Menu" : "Masquer"}</span>
+                  {renderSidebarToggleIcon()}
+                  <span>{sidebarToggleLabel}</span>
                 </button>
               )}
 

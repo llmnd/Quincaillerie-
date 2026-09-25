@@ -18,6 +18,7 @@ async function getJson<T>(path: string): Promise<T | null> {
 }
 
 export async function loadWebsiteTheme(): Promise<{
+  slug?: string | null;
   theme?: WebsiteTheme;
   template?: string | null;
   settings?: { social_links?: Partial<SocialLinks> };

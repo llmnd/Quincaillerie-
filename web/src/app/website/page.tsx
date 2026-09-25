@@ -845,7 +845,7 @@ export default function WebsiteConfigPage() {
 
   if (loading) {
     return (
-      <AppShell>
+      <AppShell minimalSidebar>
         <div className={styles.shell}>
           <aside className={styles.sidebar}>
             <div className={styles.sidebarHeader}>
@@ -879,7 +879,7 @@ export default function WebsiteConfigPage() {
   const previewSlug = form.slug || website?.slug || "preview";
 
   return (
-    <AppShell>
+    <AppShell minimalSidebar>
       <div className={styles.shell}>
         <button
           type="button"

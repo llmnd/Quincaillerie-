@@ -43,6 +43,8 @@ import {
 } from "lucide-react";
 import AppShell from "../../../components/AppShell";
 import CartBadge from "../public/[slug]/CartBadge";
+import CartPage from "../public/[slug]/CartPage";
+import ProductCatalog from "../public/[slug]/productCatalog";
 import { authHeaders } from "../../../lib/auth";
 import styles from "./page.module.css";
 import previewStyles from "../_shared/preview.module.css";
@@ -100,6 +102,7 @@ export default function WebsiteEditorPage() {
   const [dragOverPageId, setDragOverPageId] = useState<number | null>(null);
   const [dragOverSectionId, setDragOverSectionId] = useState<string | number | null>(null);
   const [websiteTheme, setWebsiteTheme] = useState<WebsiteTheme>(defaultTheme);
+  const [websiteSlug, setWebsiteSlug] = useState<string | null>(null);
   const [siteTemplate, setSiteTemplate] = useState<string>("commerce");
   const [pageDraft, setPageDraft] = useState({ name: "", slug: "" });
   const [organizationProfile, setOrganizationProfile] = useState<OrganizationProfile | null>(null);
@@ -111,6 +114,7 @@ export default function WebsiteEditorPage() {
   });
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
   const [editorMode, setEditorMode] = useState<"edit" | "preview">("edit");
+  const [previewPage, setPreviewPage] = useState<"home" | "products" | "cart" | "checkout">("home");
   const [deviceMode, setDeviceMode] = useState<"desktop" | "tablet" | "mobile">("desktop");
   const [hoveredElementId, setHoveredElementId] = useState<string | null>(null);
   const [inlineTextColor, setInlineTextColor] = useState("#111827");
@@ -329,9 +333,16 @@ export default function WebsiteEditorPage() {
     const handlePointerDown = (event: MouseEvent) => {
       const target = event.target as HTMLElement | null;
       if (!target) return;
-      const insideEditableTarget = target.closest("[data-section-id]") || target.closest("[role='toolbar']");
+
+      const insideEditableTarget = target.closest("[data-section-id]");
       const insideContentToolbar = target.closest("[aria-label='Mise en forme du texte']");
-      if (insideEditableTarget || insideContentToolbar) return;
+      const insideSidebar = target.closest("[data-editor-sidebar]");
+      const insidePreviewShell = target.closest("[data-preview-shell]");
+      const insideEditorShell = target.closest("[data-editor-shell]");
+
+      if (insideEditableTarget || insideContentToolbar || insideSidebar) return;
+      if (insideEditorShell && !insidePreviewShell) return;
+
       clearSelection();
     };
     document.addEventListener("pointerdown", handlePointerDown, true);
@@ -444,6 +455,7 @@ export default function WebsiteEditorPage() {
   async function fetchWebsiteTheme() {
     const data = await loadWebsiteTheme();
     if (!data) return;
+    setWebsiteSlug(data.slug?.trim() || null);
     setWebsiteTheme({ ...defaultTheme, ...(data.theme ?? {}) });
     setSiteTemplate(data.template || "commerce");
     setSocialLinks({
@@ -502,6 +514,7 @@ export default function WebsiteEditorPage() {
      ============================================================ */
   const selectedPage = pages.find((page) => page.id === selectedPageId) ?? null;
   const selectedSection = previewSections.find((section) => section.id === selectedSectionId) ?? null;
+  const productsSection = sections.find((section) => section.type === "products") ?? null;
 
   const selectedThemeField: keyof WebsiteTheme | null =
     (selectedElementId && HEADER_THEME_KEYS.includes(selectedElementId as (typeof HEADER_THEME_KEYS)[number])
@@ -1361,7 +1374,7 @@ export default function WebsiteEditorPage() {
   /* ============================================================
      Valeurs dérivées header
      ============================================================ */
-  const currentSiteSlug = pageDraft.slug || pages.find((page) => page.id === selectedPageId)?.slug || "preview";
+  const currentSiteSlug = websiteSlug || "preview";
   const organizationName = organizationProfile?.name?.trim() || "Votre entreprise";
   const organizationLogo = organizationProfile?.logo || "";
   const headerBrandText = websiteTheme.headerBrand?.trim() || organizationName;
@@ -1390,7 +1403,7 @@ export default function WebsiteEditorPage() {
      ============================================================ */
   if (!isReady) {
     return (
-      <AppShell>
+      <AppShell minimalSidebar>
         <div style={{ padding: 24, color: "#111827" }}>Chargement de l&apos;éditeur…</div>
       </AppShell>
     );
@@ -1410,9 +1423,10 @@ export default function WebsiteEditorPage() {
      JSX
      ============================================================ */
   return (
-    <AppShell>
+    <AppShell minimalSidebar>
       <div
         className={`${styles.editorShell} ${previewStyles.themeRoot}`}
+        data-editor-shell
         data-ui-theme={darkMode ? "dark" : "light"}
         data-radius={websiteTheme.radius ?? "medium"}
         data-btn={websiteTheme.buttonStyle ?? "rounded"}
@@ -1441,6 +1455,7 @@ export default function WebsiteEditorPage() {
           <aside
             className={`${styles.panel} ${styles.sidebar}`}
             data-mobile-open={mobileSidebarOpen || undefined}
+            data-editor-sidebar
           >
             {/* Brand */}
             <div className={styles.sidebarBrand}>
@@ -1462,23 +1477,6 @@ export default function WebsiteEditorPage() {
                 title={sidebarCollapsed ? "Afficher (⇧⌘B)" : "Masquer (⇧⌘B)"}
               >
                 {sidebarCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
-              </button>
-              <button
-                type="button"
-                className={styles.sidebarCloseMobile}
-                onClick={() => setDarkMode((v) => !v)}
-                aria-label={darkMode ? "Thème clair" : "Thème sombre"}
-                title={darkMode ? "Thème clair" : "Thème sombre"}
-              >
-                {darkMode ? <Sun size={16} /> : <Moon size={16} />}
-              </button>
-              <button
-                type="button"
-                className={styles.sidebarCloseMobile}
-                onClick={() => setMobileSidebarOpen(false)}
-                aria-label="Fermer"
-              >
-                <X size={16} />
               </button>
             </div>
 
@@ -1563,24 +1561,6 @@ export default function WebsiteEditorPage() {
                 >
                   <Redo2 size={14} />
                 </button>
-                <a
-                  className={styles.deviceIconButton}
-                  href={`/site/${currentSiteSlug}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title="Voir le site public"
-                  aria-label="Voir le site public"
-                >
-                  <ExternalLink size={14} />
-                </a>
-                <button
-                  type="button"
-                  className={styles.ghostButton}
-                  onClick={() => void discardChanges()}
-                  title="Annuler toutes les modifications"
-                >
-                  <X size={13} />
-                </button>
                 <button
                   type="button"
                   className={styles.saveButtonPrimary}
@@ -1592,64 +1572,7 @@ export default function WebsiteEditorPage() {
                 </button>
               </div>
               {saveMessage ? <div className={styles.saveToast}>{saveMessage}</div> : null}
-              {autoSaveStatus === "saving" && (
-                <div className={styles.autoSaveHint}>Sauvegarde auto…</div>
-              )}
-              {autoSaveStatus === "saved" && lastSavedAt && (
-                <div className={styles.autoSaveHint}>
-                  Sauvegardé {formatRelativeTime(lastSavedAt)}
-                </div>
-              )}
-              <div className={styles.shortcutsHint} aria-hidden>
-                <span>⌘S sauver</span>
-                <span>⌘Z annuler</span>
-                <span>⌘K preview</span>
-              </div>
             </div>
-
-            {/* Santé du site */}
-            <button
-              type="button"
-              className={styles.healthToggle}
-              onClick={() => setHealthPanelOpen((v) => !v)}
-              data-has-issues={healthIssues.length > 0 || undefined}
-            >
-              {healthIssues.length === 0 ? (
-                <CheckCircle2 size={13} />
-              ) : (
-                <AlertTriangle size={13} />
-              )}
-              <span>Santé du site</span>
-              <span className={styles.healthCount}>{healthIssues.length}</span>
-            </button>
-            {healthPanelOpen && (
-              <div className={styles.healthPanel}>
-                {healthIssues.length === 0 ? (
-                  <div className={styles.healthOk}>
-                    <CheckCircle2 size={16} />
-                    <span>Tout est bon !</span>
-                  </div>
-                ) : (
-                  healthIssues.map((issue, i) => (
-                    <button
-                      key={i}
-                      type="button"
-                      className={styles.healthIssue}
-                      data-level={issue.level}
-                      onClick={() => {
-                        if (issue.sectionId != null) {
-                          const s = sections.find((x) => x.id === issue.sectionId);
-                          if (s) selectSectionElement(s, "title");
-                        }
-                      }}
-                    >
-                      <AlertTriangle size={12} />
-                      <span>{issue.message}</span>
-                    </button>
-                  ))
-                )}
-              </div>
-            )}
 
             {/* Accordéons */}
             <div className={styles.accordionStack}>
@@ -2634,7 +2557,12 @@ export default function WebsiteEditorPage() {
                       ["headerServices", headerServicesText, "#"],
                       ["headerContact", headerContactText, "#contact"],
                     ].map(([key, label, href]) => (
-                      <a key={key} href={href}>
+                        <a key={key} href={href} onClick={(event) => {
+                          if (editorMode !== "preview") return;
+                          const nextPage = key === "headerProducts" ? "products" : "home";
+                          event.preventDefault();
+                          setPreviewPage(nextPage);
+                        }}>
                         {editorMode === "edit" ? (
                           <EditableText
                             as="span"
@@ -2662,6 +2590,8 @@ export default function WebsiteEditorPage() {
                   </nav>
                   <CartBadge
                     slug={currentSiteSlug}
+                    href={websiteSlug ? `/site/${websiteSlug}/panier` : "/website/editor"}
+                    onNavigate={() => setPreviewPage("cart")}
                     textColor={websiteTheme.text ?? "#111827"}
                     secondaryColor={websiteTheme.secondary ?? "#714B67"}
                     editable={editorMode === "edit"}
@@ -2710,24 +2640,93 @@ export default function WebsiteEditorPage() {
 
                 <main className={previewStyles.siteBody}>
                   <div className={previewStyles.siteMainContent}>
-                    <SiteSections
-                      sections={displaySections}
-                      products={companyProducts}
-                      siteName={organizationProfile?.name || "Votre entreprise"}
-                      textColor={websiteTheme.text ?? "#111827"}
-                      secondaryTextColor={websiteTheme.secondaryText ?? "#475569"}
-                      primaryColor={websiteTheme.primary ?? "#111827"}
-                      secondaryColor={websiteTheme.secondary ?? "#714B67"}
-                      slug={currentSiteSlug}
-                      fontFamily={websiteTheme.font ?? "Inter, sans-serif"}
-                      editable={editorMode === "edit"}
-                      selectedSectionId={selectedSectionId}
-                      onSelectSection={selectSectionElement}
-                      onTextChange={(section, elementId, nextValue) => {
-                        setHasUnsavedChanges(true);
-                        commitSectionElementValue(section.id ?? null, elementId, nextValue);
-                      }}
-                    />
+                    {previewPage === "home" ? (
+                      <SiteSections
+                        sections={displaySections}
+                        products={companyProducts}
+                        siteName={organizationProfile?.name || "Votre entreprise"}
+                        textColor={websiteTheme.text ?? "#111827"}
+                        secondaryTextColor={websiteTheme.secondaryText ?? "#475569"}
+                        primaryColor={websiteTheme.primary ?? "#111827"}
+                        secondaryColor={websiteTheme.secondary ?? "#714B67"}
+                        slug={currentSiteSlug}
+                        fontFamily={websiteTheme.font ?? "Inter, sans-serif"}
+                        editable={editorMode === "edit"}
+                        selectedSectionId={selectedSectionId}
+                        onSelectSection={selectSectionElement}
+                        onNavigate={(href) => {
+                          if (href.endsWith("/produits")) setPreviewPage("products");
+                        }}
+                        onTextChange={(section, elementId, nextValue) => {
+                          setHasUnsavedChanges(true);
+                          commitSectionElementValue(section.id ?? null, elementId, nextValue);
+                        }}
+                      />
+                    ) : previewPage === "products" ? (
+                      <ProductCatalog
+                        slug={currentSiteSlug}
+                        products={companyProducts}
+                        eyebrowText={String(productsSection?.content?.eyebrow ?? "Catalogue")}
+                        title={String(productsSection?.content?.title ?? "Nos produits")}
+                        introText={String(productsSection?.content?.subtitle ?? "Choisissez vos produits et envoyez votre demande directement à l'entreprise.")}
+                        primaryColor={websiteTheme.primary ?? "#111827"}
+                        secondaryColor={websiteTheme.secondary ?? "#714B67"}
+                        textColor={websiteTheme.text ?? "#111827"}
+                        secondaryTextColor={websiteTheme.secondaryText ?? "#475569"}
+                        fontFamily={websiteTheme.font ?? "Inter, sans-serif"}
+                        editable={editorMode === "edit"}
+                        sectionId={productsSection?.id ?? "products-page"}
+                        onSelectField={(field) => {
+                          if (!productsSection) return;
+                          selectSectionElement(productsSection, field === "title" ? "title" : "text");
+                        }}
+                        onTextChange={(field, value) => {
+                          if (!productsSection?.id) return;
+                          const contentKey = field === "introText" ? "subtitle" : field;
+                          commitSectionElementValue(productsSection.id, contentKey, value);
+                        }}
+                      />
+                    ) : previewPage === "cart" ? (
+                      <CartPage
+                        slug={currentSiteSlug}
+                        onNavigate={() => setPreviewPage("checkout")}
+                        siteName={organizationProfile?.name || "Votre entreprise"}
+                        primaryColor={websiteTheme.primary ?? "#111827"}
+                        secondaryColor={websiteTheme.secondary ?? "#714B67"}
+                        textColor={websiteTheme.text ?? "#111827"}
+                        secondaryTextColor={websiteTheme.secondaryText ?? "#475569"}
+                      />
+                    ) : (
+                      <section style={{ padding: "32px", maxWidth: 760, margin: "0 auto" }}>
+                        <EditableText
+                          as="p"
+                          value={websiteTheme.checkoutEyebrow ?? "Dernière étape"}
+                          editable={editorMode === "edit"}
+                          data-section-id="checkout-preview"
+                          data-element-id="checkoutEyebrow"
+                          data-editor-type="text"
+                          onCommit={(value) => void updateThemeValue("checkoutEyebrow", value || "Dernière étape")}
+                        />
+                        <EditableText
+                          as="h1"
+                          value={websiteTheme.checkoutTitle ?? "Votre commande"}
+                          editable={editorMode === "edit"}
+                          data-section-id="checkout-preview"
+                          data-element-id="checkoutTitle"
+                          data-editor-type="text"
+                          onCommit={(value) => void updateThemeValue("checkoutTitle", value || "Votre commande")}
+                        />
+                        <EditableText
+                          as="p"
+                          value={websiteTheme.checkoutLead ?? "Le formulaire de commande s’affichera ici dans le site publié."}
+                          editable={editorMode === "edit"}
+                          data-section-id="checkout-preview"
+                          data-element-id="checkoutLead"
+                          data-editor-type="text"
+                          onCommit={(value) => void updateThemeValue("checkoutLead", value || "Le formulaire de commande s’affichera ici dans le site publié.")}
+                        />
+                      </section>
+                    )}
                   </div>
                 </main>
 

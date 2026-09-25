@@ -41,6 +41,9 @@ export type PublicWebsiteTheme = {
   headerCartColor?: string;
   headerCartCountColor?: string;
   headerStyle?: string;
+  checkoutEyebrow?: string;
+  checkoutTitle?: string;
+  checkoutLead?: string;
 };
 
 export type PublicWebsiteOrganization = {

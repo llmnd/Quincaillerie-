@@ -829,16 +829,31 @@ export default function DashboardPage() {
             </div>
 
             {activeMetric === "sales" && (
-              <div className={styles.metricModalContent}>
-                <div className={styles.modalSummary}>
-                  <strong>{formatMoney(todayRevenue)}</strong>
-                  <span>{todaySales.length} vente{todaySales.length > 1 ? "s" : ""} aujourd&apos;hui</span>
+              <div className={`${styles.metricModalContent} ${styles.salesModalContent}`}>
+                <div className={styles.salesModalOverview}>
+                  <div className={styles.salesModalTotal}>
+                    <span className={styles.salesModalLabel}>Chiffre d&apos;affaires</span>
+                    <strong>{formatMoney(todayRevenue)}</strong>
+                  </div>
+                  <div className={styles.salesModalCount}>
+                    <span className={styles.salesModalLabel}>Transactions</span>
+                    <strong>{todaySales.length}</strong>
+                    <small>vente{todaySales.length > 1 ? "s" : ""} aujourd&apos;hui</small>
+                  </div>
+                </div>
+                <div className={styles.salesModalListHeader}>
+                  <span>Détail des transactions</span>
+                  <span>{formatDate(new Date().toISOString())}</span>
                 </div>
                 {todaySales.length ? (
                   <div className={styles.metricDetailList}>
                     {todaySales.map((sale) => (
                       <div className={styles.metricDetailRow} key={sale.id}>
-                        <span>Vente #{sale.id}<small>{formatDate(sale.sale_date)} · {sale.payment_method}</small></span>
+                        <span className={styles.salesModalSaleInfo}>
+                          <strong>Vente #{sale.id}</strong>
+                          <small>{formatDate(sale.sale_date)}</small>
+                        </span>
+                        <span className={styles.salesModalPayment}>{sale.payment_method}</span>
                         <strong>{formatMoney(sale.total_amount)}</strong>
                       </div>
                     ))}

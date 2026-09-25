@@ -32,6 +32,7 @@ type SiteSectionsProps = Readonly<{
   fontFamily?: string;
   editable?: boolean;
   onTextChange?: (section: Section, elementId: string, nextValue: string) => void;
+  onNavigate?: (href: string) => void;
 }>;
 
 const sizes: Record<string, string> = { sm: "0.875rem", md: "1rem", lg: "1.25rem", xl: "1.75rem", "2xl": "2.5rem" };
@@ -248,6 +249,7 @@ export default function SiteSections({
   fontFamily,
   editable = false,
   onTextChange,
+  onNavigate,
   selectedSectionId,
   onSelectSection,
 }: SiteSectionsProps & {
@@ -399,7 +401,11 @@ export default function SiteSections({
       const titleProps = interactiveTextProps(section, "title");
       const subtitleProps = interactiveTextProps(section, "text");
       const buttonProps = interactiveTextProps(section, "button");
-      return <section key={key} {...baseSectionProps} className={`${styles.previewSiteBlock} ${styles.heroBlock} ${isSelected ? styles.previewSiteBlockSelected : ""} siteHeroBlock`.trim()} style={{ ...spacingStyle(content), "--site-primary": primaryColor, "--site-secondary": secondaryColor, "--site-text": textColor, "--site-secondary-text": secondaryTextColor, fontFamily } as CSSProperties}><div className={styles.heroPreviewContent}><div><p className={styles.previewEyebrow}>{siteName}</p><h3 {...titleProps} style={styleFor(content, "title")} dangerouslySetInnerHTML={{ __html: titleHtml }} /><p {...subtitleProps} style={{ color: secondaryTextColor, ...styleFor(content, "text") }} dangerouslySetInnerHTML={{ __html: bodyHtml }} />{hasButton && <a {...buttonProps} href={publicLink(content.buttonLink, slug)} className={styles.editableButton} style={styleFor(content, "button")} dangerouslySetInnerHTML={{ __html: buttonHtml }} />}</div>{imageUrl ? <div className={styles.previewHeroImage}><img src={imageUrl} alt={title} loading="lazy" decoding="async" /></div> : <div className={styles.heroPreviewVisual}>Image</div>}</div></section>;
+      const buttonHref = publicLink(content.buttonLink, slug);
+      const navigationProps = onNavigate && buttonHref
+        ? { onClick: (event: React.MouseEvent<HTMLAnchorElement>) => { event.preventDefault(); onNavigate(buttonHref); } }
+        : {};
+      return <section key={key} {...baseSectionProps} className={`${styles.previewSiteBlock} ${styles.heroBlock} ${isSelected ? styles.previewSiteBlockSelected : ""} siteHeroBlock`.trim()} style={{ ...spacingStyle(content), "--site-primary": primaryColor, "--site-secondary": secondaryColor, "--site-text": textColor, "--site-secondary-text": secondaryTextColor, fontFamily } as CSSProperties}><div className={styles.heroPreviewContent}><div><p className={styles.previewEyebrow}>{siteName}</p><h3 {...titleProps} style={styleFor(content, "title")} dangerouslySetInnerHTML={{ __html: titleHtml }} /><p {...subtitleProps} style={{ color: secondaryTextColor, ...styleFor(content, "text") }} dangerouslySetInnerHTML={{ __html: bodyHtml }} />{hasButton && <a {...buttonProps} {...navigationProps} href={buttonHref} className={styles.editableButton} style={styleFor(content, "button")} dangerouslySetInnerHTML={{ __html: buttonHtml }} />}</div>{imageUrl ? <div className={styles.previewHeroImage}><img src={imageUrl} alt={title} loading="lazy" decoding="async" /></div> : <div className={styles.heroPreviewVisual}>Image</div>}</div></section>;
     }
 
     if (section.type === "banner") {

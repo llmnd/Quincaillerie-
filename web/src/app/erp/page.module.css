@@ -146,6 +146,45 @@
   line-height: 1.08;
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.refreshStatus {
+  color: var(--ink-4);
+  font-size: .68rem;
+  font-weight: 600;
+}
+
+.refreshStatus:empty { display: none; }
+.refreshStatusError { color: var(--danger); }
+
+.refreshButton {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  background: var(--bg-1);
+  color: var(--ink-3);
+  cursor: pointer;
+  transition: background 180ms var(--ease), border-color 180ms var(--ease), color 180ms var(--ease);
+}
+
+.refreshButton:hover:not(:disabled) {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--accent-hi);
+}
+
+.refreshButton:disabled { cursor: wait; opacity: .55; }
+.spinning { animation: spin 800ms linear infinite; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
 /* ==========================================================================
    BOUTONS
    ========================================================================== */
@@ -231,6 +270,10 @@
 }
 
 .tabButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
   flex: 1 1 auto;
   min-width: 0;
   padding: 10px 16px;
@@ -270,6 +313,21 @@
   margin-bottom: 18px;
   min-height: 40px;
 }
+
+.emptyState {
+  display: grid;
+  gap: 6px;
+  min-height: 150px;
+  place-content: center;
+  padding: 24px;
+  border: 1px dashed var(--line-2);
+  border-radius: var(--r-sm);
+  background: var(--bg-2);
+  text-align: center;
+}
+
+.emptyState strong { color: var(--ink-2); font-size: .82rem; font-weight: 600; }
+.emptyState span { color: var(--ink-4); font-size: .74rem; }
 
 /* ==========================================================================
    MODAL
@@ -1280,3 +1338,5 @@
     text-decoration: none !important;
   }
 }
+
+.tabButton svg { flex: 0 0 auto; opacity: .8; }

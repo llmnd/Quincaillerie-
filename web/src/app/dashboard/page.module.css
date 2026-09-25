@@ -410,19 +410,20 @@
   z-index: 50;
   inset: 0;
   display: grid;
-  place-items: center;
-  padding: 20px;
-  background: rgba(5, 7, 11, 0.78);
-  backdrop-filter: blur(4px);
+  align-items: start;
+  justify-items: center;
+  padding: 16px 12px 0;
+  background: rgba(5, 7, 11, 0.92);
 }
 
 .metricModal {
-  width: min(100%, 580px);
-  max-height: min(680px, calc(100vh - 40px));
+  width: min(100%, 620px);
+  max-height: calc(100vh - 16px);
   overflow: auto;
   border: 1px solid var(--line-2);
   border-radius: var(--r-md);
-  background: var(--bg-1);
+  background: #171c25;
+  opacity: 1;
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
 }
 
@@ -431,7 +432,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  padding: 20px;
+  padding: 14px 18px;
   border-bottom: 1px solid var(--line-1);
 }
 
@@ -459,7 +460,7 @@
   color: var(--ink-1);
 }
 
-.metricModalContent { padding: 20px; }
+.metricModalContent { padding: 14px 18px 16px; }
 
 .modalSummary {
   display: flex;
@@ -474,6 +475,80 @@
   color: var(--ink-1);
   font-size: 1.45rem;
   font-weight: 400;
+}
+
+.salesModalContent { padding-top: 12px; }
+
+.salesModalOverview {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(130px, 0.75fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.salesModalTotal,
+.salesModalCount {
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line-1);
+  border-radius: var(--r-sm);
+  background: var(--bg-2);
+}
+
+.salesModalTotal { border-color: color-mix(in srgb, var(--accent) 34%, var(--line-1)); }
+
+.salesModalLabel {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--ink-4);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.salesModalTotal strong {
+  color: var(--accent);
+  font-size: clamp(1.25rem, 4vw, 1.8rem);
+  font-weight: 600;
+}
+
+.salesModalCount strong {
+  display: block;
+  color: var(--ink-1);
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.salesModalCount small {
+  display: block;
+  margin-top: 6px;
+  color: var(--ink-4);
+  font-size: 0.72rem;
+}
+
+.salesModalListHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 5px;
+  color: var(--ink-4);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.salesModalSaleInfo { display: grid; gap: 3px; }
+.salesModalSaleInfo strong { color: var(--ink-2); font-weight: 600; }
+.salesModalPayment {
+  margin-left: auto;
+  padding: 4px 7px;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  color: var(--ink-3);
+  font-size: 0.66rem;
+  white-space: nowrap;
 }
 
 .metricDetailList { border-top: 1px solid var(--line-1); }
@@ -503,6 +578,13 @@
 
 .metricDetailRow strong { flex: 0 0 auto; color: var(--ink-1); font-weight: 500; }
 .modalEmpty { margin: 0; color: var(--ink-4); }
+
+@media (max-width: 560px) {
+  .salesModalOverview { grid-template-columns: 1fr; }
+  .salesModalListHeader span:last-child { display: none; }
+  .metricDetailRow { gap: 8px; }
+  .salesModalPayment { display: none; }
+}
 .relationSummaryGrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 18px; }
 .relationSummaryGrid > div { padding: 14px; border: 1px solid var(--line-1); border-radius: var(--r-sm); background: var(--bg-2); }
 .relationSummaryGrid strong { display: block; color: var(--ink-1); font-size: 1.35rem; font-weight: 400; }

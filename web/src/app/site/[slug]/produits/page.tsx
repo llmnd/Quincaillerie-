@@ -19,6 +19,7 @@ type Payload = {
   website?: { name?: string; logo?: string | null; theme?: Record<string, string> };
   organization?: { name?: string; phone?: string | null };
   products?: Product[];
+  sections?: Array<{ type?: string; content?: Record<string, unknown> }>;
 };
 
 export default async function ProductsPage({ params }: Readonly<{ params: Promise<{ slug: string }> }>) {
@@ -35,6 +36,7 @@ export default async function ProductsPage({ params }: Readonly<{ params: Promis
     ...product,
     image: product.image || product.image_url || null,
   }));
+  const catalogContent = payload.sections?.find((section) => section.type === "products")?.content ?? {};
 
   return (
     <main className={styles.page} style={{ background: theme.background ?? "#fff", color: textColor, fontFamily: theme.font ?? "Inter, sans-serif", "--secondary": secondaryColor, "--muted": secondaryTextColor, "--primary": primaryColor } as CSSProperties}>
@@ -76,7 +78,18 @@ export default async function ProductsPage({ params }: Readonly<{ params: Promis
             </div>
           </div>
         </header>
-        <ProductCatalog slug={slug} products={products} columnsMobile={2} primaryColor={primaryColor} secondaryColor={secondaryColor} textColor={textColor} secondaryTextColor={secondaryTextColor} />
+        <ProductCatalog
+          slug={slug}
+          products={products}
+          eyebrowText={String(catalogContent.eyebrow ?? "Catalogue")}
+          title={String(catalogContent.title ?? "Nos produits")}
+          introText={String(catalogContent.subtitle ?? "Choisissez vos produits et envoyez votre demande directement à l'entreprise.")}
+          columnsMobile={2}
+          primaryColor={primaryColor}
+          secondaryColor={secondaryColor}
+          textColor={textColor}
+          secondaryTextColor={secondaryTextColor}
+        />
       </div>
     </main>
   );

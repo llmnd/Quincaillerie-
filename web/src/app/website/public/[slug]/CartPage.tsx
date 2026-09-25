@@ -12,6 +12,7 @@ import styles from "./productCatalog.module.css";
 
 type CartPageProps = Readonly<{
   slug: string;
+  onNavigate?: (href: string) => void;
   siteName: string;
   primaryColor: string;
   secondaryColor: string;
@@ -45,6 +46,7 @@ function lineKey(line: CartLine): string {
 
 export default function CartPage({
   slug,
+  onNavigate,
   siteName,
   primaryColor,
   secondaryColor,
@@ -232,6 +234,11 @@ export default function CartPage({
               <a
                 href={`/site/${slug}/commande`}
                 className={styles.btnSolid}
+                onClick={(event) => {
+                  if (!onNavigate) return;
+                  event.preventDefault();
+                  onNavigate(`/site/${slug}/commande`);
+                }}
               >
                 Continuer la commande <ArrowRight size={15} />
               </a>

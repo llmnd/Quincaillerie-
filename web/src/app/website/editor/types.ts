@@ -59,6 +59,9 @@ export type WebsiteTheme = {
   headerCartCountColor?: string;
   headerCart?: string;
   headerCartCount?: string;
+  checkoutEyebrow?: string;
+  checkoutTitle?: string;
+  checkoutLead?: string;
 };
 
 export type OrganizationProfile = {

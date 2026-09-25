@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.api.deps import require_module, require_roles
+from app.api.deps import require_roles
 from app.core.config import settings
 from app.models.cash import AuditLog, CashHandoff, CashOperation, CashRegister, CashSession
 from app.models.sale import Sale
@@ -12,7 +12,7 @@ from app.models.user import User
 from app.schemas.cash import CashOperationCreate, CashOperationRead, CashRegisterCreate, CashRegisterRead, CashSessionClose, CashSessionOpen, CashSessionRead
 from app.api.deps import get_db
 
-router = APIRouter(prefix="/cash", tags=["cash"], dependencies=[Depends(require_module("cash"))])
+router = APIRouter(prefix="/cash", tags=["cash"])
 
 
 def calculate_expected_cash(session_id: int, db: Session) -> float:
@@ -225,28 +225,18 @@ def list_sessions(db: Session = Depends(get_db), current_user: User = Depends(re
 
 
 @router.get("/sessions/{session_id}/balance")
-def session_balance(session_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin", "seller"))) -> dict[str, object]:
+def session_balance(session_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin", "seller"))) -> dict[str, float | int | str]:
     session = db.get(CashSession, session_id)
     if session is None:
         raise HTTPException(status_code=404, detail="Cash session not found")
     if current_user.role != "admin" and not handoff_is_acknowledged(session.id, current_user.id, db):
         raise HTTPException(status_code=403, detail="This is not your cash session")
-    sales = db.scalars(select(Sale).where(Sale.session_id == session.id)).all()
-    operations = db.scalars(select(CashOperation).where(CashOperation.session_id == session.id)).all()
-    payment_totals: dict[str, float] = {}
-    for sale in sales:
-        payment_totals[sale.payment_method] = payment_totals.get(sale.payment_method, 0.0) + float(sale.total_amount)
-    cash_in = sum(operation.amount for operation in operations if operation.operation_type in {"cash_in", "adjustment_in"})
-    cash_out = sum(operation.amount for operation in operations if operation.operation_type in {"cash_out", "refund", "adjustment_out"})
     return {
         "session_id": session.id,
         "register_id": session.register_id,
         "status": session.status,
         "opening_amount": session.actual_opening_amount,
         "expected_cash_amount": calculate_expected_cash(session.id, db),
-        "payment_totals": payment_totals,
-        "cash_in": cash_in,
-        "cash_out": cash_out,
     }
 
 

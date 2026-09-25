@@ -1,6 +1,7 @@
 "use client";
 
 import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { BarChart3, FileText, Receipt, RefreshCw, Users, WalletCards } from "lucide-react";
 import AppShell from "../../components/AppShell";
 import { authHeaders } from "../../lib/auth";
 import styles from "./page.module.css";
@@ -9,6 +10,7 @@ import styles from "./page.module.css";
    TYPES
    ========================================================================= */
 type TabKey = "depenses" | "creances" | "fournisseurs" | "factures" | "pdf";
+type TabDefinition = { key: TabKey; label: string; icon: typeof Receipt };
 
 type Overview = {
   taxes: number;
@@ -118,12 +120,12 @@ type ExpenseForm = {
    ========================================================================= */
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
-const tabs: { key: TabKey; label: string }[] = [
-  { key: "depenses", label: "Dépenses" },
-  { key: "creances", label: "Créances" },
-  { key: "fournisseurs", label: "Fournisseurs" },
-  { key: "factures", label: "Factures" },
-  { key: "pdf", label: "Rapports PDF" },
+const tabs: TabDefinition[] = [
+  { key: "depenses", label: "Dépenses", icon: WalletCards },
+  { key: "creances", label: "Créances", icon: Receipt },
+  { key: "fournisseurs", label: "Fournisseurs", icon: Users },
+  { key: "factures", label: "Factures", icon: FileText },
+  { key: "pdf", label: "Rapports PDF", icon: BarChart3 },
 ];
 
 const emptySupplierForm = {
@@ -170,6 +172,9 @@ export default function ERPPage() {
     logo: null,
   });
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshError, setRefreshError] = useState("");
+  const [lastRefreshedAt, setLastRefreshedAt] = useState<Date | null>(null);
   const [createTarget, setCreateTarget] = useState<CreateTarget | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<
     { kind: "supplier" | "expense" | "invoice"; id: number; label: string } | null
@@ -283,6 +288,19 @@ export default function ERPPage() {
       isCancelled = true;
     };
   }, []);
+
+  async function handleRefresh() {
+    setIsRefreshing(true);
+    setRefreshError("");
+    try {
+      await Promise.all([refreshData(), refreshOrganizationProfile()]);
+      setLastRefreshedAt(new Date());
+    } catch {
+      setRefreshError("Actualisation impossible");
+    } finally {
+      setIsRefreshing(false);
+    }
+  }
 
   /* ---------------------------------------------------------------------
      Résumé par onglet
@@ -875,6 +893,17 @@ export default function ERPPage() {
   }).format(new Date());
 
   const printReference = `ERP-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}`;
+  let refreshStatusText = "";
+  if (isRefreshing) {
+    refreshStatusText = "Actualisation…";
+  } else if (refreshError) {
+    refreshStatusText = refreshError;
+  } else if (lastRefreshedAt) {
+    refreshStatusText = `Mis à jour à ${lastRefreshedAt.toLocaleTimeString("fr-FR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    })}`;
+  }
 
   /* =====================================================================
      RENDU
@@ -888,13 +917,28 @@ export default function ERPPage() {
             <p className={styles.eyebrow}>ERP</p>
             <h1>Gestion financière</h1>
           </div>
-          <button
-            type="button"
-            className={styles.primaryAction}
-            onClick={handleExportPdf}
-          >
-            Exporter PDF
-          </button>
+          <div className={styles.headerActions}>
+            <span className={`${styles.refreshStatus} ${refreshError ? styles.refreshStatusError : ""}`} role="status" aria-live="polite">
+              {refreshStatusText}
+            </span>
+            <button
+              type="button"
+              className={styles.refreshButton}
+              onClick={() => void handleRefresh()}
+              disabled={loading || isRefreshing}
+              aria-label="Actualiser les données ERP"
+              title="Actualiser les données"
+            >
+              <RefreshCw size={15} className={isRefreshing ? styles.spinning : ""} />
+            </button>
+            <button
+              type="button"
+              className={styles.primaryAction}
+              onClick={handleExportPdf}
+            >
+              Exporter PDF
+            </button>
+          </div>
         </header>
 
         {/* ====================== EN-TÊTE D'IMPRESSION ====================== */}
@@ -974,6 +1018,7 @@ export default function ERPPage() {
               }`}
               onClick={() => setActiveTab(tab.key)}
             >
+              <tab.icon size={14} aria-hidden="true" />
               {tab.label}
             </button>
           ))}
@@ -1498,7 +1543,16 @@ export default function ERPPage() {
             </div>
 
             <div className={styles.tableWrap}>
-              {currentRows.map((row, index) => {
+              {currentRows.length === 0 ? (
+                <div className={styles.emptyState}>
+                  <strong>Aucune donnée pour cette section</strong>
+                  <span>
+                    {activeTab === "pdf"
+                      ? "Les rapports apparaîtront après les premières opérations comptables."
+                      : "Utilisez l’action ci-dessus pour commencer à alimenter cet espace."}
+                  </span>
+                </div>
+              ) : currentRows.map((row, index) => {
                 const supplier =
                   activeTab === "fournisseurs"
                     ? suppliers.find((item) => item.name === row.label)

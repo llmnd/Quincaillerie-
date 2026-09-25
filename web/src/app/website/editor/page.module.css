@@ -16,7 +16,7 @@
 
 .editorLayout {
   display: grid;
-  grid-template-columns: 300px minmax(0, 1fr);
+  grid-template-columns: 240px minmax(0, 1fr);
   flex: 1;
   overflow: hidden;
   height: calc(100vh - 60px);
@@ -32,9 +32,9 @@
 .sidebar {
   display: flex;
   flex-direction: column;
-  border-right: 1px solid #1f2b3a;
-  padding: 16px 14px 14px;
-  background: #212b38;
+  border-right: 1px solid rgba(148, 163, 184, 0.05);
+  padding: 4px 6px 8px;
+  background: #1a1f27;
   color: #e8eef9;
   overflow-y: auto;
   overflow-x: hidden;
@@ -44,8 +44,8 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 4px 6px 10px;
-  margin-bottom: 8px;
+  padding: 6px 6px 8px;
+  margin-bottom: 6px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   flex-shrink: 0;
 }
@@ -65,7 +65,7 @@
 .sidebarBrandText { display: grid; gap: 1px; min-width: 0; flex: 1; }
 .sidebarBrandText strong { font-size: 13px; font-weight: 700; color: #f8fafc; }
 .sidebarBrandText span {
-  font-size: 11.5px; color: #94a3b8;
+  font-size: 12px; color: #a7b4c6;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
@@ -88,14 +88,14 @@
 /* ---------- Barre d'actions ---------- */
 .sidebarActions {
   display: grid;
-  gap: 8px;
-  padding: 10px 10px 12px;
-  margin-bottom: 10px;
+  gap: 6px;
+  padding: 5px 5px 6px;
+  margin-bottom: 4px;
   box-sizing: border-box;
   min-width: 0;
-  border-radius: 10px;
-  background: rgba(14, 165, 164, 0.08);
-  border: 1px solid rgba(14, 165, 164, 0.18);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid rgba(255, 255, 255, 0.03);
   flex-shrink: 0;
 }
 
@@ -108,11 +108,11 @@
 .deviceSpacer { flex: 1 1 auto; min-width: 0; }
 
 .deviceIconButton {
-  width: 32px; height: 32px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
-  color: #94a3b8;
+  width: 24px; height: 24px;
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.003);
+  color: #b6c2d1;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -131,13 +131,13 @@
 .modeToggle {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 6px 11px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
-  color: #94a3b8;
-  font-size: 11.5px;
+  gap: 4px;
+  padding: 4px 7px;
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.003);
+  color: #bbc8d8;
+  font-size: 10.5px;
   font-weight: 600;
   cursor: pointer;
   min-width: 0;
@@ -161,12 +161,12 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 9px 10px;
-  border-radius: 9px;
+  padding: 7px 10px;
+  border-radius: 6px;
   border: none;
-  background: linear-gradient(135deg, #0ea5a4 0%, #0f766e 100%);
+  background: #2ea685;
   color: #ffffff;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -188,7 +188,7 @@
 /* ---------- Accordéons ---------- */
 .accordionStack {
   display: grid;
-  gap: 4px;
+  gap: 3px;
   flex: none;
   align-content: start;
   overflow: visible;
@@ -197,34 +197,34 @@
 }
 
 .accordion {
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.025);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
   border: 1px solid transparent;
   transition: background 0.2s ease, border-color 0.2s ease;
   overflow: hidden;
 }
 .accordion[data-open] {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.07);
 }
 
 .accordionTrigger {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
+  gap: 6px;
+  padding: 5px 7px;
   border: none;
   background: transparent;
-  color: #cbd5e1;
+  color: #d7e1ef;
   font: inherit;
-  font-size: 12.5px;
+  font-size: 11px;
   font-weight: 700;
   cursor: pointer;
   text-align: left;
   transition: color 0.15s ease, background 0.15s ease;
 }
-.accordionTrigger:hover { color: #ffffff; background: rgba(255, 255, 255, 0.03); }
+.accordionTrigger:hover { color: #ffffff; background: rgba(255, 255, 255, 0.02); }
 .accordion[data-open] .accordionTrigger { color: #ffffff; }
 
 .accordionChevron {
@@ -244,19 +244,19 @@
 .accordionTitle { flex: 1; text-align: left; }
 
 .accordionBadge {
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 700;
-  padding: 2px 7px;
+  padding: 2px 6px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #cbd5e1;
+  background: rgba(255, 255, 255, 0.07);
+  color: #dfeaf8;
   max-width: 90px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .accordion[data-open] .accordionBadge {
-  background: rgba(14, 165, 164, 0.22);
+  background: rgba(14, 165, 164, 0.2);
   color: #5fe2dd;
 }
 
@@ -286,16 +286,16 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 18px 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.04);
+  gap: 2px;
+  padding: 6px 4px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.006);
   color: #e8eef9;
   text-align: center;
   cursor: pointer;
   font: inherit;
-  font-size: 12px;
+  font-size: 9px;
   font-weight: 600;
   transition: all 0.18s ease;
 }
@@ -310,8 +310,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px; height: 30px;
-  border-radius: 8px;
+  width: 26px; height: 26px;
+  border-radius: 7px;
   background: rgba(14, 165, 164, 0.18);
   color: #5fe2dd;
 }
@@ -751,8 +751,8 @@
 
 /* ---------- Presets ---------- */
 .themePresetHeader {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: #94a3b8;
@@ -792,11 +792,11 @@
 
 /* ---------- Preview panel (UI de l'éditeur) ---------- */
 .previewPanel {
-  background: #eef3f6;
-  padding: 12px;
+  background: #eef1f3;
+  padding: 3px 3px 6px;
   display: flex;
   flex-direction: column;
-  align-items: stretch;
+  align-items: center;
   min-height: 500px;
   overflow-y: auto;
 }
@@ -804,19 +804,20 @@
 .previewContent {
   display: grid;
   gap: 0;
-  width: 100%;
+  width: min(100%, 900px);
   flex: 1;
   min-height: max-content;
+  margin: 0 auto;
 }
 
 /* ---------- Style panel: sous-groupes taille + graisse ---------- */
 .styleGroup {
   display: grid;
   gap: 6px;
-  padding: 10px 10px 12px;
-  border-radius: 9px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 8px 8px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 .styleGroupTitle {
   font-size: 10.5px;

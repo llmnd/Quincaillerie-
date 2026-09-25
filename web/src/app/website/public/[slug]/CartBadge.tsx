@@ -8,6 +8,8 @@ import styles from "./productCatalog.module.css";
 
 type CartBadgeProps = Readonly<{
   slug: string;
+  href?: string;
+  onNavigate?: (href: string) => void;
   textColor: string;
   secondaryColor: string;
   editable?: boolean;
@@ -25,6 +27,8 @@ const CART_EVENTS = [
 
 export default function CartBadge({
   slug,
+  href,
+  onNavigate,
   textColor,
   secondaryColor,
   editable = false,
@@ -94,15 +98,21 @@ export default function CartBadge({
     count === 0
       ? "Panier vide"
       : `Panier, ${count} article${count > 1 ? "s" : ""}`;
+  const cartHref = href ?? `/site/${slug}/panier`;
 
   return (
     <a
-      href={`/site/${slug}/panier`}
+      href={cartHref}
       className={styles.headerCart}
       style={{ color: textColor, borderColor: secondaryColor, ...style }}
       data-element-id={editable ? "headerCart" : undefined}
       aria-label={label}
       onClick={(event: MouseEvent<HTMLAnchorElement>) => {
+        if (!editable && onNavigate) {
+          event.preventDefault();
+          onNavigate(cartHref);
+          return;
+        }
         if (!editable) return;
         event.preventDefault();
         onSelect?.();

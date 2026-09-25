@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import CartBadge from "../app/website/public/[slug]/CartBadge";
 import styles from "./SiteHeader.module.css";
@@ -49,6 +49,8 @@ export default function SiteHeader({
     { label: labels?.products || "Produits", href: preview ? "#produits" : `${base}/produits` },
     { label: labels?.services || "Services", href: preview ? "#services" : `${base}#services` },
     { label: labels?.contact || "Contact", href: preview ? "#contact" : `${base}#contact` },
+    { label: "Commande", href: preview ? "#commande" : `${base}/commande` },
+    { label: "Panier", href: preview ? "#panier" : `${base}/panier` },
   ];
 
   useEffect(() => {
@@ -91,8 +93,6 @@ export default function SiteHeader({
         <span className={styles.siteName} style={labelColors?.brand ? { color: labelColors.brand } : undefined}>{siteName}</span>
       </a>
 
-      {showCart && <CartBadge slug={slug} textColor={labelColors?.cart ?? textColor} secondaryColor={secondaryColor} countStyle={labelColors?.cartCount ? { color: labelColors.cartCount } : undefined} />}
-
       <button
         type="button"
         className={styles.menuButton}
@@ -111,11 +111,19 @@ export default function SiteHeader({
 
       <nav id="site-navigation" className={`${styles.navigation} ${open ? styles.navigationOpen : ""}`} aria-label="Navigation principale">
         {links.map((link, index) => {
-          const colorKey = ["home", "about", "products", "services", "contact"][index] as keyof typeof labelColors;
+          const colorKey = ["home", "about", "products", "services", "contact", "cta", "cta"][index] as keyof typeof labelColors;
           return (
           <a key={link.label} href={link.href} onClick={() => setOpen(false)} style={labelColors?.[colorKey] ? { color: labelColors[colorKey] } : undefined}>{link.label}</a>
           );
         })}
+        {showCart && (
+          <CartBadge
+            slug={slug}
+            textColor={labelColors?.cart ?? textColor}
+            secondaryColor={secondaryColor}
+            countStyle={labelColors?.cartCount ? { color: labelColors.cartCount } : undefined}
+          />
+        )}
         <a href={preview ? "#contact" : `${base}#contact`} className={styles.contactLink} onClick={() => setOpen(false)} style={labelColors?.cta ? { color: labelColors.cta } : undefined}>{labels?.cta || "Contactez-nous"}</a>
       </nav>
     </header>

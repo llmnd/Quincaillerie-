@@ -1,0 +1,2764 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  AlignCenter, AlignLeft, AlignRight,
+  CheckCircle2, ChevronRight, ClipboardPaste, Copy, ExternalLink,
+  Eye, EyeOff, FileText, Globe, History, ImageIcon, LayoutGrid,
+  Menu, Monitor, Paintbrush, Palette, PanelLeftClose, PanelLeftOpen,
+  Phone, Plus, RotateCcw, Save, Search, Smartphone, Trash2, Type,
+  Undo2, Redo2, X, AlertTriangle,
+} from "lucide-react";
+import AppShell from "../../../components/AppShell";
+import CartBadge from "../public/[slug]/CartBadge";
+import { authHeaders } from "../../../lib/auth";
+import styles from "./page.module.css";
+import previewStyles from "../_shared/preview.module.css";
+import SiteSections, { getDefaultSectionsForTemplate, sanitizeInlineHtml } from "../_shared/SiteSections";
+import { editorLibrary, EditableText, ImagePicker, Segmented, ThemeColorInput } from "./components";
+import type {
+  CompanyProduct, EditorSnapshot, HealthIssue, MediaItem, OrganizationProfile,
+  PageItem, Section, SocialLinks, WebsiteTheme,
+} from "./types";
+import {
+  API_URL, loadMedia, loadPages, loadProducts, loadSections, loadWebsiteTheme,
+} from "./lib/api";
+import {
+  defaultTheme, formatRelativeTime, HEADER_THEME_KEYS, siteTemplates,
+  SIZE_OPTIONS, sizeToCss, themePresets, validateUrlValue,
+  WEIGHT_OPTIONS, weightToCss,
+} from "./lib/editor";
+
+type TabKey = "blocks" | "style" | "theme";
+
+export default function WebsiteEditorPage() {
+  const router = useRouter();
+
+  /* ---------------- États ---------------- */
+  const [pages, setPages] = useState<PageItem[]>([]);
+  const [selectedPageId, setSelectedPageId] = useState<number | null>(null);
+  const [selectedSectionId, setSelectedSectionId] = useState<string | number | null>(null);
+  const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
+  const [sections, setSections] = useState<Section[]>([]);
+  const [companyProducts, setCompanyProducts] = useState<CompanyProduct[]>([]);
+  const [draggedSectionId, setDraggedSectionId] = useState<string | number | null>(null);
+  const [dragOverSectionId, setDragOverSectionId] = useState<string | number | null>(null);
+  const [websiteTheme, setWebsiteTheme] = useState<WebsiteTheme>(defaultTheme);
+  const [siteTemplate, setSiteTemplate] = useState<string>("commerce");
+  const [pageDraft, setPageDraft] = useState({ name: "", slug: "" });
+  const [organizationProfile, setOrganizationProfile] = useState<OrganizationProfile | null>(null);
+  const [socialLinks, setSocialLinks] = useState<SocialLinks>({
+    facebook: "", instagram: "", linkedin: "", twitter: "",
+  });
+  const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
+  const [editorMode, setEditorMode] = useState<"edit" | "preview">("edit");
+  const [deviceMode, setDeviceMode] = useState<"desktop" | "tablet" | "mobile">("desktop");
+  const [inlineTextColor, setInlineTextColor] = useState("#111827");
+  const [inlineLinkDraft, setInlineLinkDraft] = useState<string | null>(null);
+  const [isReady, setIsReady] = useState(false);
+  const [savingPage, setSavingPage] = useState(false);
+  const [savingSite, setSavingSite] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [isPageFormOpen, setIsPageFormOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabKey>("blocks");
+  const [toast, setToast] = useState<string | null>(null);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [previewMenuOpen, setPreviewMenuOpen] = useState(false);
+  const [toolbarVisible, setToolbarVisible] = useState(true);
+  const [toolbarPosition, setToolbarPosition] = useState({ x: 24, y: 18 });
+  const [headerInlineStyles, setHeaderInlineStyles] = useState<Record<string, React.CSSProperties>>({});
+  const [, setHistoryTick] = useState(0);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [styleClipboard, setStyleClipboard] = useState<Record<string, string> | null>(null);
+  const [undoDropdownOpen, setUndoDropdownOpen] = useState(false);
+  const [blockSearch, setBlockSearch] = useState("");
+  const [urlErrors, setUrlErrors] = useState<Record<string, string>>({});
+  const [expandedTreeNodes, setExpandedTreeNodes] = useState<Record<string, boolean>>({
+    page: true, sections: true,
+  });
+
+  /* ---------------- Refs ---------------- */
+  const textPatchTimers = useRef<Map<string, number>>(new Map());
+  const toolbarDragRef = useRef<{ startX: number; startY: number; originX: number; originY: number } | null>(null);
+  const undoStack = useRef<EditorSnapshot[]>([]);
+  const redoStack = useRef<EditorSnapshot[]>([]);
+  const lastHistoryAt = useRef(0);
+  const inlineSelection = useRef<Range | null>(null);
+  const saveWebsiteRef = useRef<(opts?: { silent?: boolean }) => void>(() => {});
+  const undoRef = useRef<() => void>(() => {});
+  const redoRef = useRef<() => void>(() => {});
+
+  /* ============================================================
+     Utilitaires
+     ============================================================ */
+  function alignToolbarToSelection(targetId: string | null, sectionId?: string | number | null) {
+    if (!targetId || typeof document === "undefined") return;
+    const selectors: string[] = [];
+    if (sectionId != null) selectors.push(`[data-section-id="${String(sectionId)}"][data-element-id="${targetId}"]`);
+    selectors.push(`[data-element-id="${targetId}"]`);
+    const target = selectors.map((s) => document.querySelector(s) as HTMLElement | null).find(Boolean) ?? null;
+    if (!target) return;
+    const shell = target.closest("[data-preview-shell]") as HTMLElement | null;
+    if (!shell) return;
+    const shellRect = shell.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+    const nextX = Math.min(Math.max(targetRect.left - shellRect.left + 18, 12), Math.max(12, shellRect.width - 260));
+    const nextY = Math.min(Math.max(targetRect.top - shellRect.top - 52, 12), Math.max(12, shellRect.height - 80));
+    setToolbarPosition({ x: nextX, y: nextY });
+    setToolbarVisible(true);
+    target.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
+  }
+
+  function getActiveHeaderThemeKey(): keyof WebsiteTheme | null {
+    if (typeof document === "undefined") return null;
+    const activeElement = document.activeElement;
+    if (!(activeElement instanceof HTMLElement)) return null;
+    const activeId = activeElement.getAttribute("data-element-id");
+    if (activeId === "headerCartCount") return "headerCartCount";
+    if (!activeId || !HEADER_THEME_KEYS.includes(activeId as (typeof HEADER_THEME_KEYS)[number])) return null;
+    return activeId as keyof WebsiteTheme;
+  }
+
+  function showToast(message: string) {
+    setToast(message);
+    window.setTimeout(() => setToast(null), 2600);
+  }
+
+  function clearSelection() {
+    setSelectedSectionId(null);
+    setSelectedElementId(null);
+    setToolbarVisible(false);
+  }
+
+  function selectSectionElement(section: Section | null, elementId: string | null = null) {
+    if (!section) { clearSelection(); return; }
+    const finalElementId = elementId ?? "title";
+    setEditorMode("edit");
+    setSelectedSectionId(section.id ?? null);
+    setSelectedElementId(finalElementId);
+    setToolbarVisible(true);
+    setActiveTab("style");
+    alignToolbarToSelection(finalElementId, section.id ?? null);
+  }
+
+  function cloneSections(value: Section[]): Section[] {
+    return value.map((s) => ({ ...s, content: { ...s.content }, settings: { ...s.settings } }));
+  }
+
+  function pushHistory(label = "Modification") {
+    const now = Date.now();
+    if (now - lastHistoryAt.current > 700) {
+      undoStack.current = [...undoStack.current.slice(-49), { sections: cloneSections(sections), label }];
+      redoStack.current = [];
+      lastHistoryAt.current = now;
+      setHistoryTick((t) => t + 1);
+    }
+  }
+
+  async function persistSectionsSnapshot(snapshot: Section[]) {
+    await Promise.all(
+      snapshot.filter((s) => s.id).map((s) =>
+        fetch(`${API_URL}/api/v1/websites/sections/${s.id}`, {
+          method: "PATCH",
+          credentials: "include",
+          headers: { Accept: "application/json", "Content-Type": "application/json", ...authHeaders() },
+          body: JSON.stringify({ content: s.content, settings: s.settings, visible: s.visible, position: s.position }),
+        }),
+      ),
+    );
+  }
+
+  function undo() {
+    const previous = undoStack.current.pop();
+    if (!previous) return;
+    redoStack.current.push({ sections: cloneSections(sections), label: previous.label });
+    setSections(cloneSections(previous.sections));
+    void persistSectionsSnapshot(previous.sections);
+    setHasUnsavedChanges(true);
+    setHistoryTick((t) => t + 1);
+    showToast(`Annulé : ${previous.label}`);
+  }
+
+  function redo() {
+    const next = redoStack.current.pop();
+    if (!next) return;
+    undoStack.current.push({ sections: cloneSections(sections), label: next.label });
+    setSections(cloneSections(next.sections));
+    void persistSectionsSnapshot(next.sections);
+    setHasUnsavedChanges(true);
+    setHistoryTick((t) => t + 1);
+    showToast(`Rétabli : ${next.label}`);
+  }
+
+  function jumpToHistory(target: EditorSnapshot) {
+    const idx = undoStack.current.findIndex((s) => s === target);
+    if (idx === -1) return;
+    redoStack.current.push(...undoStack.current.slice(idx + 1).reverse());
+    undoStack.current = undoStack.current.slice(0, idx);
+    setSections(cloneSections(target.sections));
+    void persistSectionsSnapshot(target.sections);
+    setHasUnsavedChanges(true);
+    setUndoDropdownOpen(false);
+    setHistoryTick((t) => t + 1);
+    showToast(`Retour : ${target.label}`);
+  }
+
+  /* ============================================================
+     Effets
+     ============================================================ */
+  useEffect(() => {
+    const timers = textPatchTimers.current;
+    return () => { timers.forEach((id) => window.clearTimeout(id)); timers.clear(); };
+  }, []);
+
+  useEffect(() => {
+    void (async () => {
+      await fetchWebsiteTheme();
+      await fetchPages();
+      await fetchProducts();
+      await fetchMedia();
+      try {
+        const r = await fetch(`${API_URL}/api/v1/organization/profile`, {
+          credentials: "include", headers: { Accept: "application/json", ...authHeaders() }, cache: "no-store",
+        });
+        if (r.ok) setOrganizationProfile(await r.json());
+      } catch (e) { console.error(e); }
+      setIsReady(true);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => { void fetchSections(selectedPageId); /* eslint-disable-next-line */ }, [selectedPageId]);
+
+  useEffect(() => {
+    if (editorMode !== "edit") return;
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+      const insideEditableTarget = target.closest("[data-section-id]");
+      const insideContentToolbar = target.closest("[aria-label='Mise en forme du texte']");
+      const insideSidebar = target.closest("[data-editor-sidebar]");
+      const insidePreviewShell = target.closest("[data-preview-shell]");
+      const insideEditorShell = target.closest("[data-editor-shell]");
+      if (insideEditableTarget || insideContentToolbar || insideSidebar) return;
+      if (insideEditorShell && !insidePreviewShell) return;
+      clearSelection();
+    };
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    return () => document.removeEventListener("pointerdown", handlePointerDown, true);
+  }, [editorMode]);
+
+  useEffect(() => {
+    if (!hasUnsavedChanges) return;
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [hasUnsavedChanges]);
+
+  useEffect(() => {
+    if (!undoDropdownOpen) return;
+    const close = () => setUndoDropdownOpen(false);
+    window.addEventListener("pointerdown", close, { once: true });
+    return () => window.removeEventListener("pointerdown", close);
+  }, [undoDropdownOpen]);
+
+  useEffect(() => {
+    function handleKey(event: KeyboardEvent) {
+      const isMac = navigator.platform.toLowerCase().includes("mac");
+      const modifier = isMac ? event.metaKey : event.ctrlKey;
+      if (modifier && event.key.toLowerCase() === "s") { event.preventDefault(); saveWebsiteRef.current(); return; }
+      if (modifier && event.key.toLowerCase() === "z") {
+        event.preventDefault();
+        if (event.shiftKey) redoRef.current(); else undoRef.current();
+        return;
+      }
+      if (modifier && event.key.toLowerCase() === "y") { event.preventDefault(); redoRef.current(); return; }
+      if (modifier && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setEditorMode((m) => (m === "edit" ? "preview" : "edit"));
+        return;
+      }
+      if (modifier && event.key.toLowerCase() === "b") {
+        event.preventDefault();
+        if (event.shiftKey) setSidebarCollapsed((v) => !v);
+        else formatInline("bold");
+        return;
+      }
+      if (modifier && !event.shiftKey && ["1","2","3"].includes(event.key)) {
+        event.preventDefault();
+        setDeviceMode(event.key === "1" ? "desktop" : event.key === "2" ? "tablet" : "mobile");
+        return;
+      }
+      if (event.key === "Escape") {
+        if (inlineLinkDraft !== null) { setInlineLinkDraft(null); return; }
+        if (toolbarVisible) { setToolbarVisible(false); return; }
+        if (mobileSidebarOpen) { setMobileSidebarOpen(false); return; }
+      }
+    }
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [inlineLinkDraft, toolbarVisible, mobileSidebarOpen]);
+
+  /* ============================================================
+     useMemo
+     ============================================================ */
+  const previewSections = useMemo(
+    () => (sections.length > 0 ? sections : getDefaultSectionsForTemplate(siteTemplate)),
+    [sections, siteTemplate],
+  );
+  const displaySections = useMemo(() => previewSections.filter((s) => s.visible !== false), [previewSections]);
+
+  /* ============================================================
+     Fetch
+     ============================================================ */
+  async function fetchWebsiteTheme() {
+    const data = await loadWebsiteTheme();
+    if (!data) return;
+    setWebsiteTheme({ ...defaultTheme, ...(data.theme ?? {}) });
+    setSiteTemplate(data.template || "commerce");
+    setSocialLinks({
+      facebook: data.settings?.social_links?.facebook ?? "",
+      instagram: data.settings?.social_links?.instagram ?? "",
+      linkedin: data.settings?.social_links?.linkedin ?? "",
+      twitter: data.settings?.social_links?.twitter ?? "",
+    });
+  }
+  async function fetchPages() {
+    const data = await loadPages();
+    if (!data) return;
+    setPages(data);
+    if (data.length > 0 && (!selectedPageId || !data.some((p) => p.id === selectedPageId))) setSelectedPageId(data[0].id ?? null);
+  }
+  async function fetchSections(pageId: number | null) {
+    if (!pageId) { setSections([]); setSelectedSectionId(null); setSelectedElementId(null); return; }
+    const data = await loadSections(pageId);
+    if (!data) return;
+    setSections(data);
+    if (data.length > 0) {
+      const hasSelected = selectedSectionId != null && data.some((s) => s.id === selectedSectionId);
+      if (!hasSelected) { setSelectedSectionId(data[0].id ?? null); setSelectedElementId("title"); }
+    } else { setSelectedSectionId(null); setSelectedElementId(null); }
+  }
+  async function fetchProducts() {
+    const data = await loadProducts();
+    if (!data) return;
+    setCompanyProducts(data.filter((p) => p && typeof p.name === "string"));
+  }
+  async function fetchMedia() {
+    const data = await loadMedia();
+    if (!data) return;
+    setMediaItems(Array.isArray(data.media) ? data.media.filter((i) => i?.url) : []);
+  }
+
+  /* ============================================================
+     Valeurs dérivées
+     ============================================================ */
+  const selectedPage = pages.find((p) => p.id === selectedPageId) ?? null;
+  const selectedSection = previewSections.find((s) => s.id === selectedSectionId) ?? null;
+
+  const selectedThemeField: keyof WebsiteTheme | null =
+    (selectedElementId && HEADER_THEME_KEYS.includes(selectedElementId as (typeof HEADER_THEME_KEYS)[number])
+      ? (selectedElementId as keyof WebsiteTheme) : null)
+    ?? (selectedElementId === "headerCartCount" ? "headerCartCount" : null)
+    ?? getActiveHeaderThemeKey();
+
+  function selectedTextKey(suffix: string) {
+    if (!selectedElementId) return suffix;
+    if (selectedThemeField) return selectedThemeField;
+    if (selectedElementId === "title") return `title${suffix}`;
+    if (selectedElementId === "button") return suffix === "Link" ? "buttonLink" : `button${suffix}`;
+    return `text${suffix}`;
+  }
+
+  /* ============================================================
+     Mutations
+     ============================================================ */
+  function commitSectionElementValue(sectionId: string | number | null, elementId: string | null, nextValue: string) {
+    if (sectionId == null || !elementId) return;
+    pushHistory("Édition du texte");
+    setSections((current) =>
+      current.map((s) => (s.id === sectionId ? { ...s, content: { ...s.content, [elementId]: nextValue } } : s)),
+    );
+    setHasUnsavedChanges(true);
+    const key = `${sectionId}:${elementId}`;
+    const timers = textPatchTimers.current;
+    const existing = timers.get(key);
+    if (existing) window.clearTimeout(existing);
+    const timer = window.setTimeout(() => {
+      const target = sections.find((s) => s.id === sectionId);
+      const content = { ...(target?.content ?? {}), [elementId]: nextValue };
+      void fetch(`${API_URL}/api/v1/websites/sections/${sectionId}`, {
+        method: "PATCH", credentials: "include",
+        headers: { Accept: "application/json", "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ content }),
+      }).catch((e) => console.error(e));
+      timers.delete(key);
+    }, 500);
+    timers.set(key, timer);
+  }
+
+  function updateSelectedSectionField(key: string, value: string) {
+    if (!selectedSection || !selectedSection.id) return;
+    pushHistory(`Réglage : ${key}`);
+    setSections((current) =>
+      current.map((item) => (item.id === selectedSection.id ? { ...item, content: { ...item.content, [key]: value } } : item)),
+    );
+    setHasUnsavedChanges(true);
+    const keyId = `${selectedSection.id}:${key}`;
+    const timers = textPatchTimers.current;
+    const existing = timers.get(keyId);
+    if (existing) window.clearTimeout(existing);
+    const timer = window.setTimeout(() => {
+      const cur = sections.find((s) => s.id === selectedSection.id);
+      void fetch(`${API_URL}/api/v1/websites/sections/${selectedSection.id}`, {
+        method: "PATCH", credentials: "include",
+        headers: { Accept: "application/json", "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ content: { ...(cur?.content ?? selectedSection.content), [key]: value } }),
+      }).catch((e) => console.error(e));
+      timers.delete(keyId);
+    }, 400);
+    timers.set(keyId, timer);
+  }
+
+  /* ============================================================
+     Toolbar drag
+     ============================================================ */
+  function startToolbarDrag(event: React.PointerEvent<HTMLDivElement>) {
+    const target = event.target as HTMLElement | null;
+    if (target && target.closest("button, select, input, label, form")) return;
+    event.preventDefault();
+    const shell = event.currentTarget.closest("[data-preview-shell]") as HTMLElement | null;
+    const shellRect = shell?.getBoundingClientRect();
+    toolbarDragRef.current = { startX: event.clientX, startY: event.clientY, originX: toolbarPosition.x, originY: toolbarPosition.y };
+    const handleMove = (mv: PointerEvent) => {
+      if (!toolbarDragRef.current) return;
+      const maxX = shellRect ? Math.max(12, shellRect.width - 260) : 360;
+      const maxY = shellRect ? Math.max(12, shellRect.height - 80) : 360;
+      const nx = Math.min(Math.max(toolbarDragRef.current.originX + (mv.clientX - toolbarDragRef.current.startX), 12), maxX);
+      const ny = Math.min(Math.max(toolbarDragRef.current.originY + (mv.clientY - toolbarDragRef.current.startY), 12), maxY);
+      setToolbarPosition({ x: nx, y: ny });
+    };
+    const handleUp = () => {
+      toolbarDragRef.current = null;
+      window.removeEventListener("pointermove", handleMove);
+      window.removeEventListener("pointerup", handleUp);
+    };
+    window.addEventListener("pointermove", handleMove);
+    window.addEventListener("pointerup", handleUp, { once: true });
+  }
+
+  /* ============================================================
+     Styles inline
+     ============================================================ */
+  function updateInlineTextStyle(suffix: string, value: string) {
+    const selectedHeaderKey =
+      (selectedElementId && (HEADER_THEME_KEYS.includes(selectedElementId as any) || selectedElementId === "headerCartCount")
+        ? (selectedElementId as keyof WebsiteTheme) : null) ?? selectedThemeField;
+    const activeThemeKey = selectedHeaderKey ?? getActiveHeaderThemeKey();
+
+    const activeEditableTarget =
+      document.activeElement instanceof HTMLElement && document.activeElement.hasAttribute("data-element-id")
+        ? document.activeElement : null;
+    const matchingTargets = selectedElementId
+      ? (Array.from(document.querySelectorAll(`[data-element-id="${selectedElementId}"]`)) as HTMLElement[])
+      : [];
+    const heroFallbackTarget =
+      selectedElementId === "title" && selectedSectionId != null && String(selectedSectionId) === "default-hero"
+        ? (document.querySelector('.siteHeroBlock [data-element-id="title"]') as HTMLElement | null) : null;
+    const sectionScopedTarget = selectedSectionId != null
+      ? matchingTargets.find((el) => el.getAttribute("data-section-id") === String(selectedSectionId)) ?? null
+      : null;
+    const fallbackTarget = heroFallbackTarget ?? matchingTargets[0] ?? null;
+    const currentTarget =
+      (activeEditableTarget && (!selectedElementId || activeEditableTarget.getAttribute("data-element-id") === selectedElementId || activeEditableTarget.getAttribute("data-element-id") === String(activeThemeKey)))
+        ? activeEditableTarget
+        : sectionScopedTarget ?? fallbackTarget ?? (activeThemeKey ? (document.querySelector(`[data-element-id="${activeThemeKey}"]`) as HTMLElement | null) : null) ?? activeEditableTarget;
+
+    const styleKey = activeThemeKey ?? (selectedElementId ?? selectedTextKey(suffix));
+    const previous = activeThemeKey ? (headerInlineStyles[styleKey] ?? {}) : (currentTarget ? (currentTarget.style as any) : {});
+    const nextStyle: React.CSSProperties = { ...(activeThemeKey ? headerInlineStyles[styleKey] ?? {} : {}) };
+    if (suffix === "Color") nextStyle.color = value;
+    if (suffix === "Size") nextStyle.fontSize = sizeToCss(value, previous.fontSize ?? "1rem");
+    if (suffix === "Weight") nextStyle.fontWeight = weightToCss(value, previous.fontWeight ?? 400) as any;
+    if (suffix === "Align") nextStyle.textAlign = value as any;
+
+    if (currentTarget) {
+      Object.entries(nextStyle).forEach(([prop, val]) => {
+        if (typeof val === "string" || typeof val === "number")
+          currentTarget.style.setProperty(prop.replace(/[A-Z]/g, (l) => `-${l.toLowerCase()}`), String(val), "important");
+      });
+    }
+    if (activeThemeKey) {
+      setHeaderInlineStyles((cur) => ({ ...cur, [styleKey]: nextStyle }));
+      if (suffix === "Color") void updateThemeValue(`${activeThemeKey}Color` as any, value);
+      return;
+    }
+    if (selectedSection && selectedElementId) {
+      const propKey = selectedTextKey(suffix);
+      if (propKey) updateSelectedSectionField(propKey, value);
+      return;
+    }
+    updateSelectedSectionField(selectedTextKey(suffix), value);
+  }
+
+  function insertInlineLink() {
+    if (!selectedElementId) return;
+    const current = String(selectedSection?.content?.[selectedTextKey("Link")] ?? "");
+    const selection = window.getSelection();
+    inlineSelection.current = selection?.rangeCount ? selection.getRangeAt(0).cloneRange() : null;
+    setInlineLinkDraft(current || "https://");
+  }
+
+  function applyInlineLink() {
+    if (inlineLinkDraft === null) return;
+    const selection = window.getSelection();
+    if (inlineSelection.current && selection) { selection.removeAllRanges(); selection.addRange(inlineSelection.current); }
+    formatInline("createLink", inlineLinkDraft.trim());
+    updateInlineTextStyle("Link", inlineLinkDraft.trim());
+    setInlineLinkDraft(null);
+  }
+
+  function formatInline(command: "bold" | "italic" | "underline" | "createLink", value?: string) {
+    document.execCommand(command, false, value);
+    const active = document.activeElement as HTMLElement | null;
+    active?.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "formatInline" }));
+  }
+
+  function checkUrlField(id: string, value: string) {
+    const err = validateUrlValue(value);
+    setUrlErrors((cur) => { const n = { ...cur }; if (err) n[id] = err; else delete n[id]; return n; });
+  }
+
+  function copySelectedStyle() {
+    if (!selectedSection || !selectedElementId) return;
+    const prefix = selectedElementId === "title" ? "title" : selectedElementId === "button" ? "button" : "text";
+    const clip: Record<string, string> = {};
+    for (const suffix of ["Size", "Weight", "Color", "Align"]) {
+      const key = `${prefix}${suffix}`;
+      const val = selectedSection.content?.[key];
+      if (typeof val === "string") clip[key] = val;
+    }
+    if (Object.keys(clip).length === 0) { showToast("Aucun style à copier"); return; }
+    setStyleClipboard(clip); showToast("Style copié");
+  }
+  function pasteStyleToSelected() {
+    if (!styleClipboard || !selectedSection?.id || !selectedElementId) return;
+    pushHistory("Collage de style");
+    setSections((cur) => cur.map((s) => (s.id === selectedSection.id ? { ...s, content: { ...s.content, ...styleClipboard } } : s)));
+    setHasUnsavedChanges(true); showToast("Style appliqué");
+  }
+
+  async function resetSection(sectionId: string | number | null) {
+    if (sectionId == null) return;
+    if (!confirm("Réinitialiser cette section ?")) return;
+    const r = await fetch(`${API_URL}/api/v1/websites/sections/${sectionId}`, {
+      credentials: "include", headers: { Accept: "application/json", ...authHeaders() }, cache: "no-store",
+    });
+    if (!r.ok) { showToast("Impossible de recharger la section"); return; }
+    const fresh = (await r.json()) as Section;
+    pushHistory("Réinitialisation");
+    setSections((cur) => cur.map((s) => (s.id === sectionId ? fresh : s)));
+    setHasUnsavedChanges(true); showToast("Section réinitialisée");
+  }
+
+  async function copySectionToPage(section: Section) {
+    if (!section.id || pages.length < 2) { showToast("Aucune autre page disponible"); return; }
+    const choice = window.prompt(
+      `Copier « ${String(section.content?.title ?? section.type)} » vers quelle page ?\n\n` +
+        pages.map((p, i) => `${i + 1}. ${p.name}${p.id === selectedPageId ? " (actuelle)" : ""}`).join("\n") +
+        "\n\nNuméro :",
+    );
+    if (!choice) return;
+    const idx = parseInt(choice, 10) - 1;
+    const targetPage = pages[idx];
+    if (!targetPage?.id) { showToast("Page invalide"); return; }
+    const r = await fetch(`${API_URL}/api/v1/websites/pages/${targetPage.id}/sections`, {
+      method: "POST", credentials: "include",
+      headers: { Accept: "application/json", "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ type: section.type, visible: section.visible, content: section.content, settings: section.settings }),
+    });
+    if (!r.ok) { showToast("Copie impossible"); return; }
+    showToast(`Copié vers « ${targetPage.name} »`);
+  }
+
+  async function insertSectionAt(type: string, index: number) {
+    if (!selectedPageId) { showToast("Sélectionnez une page"); return; }
+    const defaults: Record<string, Record<string, unknown>> = {
+      products: { title: "Nos produits", subtitle: "Choisissez vos produits…", show_price: true, show_search: true },
+      testimonials: { title: "Ils nous font confiance" },
+      features: { title: "Nos services" },
+      faq: { title: "Questions fréquentes" },
+      map: { title: "Nous trouver" },
+    };
+    const r = await fetch(`${API_URL}/api/v1/websites/pages/${selectedPageId}/sections`, {
+      method: "POST", credentials: "include",
+      headers: { Accept: "application/json", "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ type, position: index, content: defaults[type] ?? { title: `Nouvelle section ${sections.length + 1}` }, settings: {}, visible: true }),
+    });
+    if (!r.ok) { showToast("Insertion impossible"); return; }
+    const created = (await r.json()) as Section;
+    const next = [...sections]; next.splice(index, 0, created);
+    setSections(next); void persistSectionOrder(next);
+    setSelectedSectionId(created.id ?? null); setSelectedElementId(null);
+    setHasUnsavedChanges(true); showToast("Section insérée");
+  }
+
+  /* ============================================================
+     Theme
+     ============================================================ */
+  async function updateThemeValue(key: keyof WebsiteTheme, value: string) {
+    const next = { ...websiteTheme, [key]: value };
+    setWebsiteTheme(next); setHasUnsavedChanges(true);
+    await fetch(`${API_URL}/api/v1/websites/current`, {
+      method: "PATCH", credentials: "include",
+      headers: { Accept: "application/json", "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ theme: next }),
+    }).catch((e) => console.error(e));
+  }
+  async function applyThemePreset(preset: (typeof themePresets)[number]) {
+    const next: WebsiteTheme = { ...websiteTheme, primary: preset.primary, secondary: preset.secondary, background: preset.background, text: preset.text };
+    setWebsiteTheme(next); setHasUnsavedChanges(true);
+    await fetch(`${API_URL}/api/v1/websites/current`, {
+      method: "PATCH", credentials: "include",
+      headers: { Accept: "application/json", "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ theme: next }),
+    }).catch((e) => console.error(e));
+  }
+  async function applySiteTemplate(template: (typeof siteTemplates)[number]) {
+    await applyThemePreset(template.theme);
+    setSiteTemplate(template.key);
+    const r = await fetch(`${API_URL}/api/v1/websites/current`, {
+      method: "PATCH", credentials: "include",
+      headers: { Accept: "application/json", "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ template: template.key }),
+    });
+    if (!r.ok) { showToast("Le modèle n'a pas pu être appliqué"); return; }
+    setHasUnsavedChanges(true); showToast(`Modèle « ${template.name} » appliqué`);
+  }
+
+  /* ============================================================
+     Erreurs
+     ============================================================ */
+  function extractErrorMessage(value: unknown): string {
+    if (typeof value === "string") return value.trim();
+    if (Array.isArray(value)) return value.map(extractErrorMessage).filter(Boolean).join(" ");
+    if (value && typeof value === "object") {
+      const rec = value as Record<string, unknown>;
+      for (const c of [rec.msg, rec.message, rec.error, rec.detail]) { const m = extractErrorMessage(c); if (m) return m; }
+      for (const c of Object.values(rec)) { const m = extractErrorMessage(c); if (m) return m; }
+    }
+    return "";
+  }
+
+  /* ============================================================
+     CRUD
+     ============================================================ */
+  async function addPage() {
+    if (!pageDraft.name.trim()) return;
+    setSavingPage(true);
+    try {
+      const r = await fetch(`${API_URL}/api/v1/websites/current/pages`, {
+        method: "POST", credentials: "include",
+        headers: { Accept: "application/json", "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ name: pageDraft.name, slug: pageDraft.slug || pageDraft.name, title: pageDraft.name, meta_title: pageDraft.name, published: true, position: pages.length }),
+      });
+      if (!r.ok) { const p = await r.json().catch(() => null); throw new Error(extractErrorMessage(p) || "Impossible de créer la page"); }
+      const created = (await r.json()) as PageItem;
+      setPageDraft({ name: "", slug: "" }); setSelectedPageId(created.id ?? null);
+      setIsPageFormOpen(false); await fetchPages(); showToast("Page créée");
+    } catch (e) { console.error(e); showToast(e instanceof Error ? e.message : "Erreur"); }
+    finally { setSavingPage(false); }
+  }
+  async function persistPageOrder(next: PageItem[]) {
+    await Promise.all(next.map((p, i) => p.id ? fetch(`${API_URL}/api/v1/websites/pages/${p.id}`, {
+      method: "PATCH", credentials: "include",
+      headers: { Accept: "application/json", "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ position: i }),
+    }) : Promise.resolve()));
+  }
+  async function persistSectionOrder(next: Section[]) {
+    await Promise.all(next.map((s, i) => s.id ? fetch(`${API_URL}/api/v1/websites/sections/${s.id}`, {
+      method: "PATCH", credentials: "include",
+      headers: { Accept: "application/json", "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ position: i }),
+    }) : Promise.resolve()));
+  }
+  async function addSection(type: string) {
+    if (!selectedPageId) { showToast("Sélectionnez d'abord une page"); return; }
+    const defaults: Record<string, Record<string, unknown>> = {
+      products: { title: "Nos produits", subtitle: "Choisissez vos produits…", show_price: true, show_description: true, show_category: true, show_search: true, show_filters: true, columns: 3, columns_tablet: 2, columns_mobile: 1 },
+      testimonials: { title: "Ils nous font confiance", subtitle: "Découvrez les retours de nos clients." },
+      features: { title: "Nos services", subtitle: "Des solutions pensées pour votre activité." },
+      faq: { title: "Questions fréquentes", subtitle: "Les réponses aux questions les plus courantes." },
+      map: { title: "Nous trouver", subtitle: "Retrouvez-nous facilement." },
+    };
+    const r = await fetch(`${API_URL}/api/v1/websites/pages/${selectedPageId}/sections`, {
+      method: "POST", credentials: "include",
+      headers: { Accept: "application/json", "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ type, position: sections.length, content: defaults[type] ?? { title: `Nouvelle section ${sections.length + 1}` }, settings: {}, visible: true }),
+    });
+    if (!r.ok) { showToast("Impossible d'ajouter la section"); return; }
+    const section = (await r.json()) as Section;
+    setSections((cur) => [...cur, section]);
+    setSelectedSectionId(section.id ?? null); setSelectedElementId(null);
+    setHasUnsavedChanges(true); setActiveTab("style"); showToast("Section ajoutée");
+  }
+  async function duplicateSection(section: Section) {
+    if (!selectedPageId || !section.id) return;
+    const r = await fetch(`${API_URL}/api/v1/websites/pages/${selectedPageId}/sections`, {
+      method: "POST", credentials: "include",
+      headers: { Accept: "application/json", "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ type: section.type, position: sections.length, visible: section.visible, content: section.content, settings: section.settings }),
+    });
+    if (!r.ok) { showToast("Impossible de dupliquer"); return; }
+    const created = (await r.json()) as Section;
+    setSections((cur) => [...cur, created]);
+    setSelectedSectionId(created.id ?? null); setHasUnsavedChanges(true);
+    showToast("Section dupliquée");
+  }
+  async function deletePage(pageId: number | null) {
+    if (pageId == null) return;
+    if (!confirm("Supprimer cette page et toutes ses sections ?")) return;
+    const r = await fetch(`${API_URL}/api/v1/websites/pages/${pageId}`, { method: "DELETE", credentials: "include", headers: { ...authHeaders() } });
+    if (!r.ok) { showToast("Impossible de supprimer"); return; }
+    const next = pages.filter((p) => p.id !== pageId);
+    setPages(next); setSelectedPageId(next[0]?.id ?? null);
+    await fetchPages(); setHasUnsavedChanges(true); showToast("Page supprimée");
+  }
+  function moveSection(sourceId: string | number | null, targetId: string | number | null) {
+    if (sourceId == null || targetId == null || sourceId === targetId) return;
+    const next = [...sections];
+    const si = next.findIndex((s) => s.id === sourceId);
+    const ti = next.findIndex((s) => s.id === targetId);
+    if (si === -1 || ti === -1) return;
+    const [moved] = next.splice(si, 1);
+    next.splice(ti, 0, moved);
+    setSections(next); setHasUnsavedChanges(true);
+    void persistSectionOrder(next);
+  }
+  async function toggleSectionVisibility(section: Section) {
+    if (!section.id) return;
+    const nextVisible = !section.visible;
+    setSections((cur) => cur.map((i) => (i.id === section.id ? { ...i, visible: nextVisible } : i)));
+    setHasUnsavedChanges(true);
+    try {
+      const r = await fetch(`${API_URL}/api/v1/websites/sections/${section.id}`, {
+        method: "PATCH", credentials: "include",
+        headers: { Accept: "application/json", "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ visible: nextVisible }),
+      });
+      if (!r.ok) throw new Error("PATCH failed");
+    } catch (e) {
+      console.error(e);
+      setSections((cur) => cur.map((i) => (i.id === section.id ? { ...i, visible: !nextVisible } : i)));
+      showToast("Échec, rollback effectué");
+    }
+  }
+  async function deleteSection(sectionId: string | number | null) {
+    if (sectionId == null) return;
+    if (!confirm("Supprimer cette section ?")) return;
+    const r = await fetch(`${API_URL}/api/v1/websites/sections/${sectionId}`, { method: "DELETE", credentials: "include", headers: { ...authHeaders() } });
+    if (!r.ok) { showToast("Impossible de supprimer"); return; }
+    setSections((cur) => {
+      const next = cur.filter((s) => s.id !== sectionId);
+      if (selectedSectionId === sectionId) { setSelectedSectionId(next[0]?.id ?? null); setSelectedElementId(null); }
+      return next;
+    });
+    setHasUnsavedChanges(true); showToast("Section supprimée");
+  }
+  async function updatePageMetadata(next: Partial<PageItem>) {
+    if (!selectedPageId) return;
+    setPages((cur) => cur.map((p) => (p.id === selectedPageId ? { ...p, ...next } : p)));
+    setHasUnsavedChanges(true);
+    const r = await fetch(`${API_URL}/api/v1/websites/pages/${selectedPageId}`, {
+      method: "PATCH", credentials: "include",
+      headers: { Accept: "application/json", "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify(next),
+    });
+    if (!r.ok) { showToast("Impossible de sauvegarder la page"); return; }
+    const updated = (await r.json()) as PageItem;
+    setPages((cur) => cur.map((p) => (p.id === updated.id ? { ...p, ...updated } : p)));
+  }
+
+  /* ============================================================
+     Save / Discard
+     ============================================================ */
+  async function saveWebsite(opts: { silent?: boolean } = {}) {
+    const silent = opts.silent === true;
+    if (!silent) { setSavingSite(true); setSaveMessage(null); }
+    try {
+      const r1 = await fetch(`${API_URL}/api/v1/websites/current`, {
+        method: "PATCH", credentials: "include",
+        headers: { Accept: "application/json", "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({
+          theme: websiteTheme,
+          settings: { social_links: Object.fromEntries(Object.entries(socialLinks).map(([k, v]) => [k, v.trim() || null])) },
+        }),
+      });
+      if (!r1.ok) { const p = await r1.json().catch(() => null); throw new Error(extractErrorMessage(p) || "Impossible de sauvegarder le thème"); }
+      if (organizationProfile) {
+        await fetch(`${API_URL}/api/v1/organization/profile`, {
+          method: "PUT", credentials: "include",
+          headers: { Accept: "application/json", "Content-Type": "application/json", ...authHeaders() },
+          body: JSON.stringify({
+            name: organizationProfile.name?.trim() || "Votre entreprise",
+            logo: organizationProfile.logo ?? null,
+            email: organizationProfile.email?.trim() || null,
+            phone: organizationProfile.phone?.trim() || null,
+            address: organizationProfile.address?.trim() || null,
+          }),
+        });
+      }
+      const pagePromises = pages.filter((p) => typeof p.id === "number").map((p) =>
+        fetch(`${API_URL}/api/v1/websites/pages/${p.id}`, {
+          method: "PATCH", credentials: "include",
+          headers: { Accept: "application/json", "Content-Type": "application/json", ...authHeaders() },
+          body: JSON.stringify({
+            name: p.name, slug: p.slug, title: p.title ?? p.name,
+            meta_title: p.meta_title ?? p.title ?? p.name, meta_description: p.meta_description ?? null,
+            published: p.published ?? true, position: p.position ?? 0,
+          }),
+        }));
+      const sectionPromises = sections.filter((s) => typeof s.id === "number").map((s) =>
+        fetch(`${API_URL}/api/v1/websites/sections/${s.id}`, {
+          method: "PATCH", credentials: "include",
+          headers: { Accept: "application/json", "Content-Type": "application/json", ...authHeaders() },
+          body: JSON.stringify({ type: s.type, position: s.position, content: s.content ?? {}, settings: s.settings ?? {}, visible: s.visible }),
+        }));
+      const results = await Promise.allSettled([...pagePromises, ...sectionPromises]);
+      const failures = results.filter((r) => r.status === "rejected");
+      if (failures.length > 0) throw new Error(`Sauvegarde incomplète (${failures.length} échecs)`);
+      setHasUnsavedChanges(false);
+      if (!silent) {
+        setSaveMessage("Site enregistré ✓");
+        showToast("Site enregistré");
+        window.setTimeout(() => setSaveMessage(null), 2500);
+        window.setTimeout(() => { router.push("/website"); router.refresh(); }, 700);
+      }
+    } catch (e) {
+      console.error(e);
+      if (!silent) { setSaveMessage(e instanceof Error ? e.message : "Échec"); showToast("Échec de la sauvegarde"); }
+    } finally { if (!silent) setSavingSite(false); }
+  }
+  saveWebsiteRef.current = saveWebsite;
+  undoRef.current = undo;
+  redoRef.current = redo;
+
+  async function discardChanges() {
+    if (!hasUnsavedChanges) { showToast("Aucune modification à ignorer"); return; }
+    if (!confirm("Annuler toutes les modifications non sauvegardées ?")) return;
+    setSaveMessage(null);
+    await fetchWebsiteTheme(); await fetchPages();
+    if (selectedPageId) await fetchSections(selectedPageId);
+    setHasUnsavedChanges(false); showToast("Modifications annulées");
+  }
+
+  /* ============================================================
+     Valeurs dérivées header
+     ============================================================ */
+  const currentSiteSlug = pageDraft.slug || pages.find((p) => p.id === selectedPageId)?.slug || "preview";
+  const organizationName = organizationProfile?.name?.trim() || "Votre entreprise";
+  const organizationLogo = organizationProfile?.logo || "";
+  const headerBrandText = websiteTheme.headerBrand?.trim() || organizationName;
+  const headerHomeText = websiteTheme.headerHome?.trim() || "Accueil";
+  const headerAboutText = websiteTheme.headerAbout?.trim() || "À propos";
+  const headerProductsText = websiteTheme.headerProducts?.trim() || "Produits";
+  const headerServicesText = websiteTheme.headerServices?.trim() || "Services";
+  const headerContactText = websiteTheme.headerContact?.trim() || "Contact";
+  const headerCtaText = (() => {
+    const v = websiteTheme.headerCta?.trim() ?? "";
+    if (!v) return "Contactez-nous";
+    if (/^(?:https?:|mailto:|tel:|#|\/)/i.test(v)) return "Contactez-nous";
+    if (v.includes("/") && !v.includes(" ")) return "Contactez-nous";
+    if (v.includes("/") && v.split("/")[0]?.trim()) return v.split("/")[0].trim();
+    return v;
+  })();
+  const headerStyleFor = (key: keyof WebsiteTheme): React.CSSProperties | undefined => {
+    const savedColor = websiteTheme[`${String(key)}Color` as keyof WebsiteTheme];
+    const local = headerInlineStyles[String(key)];
+    if (!savedColor && !local) return undefined;
+    return { ...local, ...(savedColor ? { color: savedColor } : {}) };
+  };
+
+  const previewMaxWidth = deviceMode === "mobile" ? "430px" : deviceMode === "tablet" ? "900px" : "100%";
+
+  const filteredLibrary = editorLibrary.filter(
+    (item) => !blockSearch || item.label.toLowerCase().includes(blockSearch.toLowerCase()) || item.type.toLowerCase().includes(blockSearch.toLowerCase()),
+  );
+
+  const healthCount = urlErrors.headerCta ? 1 : 0;
+
+  if (!isReady) {
+    return (
+      <AppShell>
+        <div style={{ padding: 24, color: "#111827" }}>Chargement de l&apos;éditeur…</div>
+      </AppShell>
+    );
+  }
+
+  /* ============================================================
+     Rendu
+     ============================================================ */
+  return (
+    <AppShell>
+      <div
+        className={`${styles.editorShell} ${previewStyles.themeRoot}`}
+        data-editor-shell
+        data-radius={websiteTheme.radius ?? "medium"}
+        data-btn={websiteTheme.buttonStyle ?? "rounded"}
+        data-card={websiteTheme.cardStyle ?? "soft"}
+        data-header={websiteTheme.headerStyle ?? "minimal"}
+        data-footer={websiteTheme.footerStyle ?? "simple"}
+      >
+        {/* ============ TOP BAR ============ */}
+        <header className={styles.topBar}>
+          {/* Zone gauche : historique + undo/redo */}
+          <div className={styles.topBarGroup}>
+            <button
+              type="button"
+              className={styles.iconBtn}
+              onClick={() => setUndoDropdownOpen((v) => !v)}
+              disabled={undoStack.current.length === 0}
+              title="Historique (⌘Z)"
+              aria-label="Historique"
+            >
+              <History size={15} />
+            </button>
+            {undoDropdownOpen && (
+              <div className={styles.undoDropdown} onPointerDown={(e) => e.stopPropagation()}>
+                <div className={styles.undoDropdownHeader}>Historique récent</div>
+                {undoStack.current.length === 0 ? (
+                  <div className={styles.undoDropdownEmpty}>Aucune action</div>
+                ) : (
+                  undoStack.current.slice(-10).reverse().map((snap, i) => (
+                    <button key={`${snap.label}-${i}`} type="button" className={styles.undoDropdownItem} onClick={() => jumpToHistory(snap)}>
+                      <Undo2 size={12} /> {snap.label}
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+            <button type="button" className={styles.iconBtn} onClick={undo} disabled={undoStack.current.length === 0} title="Annuler (⌘Z)" aria-label="Annuler">
+              <Undo2 size={15} />
+            </button>
+            <button type="button" className={styles.iconBtn} onClick={redo} disabled={redoStack.current.length === 0} title="Rétablir (⌘⇧Z)" aria-label="Rétablir">
+              <Redo2 size={15} />
+            </button>
+            <span className={styles.topBarDivider} />
+            <button
+              type="button"
+              className={styles.iconBtn}
+              onClick={() => setSidebarCollapsed((v) => !v)}
+              title={sidebarCollapsed ? "Afficher le panneau (⇧⌘B)" : "Masquer le panneau (⇧⌘B)"}
+            >
+              {sidebarCollapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
+            </button>
+          </div>
+
+          {/* Zone centre : toggles device */}
+          <div className={styles.topBarGroup}>
+            {(["desktop", "tablet", "mobile"] as const).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                className={`${styles.iconBtn} ${deviceMode === mode ? styles.iconBtnActive : ""}`}
+                onClick={() => setDeviceMode(mode)}
+                title={mode === "desktop" ? "Ordinateur (⌘1)" : mode === "tablet" ? "Tablette (⌘2)" : "Mobile (⌘3)"}
+              >
+                {mode === "desktop" ? <Monitor size={15} /> : mode === "tablet" ? <LayoutGrid size={15} /> : <Smartphone size={15} />}
+              </button>
+            ))}
+          </div>
+
+          {/* Zone droite : mode édition + Ignorer + Sauver */}
+          <div className={styles.topBarGroup}>
+            <button
+              type="button"
+              className={`${styles.modePill} ${editorMode === "preview" ? styles.modePillActive : ""}`}
+              onClick={() => setEditorMode((m) => (m === "edit" ? "preview" : "edit"))}
+              title="Basculer édition / preview (⌘K)"
+            >
+              {editorMode === "edit" ? <><Eye size={13} /> Preview</> : <><Type size={13} /> Édition</>}
+            </button>
+            <span className={styles.topBarDivider} />
+            <button type="button" className={styles.ghostBtn} onClick={() => void discardChanges()} disabled={!hasUnsavedChanges}>
+              Ignorer
+            </button>
+            <button type="button" className={styles.saveBtn} onClick={() => void saveWebsite()} disabled={savingSite}>
+              <Save size={14} /> {savingSite ? "…" : "Sauver"}
+            </button>
+          </div>
+        </header>
+
+        {/* ============ TAB BAR ============ */}
+        <nav className={styles.tabBar} role="tablist">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "blocks"}
+            className={`${styles.tabBtn} ${activeTab === "blocks" ? styles.tabBtnActive : ""}`}
+            onClick={() => setActiveTab("blocks")}
+          >
+            <Plus size={14} /> Blocs
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "style"}
+            className={`${styles.tabBtn} ${activeTab === "style" ? styles.tabBtnActive : ""}`}
+            onClick={() => setActiveTab("style")}
+          >
+            <Paintbrush size={14} /> Style
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "theme"}
+            className={`${styles.tabBtn} ${activeTab === "theme" ? styles.tabBtnActive : ""}`}
+            onClick={() => setActiveTab("theme")}
+          >
+            <Palette size={14} /> Thème
+          </button>
+          <div style={{ flex: 1 }} />
+          {hasUnsavedChanges && (
+            <span className={styles.unsavedPill} title="Modifications non sauvegardées">● Non sauvegardé</span>
+          )}
+        </nav>
+
+        {/* ============ LAYOUT ============ */}
+        <div className={styles.editorLayout} data-collapsed={sidebarCollapsed || undefined}>
+          {/* ---------------- SIDEBAR ---------------- */}
+          <aside className={styles.sidebar} data-mobile-open={mobileSidebarOpen || undefined} data-editor-sidebar>
+            {/* ============ BLOCS ============ */}
+            {activeTab === "blocks" && (
+              <div className={styles.panelBody}>
+                {/* Pages */}
+                <section className={styles.treeSection}>
+                  <button
+                    type="button"
+                    className={styles.treeSectionHeader}
+                    onClick={() => setExpandedTreeNodes((n) => ({ ...n, page: !n.page }))}
+                  >
+                    <ChevronRight size={14} className={styles.treeChevron} data-open={expandedTreeNodes.page || undefined} />
+                    <FileText size={14} />
+                    <span>Pages</span>
+                    <span className={styles.treeBadge}>{pages.length}</span>
+                  </button>
+                  {expandedTreeNodes.page && (
+                    <div className={styles.treeList}>
+                      {pages.length === 0 ? (
+                        <div className={styles.emptyHint}>Aucune page.</div>
+                      ) : pages.map((page) => (
+                        <div
+                          key={page.id ?? page.slug}
+                          className={`${styles.treeItem} ${selectedPageId === page.id ? styles.treeItemActive : ""}`}
+                        >
+                          <button
+                            type="button"
+                            className={styles.treeItemBtn}
+                            onClick={() => { setSelectedPageId(page.id ?? null); setMobileSidebarOpen(false); }}
+                          >
+                            <span>{page.name}</span>
+                            {page.published === false && <span className={styles.draftBadge}>Brouillon</span>}
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.treeItemIcon}
+                            onClick={() => void deletePage(page.id ?? null)}
+                            title="Supprimer"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      ))}
+                      <div className={styles.treeForm}>
+                        {isPageFormOpen ? (
+                          <>
+                            <input
+                              className={styles.input}
+                              placeholder="Nom de la page"
+                              value={pageDraft.name}
+                              onChange={(e) => setPageDraft((c) => ({ ...c, name: e.target.value, slug: c.slug || e.target.value.toLowerCase().replace(/\s+/g, "-") }))}
+                              autoFocus
+                            />
+                            <input
+                              className={styles.input}
+                              placeholder="slug-de-la-page"
+                              value={pageDraft.slug}
+                              onChange={(e) => setPageDraft((c) => ({ ...c, slug: e.target.value }))}
+                            />
+                            <div className={styles.inlineRow}>
+                              <button type="button" className={styles.primaryBtn} onClick={() => void addPage()} disabled={savingPage}>
+                                {savingPage ? "…" : "Créer"}
+                              </button>
+                              <button type="button" className={styles.ghostBtnSm} onClick={() => setIsPageFormOpen(false)}>Annuler</button>
+                            </div>
+                          </>
+                        ) : (
+                          <button type="button" className={styles.addBtn} onClick={() => setIsPageFormOpen(true)}>
+                            <Plus size={13} /> Ajouter une page
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </section>
+
+                {/* Bibliothèque de blocs */}
+                <section className={styles.treeSection}>
+                  <div className={styles.searchWrap}>
+                    <Search size={13} className={styles.searchIcon} />
+                    <input
+                      className={styles.searchInput}
+                      placeholder="Rechercher un bloc…"
+                      value={blockSearch}
+                      onChange={(e) => setBlockSearch(e.target.value)}
+                    />
+                  </div>
+                  <div className={styles.blockGrid}>
+                    {filteredLibrary.length === 0 ? (
+                      <div className={styles.emptyHint} style={{ gridColumn: "1 / -1" }}>Aucun bloc.</div>
+                    ) : filteredLibrary.map((item) => (
+                      <button key={item.type} type="button" className={styles.blockCard} onClick={() => void addSection(item.type)}>
+                        <span className={styles.blockCardIcon}>{item.icon}</span>
+                        <span>{item.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+
+                {/* Arbre des sections de la page */}
+                <section className={styles.treeSection}>
+                  <button
+                    type="button"
+                    className={styles.treeSectionHeader}
+                    onClick={() => setExpandedTreeNodes((n) => ({ ...n, sections: !n.sections }))}
+                  >
+                    <ChevronRight size={14} className={styles.treeChevron} data-open={expandedTreeNodes.sections || undefined} />
+                    <LayoutGrid size={14} />
+                    <span>Structure de la page</span>
+                    <span className={styles.treeBadge}>{sections.length}</span>
+                  </button>
+                  {expandedTreeNodes.sections && (
+                    <div className={styles.treeList}>
+                      {sections.length === 0 ? (
+                        <div className={styles.emptyHint}>Ajoutez votre premier bloc.</div>
+                      ) : sections.map((section, index) => {
+                        const isActive = selectedSectionId === section.id;
+                        return (
+                          <div key={section.id ?? `s-${index}`}>
+                            <div
+                              className={`${styles.treeItem} ${isActive ? styles.treeItemActive : ""}`}
+                              onDragOver={(e) => { e.preventDefault(); setDragOverSectionId(section.id ?? null); }}
+                              onDragLeave={() => setDragOverSectionId((c) => (c === (section.id ?? null) ? null : c))}
+                              onDrop={() => { moveSection(draggedSectionId, section.id ?? null); setDraggedSectionId(null); setDragOverSectionId(null); }}
+                              data-drop={dragOverSectionId === (section.id ?? null) || undefined}
+                            >
+                              <span
+                                draggable={Boolean(section.id)}
+                                onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; setDraggedSectionId(section.id ?? null); }}
+                                onDragEnd={() => { setDraggedSectionId(null); setDragOverSectionId(null); }}
+                                className={styles.dragHandle}
+                                title="Déplacer"
+                              >
+                                ⋮⋮
+                              </span>
+                              <button
+                                type="button"
+                                className={styles.treeItemBtn}
+                                onClick={() => selectSectionElement(section, null)}
+                              >
+                                <strong>{section.type}</strong>
+                                <span className={styles.treeItemSub}>{String(section.content?.title ?? "Sans titre")}</span>
+                              </button>
+                              <button type="button" className={styles.treeItemIcon} title="Dupliquer" onClick={(e) => { e.stopPropagation(); void duplicateSection(section); }}>
+                                <Copy size={12} />
+                              </button>
+                              <button type="button" className={styles.treeItemIcon} title={section.visible ? "Masquer" : "Afficher"} onClick={(e) => { e.stopPropagation(); void toggleSectionVisibility(section); }}>
+                                {section.visible ? <Eye size={12} /> : <EyeOff size={12} />}
+                              </button>
+                              <button type="button" className={styles.treeItemIcon} title="Supprimer" onClick={(e) => { e.stopPropagation(); void deleteSection(section.id ?? null); }}>
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                            <div className={styles.insertionPoint} onClick={() => void insertSectionAt("text", index + 1)} title="Insérer ici">
+                              <Plus size={10} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </section>
+              </div>
+            )}
+
+            {/* ============ STYLE ============ */}
+            {activeTab === "style" && (
+              <div className={styles.panelBody}>
+                {selectedSection ? (
+                  <>
+                    {/* Breadcrumb de l'élément sélectionné */}
+                    <div className={styles.inspectorHeader}>
+                      <div className={styles.inspectorTitle}>
+                        <strong>{selectedSection.type}</strong>
+                        {selectedSection.id ? <span className={styles.inspectorId}>#{selectedSection.id}</span> : null}
+                      </div>
+                      <div className={styles.inspectorCrumb}>
+                        <span>Page</span>
+                        <ChevronRight size={11} />
+                        <span>Section</span>
+                        <ChevronRight size={11} />
+                        <strong>{selectedSection.type}</strong>
+                      </div>
+                    </div>
+
+                    {/* Ligne : Agencement */}
+                    <PropertyRow label="Agencement">
+                      <div className={styles.segmented}>
+                        {["1", "2", "3", "4"].map((n) => {
+                          const active = String(selectedSection.content?.columns ?? "3") === n;
+                          return (
+                            <button
+                              key={n}
+                              type="button"
+                              className={`${styles.segmentedBtn} ${active ? styles.segmentedBtnActive : ""}`}
+                              onClick={() => updateSelectedSectionField("columns", n)}
+                            >
+                              {n === "1" ? "Grid" : `${n} col.`}
+                            </button>
+                          );
+                        })}
+                        <button type="button" className={styles.segmentedBtn}>Personnalisé</button>
+                      </div>
+                    </PropertyRow>
+
+                    {/* Ligne : Arrière-plan */}
+                    <PropertyRow label="Arrière-plan">
+                      <div className={styles.iconRow}>
+                        <label className={styles.iconField} title="Image de fond">
+                          <ImageIcon size={14} />
+                          <input type="file" accept="image/*" style={{ display: "none" }} />
+                        </label>
+                        <button type="button" className={styles.iconField} title="Couleur de fond">
+                          <Palette size={14} />
+                        </button>
+                      </div>
+                    </PropertyRow>
+
+                    {/* Ligne : Image */}
+                    <PropertyRow label="Image">
+                      <div className={styles.fullWidth}>
+                        <ImagePicker
+                          label=""
+                          value={String(selectedSection.content?.image ?? "")}
+                          onChange={(url) => {
+                            updateSelectedSectionField("image", url);
+                            if (url && !mediaItems.some((i) => i.url === url)) void fetchMedia();
+                          }}
+                        />
+                        {mediaItems.length > 0 && (
+                          <div className={styles.mediaGrid}>
+                            {mediaItems.slice(-8).map((item) => (
+                              <button
+                                key={`${item.id ?? item.url}-${item.url}`}
+                                type="button"
+                                className={`${styles.mediaThumb} ${String(selectedSection.content?.image ?? "") === item.url ? styles.mediaThumbActive : ""}`}
+                                title={item.name ?? "Image"}
+                                onClick={() => updateSelectedSectionField("image", item.url)}
+                              >
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={item.url} alt={item.name ?? "Image"} />
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </PropertyRow>
+
+                    {/* Ligne : Forme */}
+                    <PropertyRow label="Forme">
+                      <select
+                        className={styles.select}
+                        value={String(selectedSection.content?.shape ?? "Aucun")}
+                        onChange={(e) => updateSelectedSectionField("shape", e.target.value)}
+                      >
+                        <option value="Aucun">Aucun</option>
+                        <option value="Arrondi">Arrondi</option>
+                        <option value="Cercle">Cercle</option>
+                        <option value="Rectangle">Rectangle</option>
+                      </select>
+                    </PropertyRow>
+
+                    {/* Ligne : Hauteur */}
+                    <PropertyRow label="Hauteur">
+                      <div className={styles.segmented}>
+                        <button
+                          type="button"
+                          className={`${styles.segmentedBtn} ${!selectedSection.content?.height ? styles.segmentedBtnActive : ""}`}
+                          onClick={() => updateSelectedSectionField("height", "")}
+                        >
+                          Automatique
+                        </button>
+                        <button
+                          type="button"
+                          className={`${styles.segmentedBtn} ${selectedSection.content?.height === "75" ? styles.segmentedBtnActive : ""}`}
+                          onClick={() => updateSelectedSectionField("height", "75")}
+                        >
+                          75%
+                        </button>
+                        <button
+                          type="button"
+                          className={`${styles.segmentedBtn} ${selectedSection.content?.height === "100" ? styles.segmentedBtnActive : ""}`}
+                          onClick={() => updateSelectedSectionField("height", "100")}
+                        >
+                          100%
+                        </button>
+                      </div>
+                    </PropertyRow>
+
+                    {/* Ligne : Visibilité */}
+                    <PropertyRow label="Visibilité">
+                      <div className={styles.iconRow}>
+                        {(["desktop", "tablet", "mobile"] as const).map((m) => (
+                          <button
+                            key={m}
+                            type="button"
+                            className={styles.iconField}
+                            title={`Afficher sur ${m}`}
+                          >
+                            {m === "desktop" ? <Monitor size={14} /> : m === "tablet" ? <LayoutGrid size={14} /> : <Smartphone size={14} />}
+                          </button>
+                        ))}
+                        <select className={styles.selectSm}>
+                          <option>Aucune condition</option>
+                          <option>Utilisateur connecté</option>
+                          <option>Inviter</option>
+                        </select>
+                      </div>
+                    </PropertyRow>
+
+                    {/* Espacement */}
+                    <div className={styles.styleGroup}>
+                      <span className={styles.styleGroupTitle}>Espacement</span>
+                      {[
+                        ["spacingDesktop", "Intérieur ordinateur", "20"],
+                        ["spacingTablet", "Intérieur tablette", "16"],
+                        ["spacingMobile", "Intérieur mobile", "14"],
+                        ["elementGap", "Entre les éléments", "12"],
+                      ].map(([key, label, fallback]) => (
+                        <label key={key} className={styles.rangeField}>
+                          <span>{label}</span>
+                          <div className={styles.rangeRow}>
+                            <input
+                              type="range"
+                              min="0" max="64" step="1"
+                              value={String(selectedSection.content?.[key] ?? fallback)}
+                              onChange={(e) => updateSelectedSectionField(key, e.target.value)}
+                            />
+                            <output>{String(selectedSection.content?.[key] ?? fallback)} px</output>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+
+                    {/* Typo */}
+                    <div className={styles.styleGroup}>
+                      <span className={styles.styleGroupTitle}>Typographie</span>
+                      <div className={styles.styleGroupRow}>
+                        <div>
+                          <span className={styles.styleMiniLabel}>Taille titre</span>
+                          <Segmented options={SIZE_OPTIONS} value={String(selectedSection.content?.titleSize ?? "")} onChange={(v) => updateSelectedSectionField("titleSize", v)} />
+                        </div>
+                        <div>
+                          <span className={styles.styleMiniLabel}>Graisse titre</span>
+                          <Segmented options={WEIGHT_OPTIONS} value={String(selectedSection.content?.titleWeight ?? "")} onChange={(v) => updateSelectedSectionField("titleWeight", v)} />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className={styles.sectionStyleActions}>
+                      <button type="button" className={styles.switchButton} onClick={() => void toggleSectionVisibility(selectedSection)}>
+                        {selectedSection.visible ? "Masquer la section" : "Afficher la section"}
+                      </button>
+                      <button type="button" className={styles.dangerButton} onClick={() => void deleteSection(selectedSection.id ?? null)}>
+                        <Trash2 size={14} /> Supprimer la section
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className={styles.emptyHint}>
+                    Sélectionnez un élément dans l&apos;aperçu pour modifier son style.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ============ THÈME ============ */}
+            {activeTab === "theme" && (
+              <div className={styles.panelBody}>
+                <div className={styles.styleGroup}>
+                  <span className={styles.styleGroupTitle}>Modèles de site</span>
+                  <div className={styles.templateGrid}>
+                    {siteTemplates.map((t) => (
+                      <button key={t.key} type="button" className={styles.templateCard} onClick={() => void applySiteTemplate(t)}>
+                        <strong>{t.name}</strong>
+                        <span>{t.description}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className={styles.styleGroup}>
+                  <span className={styles.styleGroupTitle}>Palettes rapides</span>
+                  <div className={styles.themePresets}>
+                    {themePresets.map((preset) => {
+                      const active = websiteTheme.primary === preset.primary && websiteTheme.secondary === preset.secondary && websiteTheme.background === preset.background;
+                      return (
+                        <button key={preset.name} type="button" className={`${styles.presetChip} ${active ? styles.presetChipActive : ""}`} onClick={() => void applyThemePreset(preset)} title={preset.name}>
+                          <span className={styles.presetChipDots}>
+                            <span style={{ background: preset.primary }} />
+                            <span style={{ background: preset.secondary }} />
+                            <span style={{ background: preset.background, border: "1px solid rgba(0,0,0,0.1)" }} />
+                          </span>
+                          <span className={styles.presetChipLabel}>{preset.name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <ThemeColorInput label="Couleur principale" value={websiteTheme.primary ?? "#111827"} onCommit={(v) => void updateThemeValue("primary", v)} />
+                <ThemeColorInput label="Couleur secondaire" value={websiteTheme.secondary ?? "#714B67"} onCommit={(v) => void updateThemeValue("secondary", v)} />
+                <ThemeColorInput label="Arrière-plan" value={websiteTheme.background ?? "#FFFFFF"} onCommit={(v) => void updateThemeValue("background", v)} />
+                <ThemeColorInput label="Couleur du texte" value={websiteTheme.text ?? "#111827"} onCommit={(v) => void updateThemeValue("text", v)} />
+                <ThemeColorInput label="Texte secondaire" value={websiteTheme.secondaryText ?? "#475569"} onCommit={(v) => void updateThemeValue("secondaryText", v)} />
+
+                <label className={styles.fieldLabel}>
+                  <span>Police</span>
+                  <select className={styles.select} value={websiteTheme.font ?? "Inter, sans-serif"} onChange={(e) => void updateThemeValue("font", e.target.value)}>
+                    <option value="Inter, sans-serif">Inter</option>
+                    <option value="Georgia, serif">Georgia</option>
+                    <option value="'Times New Roman', serif">Times New Roman</option>
+                    <option value="system-ui, -apple-system, sans-serif">Système</option>
+                    <option value="'Courier New', monospace">Courier New</option>
+                  </select>
+                </label>
+
+                <label className={styles.fieldLabel}>
+                  <span>Rayon</span>
+                  <select className={styles.select} value={websiteTheme.radius ?? "medium"} onChange={(e) => void updateThemeValue("radius", e.target.value)}>
+                    <option value="none">Aucun</option>
+                    <option value="small">Petit</option>
+                    <option value="medium">Moyen</option>
+                    <option value="large">Grand</option>
+                  </select>
+                </label>
+
+                <label className={styles.fieldLabel}>
+                  <span>Boutons</span>
+                  <select className={styles.select} value={websiteTheme.buttonStyle ?? "rounded"} onChange={(e) => void updateThemeValue("buttonStyle", e.target.value)}>
+                    <option value="square">Carré</option>
+                    <option value="rounded">Arrondi</option>
+                    <option value="pill">Pilule</option>
+                  </select>
+                </label>
+
+                <label className={styles.fieldLabel}>
+                  <span>En-tête</span>
+                  <select className={styles.select} value={websiteTheme.headerStyle ?? "minimal"} onChange={(e) => void updateThemeValue("headerStyle", e.target.value)}>
+                    <option value="minimal">Minimal</option>
+                    <option value="centered">Centré</option>
+                    <option value="bold">Audacieux</option>
+                  </select>
+                </label>
+
+                <label className={styles.fieldLabel}>
+                  <span>Pied de page</span>
+                  <select className={styles.select} value={websiteTheme.footerStyle ?? "simple"} onChange={(e) => void updateThemeValue("footerStyle", e.target.value)}>
+                    <option value="simple">Simple</option>
+                    <option value="columns">Colonnes</option>
+                    <option value="minimal">Minimal</option>
+                  </select>
+                </label>
+
+                <div className={styles.styleGroup}>
+                  <span className={styles.styleGroupTitle}>Contenu du header</span>
+                  {([
+                    ["headerBrand", "Nom affiché"],
+                    ["headerHome", "Accueil"],
+                    ["headerAbout", "À propos"],
+                    ["headerProducts", "Produits"],
+                    ["headerServices", "Services"],
+                    ["headerContact", "Contact"],
+                    ["headerCta", "Bouton contact"],
+                  ] as const).map(([key, label]) => (
+                    <label key={key} className={styles.fieldLabel}>
+                      <span>{label}</span>
+                      <input
+                        className={styles.input}
+                        value={websiteTheme[key] ?? ""}
+                        placeholder={label}
+                        onChange={(e) => { void updateThemeValue(key, e.target.value); if (key === "headerCta") checkUrlField("headerCta", e.target.value); }}
+                        onBlur={(e) => key === "headerCta" && checkUrlField("headerCta", e.target.value)}
+                        data-invalid={urlErrors[key] ? true : undefined}
+                      />
+                      {urlErrors[key] && <span className={styles.urlFieldError}>{urlErrors[key]}</span>}
+                    </label>
+                  ))}
+                </div>
+
+                <div className={styles.styleGroup}>
+                  <span className={styles.styleGroupTitle}>Réseaux sociaux</span>
+                  {([
+                    ["facebook", "Facebook", "https://facebook.com/..."],
+                    ["instagram", "Instagram", "https://instagram.com/..."],
+                    ["linkedin", "LinkedIn", "https://linkedin.com/in/..."],
+                    ["twitter", "X / Twitter", "https://x.com/..."],
+                  ] as const).map(([key, label, placeholder]) => (
+                    <label key={key} className={styles.fieldLabel}>
+                      <span>{label}</span>
+                      <input
+                        className={styles.input}
+                        type="url"
+                        value={socialLinks[key]}
+                        placeholder={placeholder}
+                        onChange={(e) => setSocialLinks((c) => ({ ...c, [key]: e.target.value }))}
+                      />
+                    </label>
+                  ))}
+                </div>
+
+                {healthCount > 0 && (
+                  <div className={styles.healthWarning}>
+                    <AlertTriangle size={14} /> {healthCount} problème{healthCount > 1 ? "s" : ""} détecté{healthCount > 1 ? "s" : ""}
+                  </div>
+                )}
+              </div>
+            )}
+          </aside>
+
+          {/* ---------------- PREVIEW ---------------- */}
+          <main className={styles.previewPanel}>
+            <div className={styles.previewContent}>
+              <div
+                className={previewStyles.sitePreviewShell}
+                data-preview-shell
+                style={{
+                  "--editor-primary": websiteTheme.primary,
+                  "--editor-secondary": websiteTheme.secondary,
+                  "--editor-bg": websiteTheme.background,
+                  "--editor-text": websiteTheme.text,
+                  "--editor-font": websiteTheme.font,
+                  "--editor-secondary-text": websiteTheme.secondaryText,
+                  fontFamily: websiteTheme.font,
+                  maxWidth: previewMaxWidth,
+                  width: "100%",
+                  margin: "0 auto",
+                } as React.CSSProperties}
+              >
+                {editorMode === "edit" && toolbarVisible && ((selectedSectionId && selectedElementId) || selectedThemeField) && (
+                  <div className={styles.inlineTextToolbar} role="toolbar" aria-label="Mise en forme du texte" style={{ left: toolbarPosition.x, top: toolbarPosition.y }} onPointerDown={startToolbarDrag}>
+                    <button type="button" className={styles.inlineToolbarDragHandle} title="Déplacer">⋮⋮</button>
+                    <button type="button" className={styles.inlineToolbarClose} onClick={() => setToolbarVisible(false)} title="Fermer">×</button>
+                    <span className={styles.inlineToolbarLabel}>Texte</span>
+                    {selectedThemeField && HEADER_THEME_KEYS.includes(selectedThemeField as any) && (
+                      <input
+                        type="text"
+                        className={styles.inlineTextInput}
+                        value={String(websiteTheme[selectedThemeField] ?? "")}
+                        placeholder="Texte"
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onChange={(e) => void updateThemeValue(selectedThemeField, e.target.value)}
+                      />
+                    )}
+                    <button type="button" className={styles.inlineToolbarButton} onMouseDown={(e) => e.preventDefault()} onClick={copySelectedStyle} title="Copier le style">
+                      <Paintbrush size={13} />
+                    </button>
+                    {styleClipboard && (
+                      <button type="button" className={styles.inlineToolbarButton} onMouseDown={(e) => e.preventDefault()} onClick={pasteStyleToSelected} title="Coller le style">
+                        <ClipboardPaste size={13} />
+                      </button>
+                    )}
+                    <select
+                      className={styles.inlineToolbarSelect}
+                      value={String(selectedSection?.content?.[selectedTextKey("Size")] ?? "md")}
+                      onChange={(e) => updateInlineTextStyle("Size", e.target.value)}
+                    >
+                      {SIZE_OPTIONS.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
+                    </select>
+                    <select
+                      className={styles.inlineToolbarSelect}
+                      value={String(selectedSection?.content?.[selectedTextKey("Weight")] ?? "normal")}
+                      onChange={(e) => updateInlineTextStyle("Weight", e.target.value)}
+                    >
+                      {WEIGHT_OPTIONS.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
+                    </select>
+                    <label className={styles.inlineColorButton} title="Couleur">
+                      <span>A</span>
+                      <input
+                        type="color"
+                        value={String(selectedSection?.content?.[selectedTextKey("Color")] ?? inlineTextColor)}
+                        onChange={(e) => {
+                          const nextColor = e.target.value;
+                          setInlineTextColor(nextColor);
+                          const direct =
+                            (selectedElementId ? (Array.from(document.querySelectorAll(`[data-element-id="${selectedElementId}"]`)) as HTMLElement[]) : [])
+                              .find((el) => selectedSectionId == null || el.getAttribute("data-section-id") === String(selectedSectionId))
+                            ?? (document.activeElement instanceof HTMLElement && document.activeElement.hasAttribute("data-element-id") ? document.activeElement : null)
+                            ?? (selectedElementId ? document.querySelector(`[data-element-id="${selectedElementId}"]`) as HTMLElement | null : null);
+                          if (direct) direct.style.setProperty("color", nextColor, "important");
+                          updateInlineTextStyle("Color", nextColor);
+                        }}
+                      />
+                    </label>
+                    <button type="button" className={styles.inlineToolbarButton} onMouseDown={(e) => e.preventDefault()} onClick={() => formatInline("bold")}><strong>B</strong></button>
+                    <button type="button" className={styles.inlineToolbarButton} onMouseDown={(e) => e.preventDefault()} onClick={() => formatInline("italic")}><em>I</em></button>
+                    <button type="button" className={styles.inlineToolbarButton} onMouseDown={(e) => e.preventDefault()} onClick={() => formatInline("underline")}><u>U</u></button>
+                    <button type="button" className={styles.inlineToolbarButton} onClick={() => updateInlineTextStyle("Align", "left")}><AlignLeft size={14} /></button>
+                    <button type="button" className={styles.inlineToolbarButton} onClick={() => updateInlineTextStyle("Align", "center")}><AlignCenter size={14} /></button>
+                    <button type="button" className={styles.inlineToolbarButton} onClick={() => updateInlineTextStyle("Align", "right")}><AlignRight size={14} /></button>
+                    {inlineLinkDraft === null ? (
+                      <button type="button" className={styles.inlineToolbarButton} onMouseDown={(e) => e.preventDefault()} onClick={insertInlineLink}>↗</button>
+                    ) : (
+                      <form className={styles.inlineLinkForm} onSubmit={(e) => { e.preventDefault(); applyInlineLink(); }}>
+                        <input className={styles.inlineLinkInput} value={inlineLinkDraft} onChange={(e) => setInlineLinkDraft(e.target.value)} autoFocus />
+                        <button type="submit" className={styles.inlineToolbarButton}>OK</button>
+                        <button type="button" className={styles.inlineToolbarButton} onClick={() => setInlineLinkDraft(null)}>×</button>
+                      </form>
+                    )}
+                  </div>
+                )}
+
+                <header className={previewStyles.siteHeader}>
+                  <div className={previewStyles.companyBrand}>
+                    {organizationLogo ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={organizationLogo} alt={organizationName} className={previewStyles.companyLogo} />
+                    ) : (
+                      <div className={previewStyles.companyLogoFallback}>{organizationName.slice(0, 1).toUpperCase()}</div>
+                    )}
+                    {editorMode === "edit" ? (
+                      <EditableText
+                        as="span" value={headerBrandText} editable
+                        data-section-id="header-brand" data-element-id="headerBrand" data-editor-type="text"
+                        onCommit={(next) => void updateThemeValue("headerBrand", next || organizationName)}
+                        onSelect={() => { setEditorMode("edit"); setSelectedSectionId(null); setSelectedElementId("headerBrand"); setToolbarVisible(true); alignToolbarToSelection("headerBrand"); }}
+                        className={previewStyles.editableText}
+                        style={headerStyleFor("headerBrand")}
+                      />
+                    ) : <span>{headerBrandText}</span>}
+                  </div>
+                  <button
+                    type="button"
+                    className={previewStyles.previewMenuButton}
+                    aria-label={previewMenuOpen ? "Fermer le menu" : "Ouvrir le menu"}
+                    onClick={() => setPreviewMenuOpen((o) => !o)}
+                  >
+                    {previewMenuOpen ? <X size={18} /> : <span className={previewStyles.menuLines}><span /><span /></span>}
+                  </button>
+                  <nav className={`${previewStyles.siteNav} ${previewMenuOpen ? previewStyles.siteNavOpen : ""}`}>
+                    {[
+                      ["headerHome", headerHomeText, "#"],
+                      ["headerAbout", headerAboutText, "#"],
+                      ["headerProducts", headerProductsText, "#"],
+                      ["headerServices", headerServicesText, "#"],
+                      ["headerContact", headerContactText, "#contact"],
+                    ].map(([key, label, href]) => (
+                      <a key={key} href={href}>
+                        {editorMode === "edit" ? (
+                          <EditableText
+                            as="span" value={String(label)} editable
+                            data-section-id={`header-${String(key)}`} data-element-id={String(key)} data-editor-type="text"
+                            onCommit={(next) => void updateThemeValue(key as any, next || String(label))}
+                            onSelect={() => { setEditorMode("edit"); setSelectedSectionId(null); setSelectedElementId(key as any); setToolbarVisible(true); alignToolbarToSelection(String(key)); }}
+                            className={previewStyles.editableText}
+                            style={headerStyleFor(key as any)}
+                          />
+                        ) : <span>{label}</span>}
+                      </a>
+                    ))}
+                  </nav>
+                  <CartBadge
+                    slug={currentSiteSlug}
+                    textColor={websiteTheme.text ?? "#111827"}
+                    secondaryColor={websiteTheme.secondary ?? "#714B67"}
+                    editable={editorMode === "edit"}
+                    style={headerStyleFor("headerCart")}
+                    countStyle={headerStyleFor("headerCartCount")}
+                    onSelect={() => { setEditorMode("edit"); setSelectedSectionId(null); setSelectedElementId("headerCart"); setToolbarVisible(true); alignToolbarToSelection("headerCart"); }}
+                    onSelectCount={() => { setEditorMode("edit"); setSelectedSectionId(null); setSelectedElementId("headerCartCount"); setToolbarVisible(true); alignToolbarToSelection("headerCartCount"); }}
+                  />
+                  <button type="button" className={previewStyles.siteHeaderButton} onClick={() => setPreviewMenuOpen(false)}>
+                    {editorMode === "edit" ? (
+                      <EditableText
+                        as="span" value={headerCtaText} editable
+                        data-section-id="header-cta" data-element-id="headerCta" data-editor-type="text"
+                        onCommit={(next) => void updateThemeValue("headerCta", next || "Contactez-nous")}
+                        onSelect={() => { setEditorMode("edit"); setSelectedSectionId(null); setSelectedElementId("headerCta"); setToolbarVisible(true); alignToolbarToSelection("headerCta"); }}
+                        className={previewStyles.editableText}
+                        style={headerStyleFor("headerCta")}
+                      />
+                    ) : <span>{headerCtaText}</span>}
+                  </button>
+                </header>
+
+                <main className={previewStyles.siteBody}>
+                  <div className={previewStyles.siteMainContent}>
+                    <SiteSections
+                      sections={displaySections}
+                      products={companyProducts}
+                      siteName={organizationProfile?.name || "Votre entreprise"}
+                      textColor={websiteTheme.text ?? "#111827"}
+                      secondaryTextColor={websiteTheme.secondaryText ?? "#475569"}
+                      primaryColor={websiteTheme.primary ?? "#111827"}
+                      secondaryColor={websiteTheme.secondary ?? "#714B67"}
+                      slug={currentSiteSlug}
+                      fontFamily={websiteTheme.font ?? "Inter, sans-serif"}
+                      editable={editorMode === "edit"}
+                      selectedSectionId={selectedSectionId}
+                      onSelectSection={selectSectionElement}
+                      onTextChange={(section, elementId, nextValue) => {
+                        setHasUnsavedChanges(true);
+                        commitSectionElementValue(section.id ?? null, elementId, nextValue);
+                      }}
+                    />
+                  </div>
+                </main>
+
+                <footer className={previewStyles.siteFooter}>
+                  <span>{organizationName}</span>
+                  <span>© 2026 — Tous droits réservés</span>
+                </footer>
+              </div>
+            </div>
+          </main>
+        </div>
+
+        {toast && <div className={styles.toast}>{toast}</div>}
+      </div>
+    </AppShell>
+  );
+}
+
+/* ============================================================
+   Sous-composant : ligne de propriété label → contrôle
+   ============================================================ */
+function PropertyRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className={styles.propertyRow}>
+      <span className={styles.propertyLabel}>{label}</span>
+      <div className={styles.propertyControl}>{children}</div>
+    </div>
+  );
+} /* ============================================================
+   Editor — UI dark, structure flex robuste
+   ============================================================ */
+
+.editorShell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  min-height: 0;
+  overflow: hidden;
+  background: #14171d;
+  color: #e2e8f0;
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ============================================================
+   TOP BAR (undo/redo/device/ignore/save)
+   ============================================================ */
+.topBar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 48px;
+  padding: 0 12px;
+  background: #1a1f27;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.topBarGroup {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+}
+
+.topBarDivider {
+  display: inline-block;
+  width: 1px;
+  height: 20px;
+  margin: 0 6px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.iconBtn {
+  width: 30px; height: 30px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.iconBtn:hover { background: rgba(255, 255, 255, 0.06); color: #f1f5f9; }
+.iconBtn:disabled { opacity: 0.35; cursor: not-allowed; }
+.iconBtn:disabled:hover { background: transparent; color: #94a3b8; }
+.iconBtnActive {
+  background: rgba(45, 212, 191, 0.15);
+  color: #5eead4;
+  border-color: rgba(45, 212, 191, 0.35);
+}
+
+.modePill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  color: #cbd5e1;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.modePill:hover { color: #fff; background: rgba(255, 255, 255, 0.07); }
+.modePillActive {
+  background: rgba(45, 212, 191, 0.15);
+  border-color: rgba(45, 212, 191, 0.4);
+  color: #5eead4;
+}
+
+.ghostBtn {
+  padding: 7px 14px;
+  border-radius: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: transparent;
+  color: #cbd5e1;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.ghostBtn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.06); color: #fff; }
+.ghostBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.saveBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border-radius: 7px;
+  border: none;
+  background: #10e5b0;
+  color: #0a1f1b;
+  font-size: 12.5px;
+  font-weight: 800;
+  cursor: pointer;
+  letter-spacing: 0.01em;
+  transition: all 0.15s;
+}
+.saveBtn:hover:not(:disabled) { background: #23f0c0; transform: translateY(-1px); }
+.saveBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.undoDropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 40;
+  min-width: 240px;
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  background: #1e242e;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5);
+}
+.undoDropdownHeader {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  padding: 6px 8px;
+  font-weight: 700;
+}
+.undoDropdownEmpty { padding: 10px 8px; font-size: 12px; color: #64748b; text-align: center; }
+.undoDropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #cbd5e1;
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.undoDropdownItem:hover { background: rgba(255, 255, 255, 0.06); color: #fff; }
+
+/* ============================================================
+   TAB BAR (Blocs / Style / Thème)
+   ============================================================ */
+.tabBar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: stretch;
+  height: 40px;
+  padding: 0 8px;
+  background: #1a1f27;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  gap: 0;
+}
+
+.tabBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 100%;
+  padding: 0 18px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.15s;
+}
+.tabBtn:hover { color: #e2e8f0; }
+.tabBtnActive { color: #5eead4; }
+.tabBtnActive::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: -1px;
+  height: 2px;
+  background: #5eead4;
+  border-radius: 2px 2px 0 0;
+}
+
+.unsavedPill {
+  font-size: 11px;
+  font-weight: 700;
+  color: #fbbf24;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+  margin: auto 8px;
+  animation: pulseDot 1.8s ease-in-out infinite;
+}
+@keyframes pulseDot { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+/* ============================================================
+   LAYOUT — flex:1 + min-height:0 = la clé du fix
+   ============================================================ */
+.editorLayout {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  overflow: hidden;
+  transition: grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.editorLayout[data-collapsed] { grid-template-columns: 0 minmax(0, 1fr); }
+.editorLayout[data-collapsed] .sidebar {
+  transform: translateX(-100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sidebar {
+  min-width: 0;
+  min-height: 0;
+  display: block;
+  background: #1a1f27;
+  color: #e2e8f0;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 12px;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s;
+}
+
+.panelBody {
+  display: grid;
+  gap: 14px;
+  min-height: 0;
+}
+
+/* ============================================================
+   INSPECTEUR (Style)
+   ============================================================ */
+.inspectorHeader {
+  padding: 8px 4px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.inspectorTitle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  color: #f8fafc;
+  text-transform: capitalize;
+  margin-bottom: 6px;
+}
+.inspectorId { color: #64748b; font-size: 11px; font-weight: 700; }
+.inspectorCrumb {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #64748b;
+}
+.inspectorCrumb strong { color: #5eead4; text-transform: capitalize; }
+
+.propertyRow {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+.propertyLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: #94a3b8;
+}
+.propertyControl {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+.propertyControl .fullWidth { width: 100%; }
+
+/* ============================================================
+   ARBRES / LISTES
+   ============================================================ */
+.treeSection { display: grid; gap: 6px; }
+
+.treeSectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  color: #e2e8f0;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+.treeSectionHeader:hover { background: rgba(255, 255, 255, 0.06); }
+.treeChevron { color: #64748b; transition: transform 0.2s; }
+.treeChevron[data-open] { transform: rotate(90deg); color: #5eead4; }
+.treeBadge {
+  margin-left: auto;
+  font-size: 10.5px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+  font-weight: 700;
+}
+
+.treeList { display: grid; gap: 3px; }
+
+.treeItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 6px 6px 4px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  transition: background 0.15s, border-color 0.15s;
+}
+.treeItem:hover { background: rgba(255, 255, 255, 0.04); }
+.treeItemActive {
+  background: rgba(45, 212, 191, 0.12);
+  border-color: rgba(45, 212, 191, 0.35);
+}
+.treeItem[data-drop] { border-color: #5eead4; }
+
+.treeItemBtn {
+  flex: 1;
+  display: grid;
+  gap: 2px;
+  padding: 4px 4px;
+  border: none;
+  background: transparent;
+  color: #e2e8f0;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+}
+.treeItemBtn > span:first-child {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-transform: capitalize;
+}
+.treeItemSub {
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 400;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.treeItemIcon {
+  width: 24px; height: 24px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+.treeItemIcon:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+
+.dragHandle {
+  cursor: grab;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1;
+  padding: 0 2px;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.insertionPoint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 4px;
+  margin: 1px 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #5eead4;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s, height 0.15s, background 0.15s;
+}
+.insertionPoint:hover { opacity: 1; height: 18px; background: rgba(45, 212, 191, 0.12); }
+
+.draftBadge {
+  font-size: 9.5px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+/* ============================================================
+   RECHERCHE + GRILLE DE BLOCS
+   ============================================================ */
+.searchWrap { position: relative; display: flex; align-items: center; }
+.searchIcon { position: absolute; left: 10px; color: #64748b; pointer-events: none; }
+.searchInput {
+  width: 100%;
+  padding: 8px 10px 8px 32px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  color: #fff;
+  font: inherit;
+  font-size: 12.5px;
+}
+.searchInput::placeholder { color: #64748b; }
+.searchInput:focus { outline: none; border-color: #5eead4; box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.15); }
+
+.blockGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+.blockCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  color: #cbd5e1;
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+}
+.blockCard:hover {
+  background: rgba(45, 212, 191, 0.1);
+  border-color: rgba(45, 212, 191, 0.5);
+  color: #fff;
+  transform: translateY(-1px);
+}
+.blockCardIcon {
+  width: 32px; height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: rgba(45, 212, 191, 0.12);
+  color: #5eead4;
+}
+
+/* ============================================================
+   INPUTS
+   ============================================================ */
+.input, .textarea, .select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+  font: inherit;
+  font-size: 12.5px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.input:focus, .textarea:focus, .select:focus {
+  outline: none; border-color: #5eead4; box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.15);
+}
+.input::placeholder { color: #64748b; }
+.select { cursor: pointer; }
+.select option { background: #1e242e; color: #fff; }
+.selectSm {
+  padding: 5px 8px;
+  font-size: 11.5px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #cbd5e1;
+  cursor: pointer;
+}
+.textarea { resize: vertical; min-height: 70px; }
+
+.fieldLabel {
+  display: grid;
+  gap: 6px;
+  color: #cbd5e1;
+  font-size: 11.5px;
+  font-weight: 500;
+}
+
+.primaryBtn {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 7px;
+  background: linear-gradient(135deg, #10e5b0, #06b89b);
+  color: #0a1f1b;
+  font: inherit;
+  font-weight: 700;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.primaryBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.ghostBtnSm {
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 7px;
+  background: transparent;
+  color: #cbd5e1;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ghostBtnSm:hover { background: rgba(255, 255, 255, 0.06); color: #fff; }
+
+.addBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 9px;
+  border: 1px dashed rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.addBtn:hover { background: rgba(255, 255, 255, 0.04); border-color: #5eead4; color: #5eead4; }
+
+.inlineRow { display: flex; gap: 6px; }
+.treeForm { margin-top: 4px; display: grid; gap: 6px; }
+
+/* ============================================================
+   SEGMENTED / ICON ROWS (inspector)
+   ============================================================ */
+.segmented {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.segmentedBtn {
+  padding: 5px 10px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.segmentedBtn:hover { color: #fff; background: rgba(255, 255, 255, 0.05); }
+.segmentedBtnActive {
+  background: rgba(45, 212, 191, 0.18);
+  color: #5eead4;
+  box-shadow: 0 0 0 1px rgba(45, 212, 191, 0.3);
+}
+
+.iconRow { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.iconField {
+  width: 28px; height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  color: #cbd5e1;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.iconField:hover { background: rgba(255, 255, 255, 0.08); color: #fff; border-color: rgba(45, 212, 191, 0.4); }
+
+/* ============================================================
+   STYLE GROUP / RANGE / MEDIA / TEMPLATE
+   ============================================================ */
+.styleGroup {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+.styleGroupTitle {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+}
+.styleGroupRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+}
+.styleMiniLabel {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  color: #94a3b8;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.rangeField { display: grid; gap: 4px; color: #cbd5e1; font-size: 11px; }
+.rangeRow { display: flex; align-items: center; gap: 8px; }
+.rangeRow input { flex: 1; accent-color: #10e5b0; }
+.rangeRow output {
+  min-width: 44px; color: #5eead4; text-align: right;
+  font-variant-numeric: tabular-nums; font-weight: 700;
+}
+
+.mediaGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+}
+.mediaThumb {
+  aspect-ratio: 1;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 6px;
+  background: #0f172a;
+  cursor: pointer;
+}
+.mediaThumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.mediaThumbActive { border-color: #5eead4; box-shadow: 0 0 0 2px rgba(45, 212, 191, 0.25); }
+
+.templateGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.templateCard {
+  display: grid;
+  gap: 3px;
+  padding: 9px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.03);
+  color: #e2e8f0;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.templateCard:hover { border-color: rgba(45, 212, 191, 0.5); background: rgba(45, 212, 191, 0.08); }
+.templateCard strong { font-size: 11.5px; }
+.templateCard span { color: #94a3b8; font-size: 10.5px; line-height: 1.3; }
+
+.themePresets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.presetChip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.03);
+  color: #cbd5e1;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  min-width: 0;
+  transition: all 0.15s;
+}
+.presetChip:hover { background: rgba(255, 255, 255, 0.08); color: #fff; transform: translateY(-1px); }
+.presetChipActive { border-color: #5eead4; background: rgba(45, 212, 191, 0.12); color: #fff; }
+.presetChipDots { display: inline-flex; gap: 3px; flex-shrink: 0; }
+.presetChipDots > span { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.presetChipLabel { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+
+.sectionStyleActions {
+  display: grid; gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.switchButton {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.03);
+  color: #cbd5e1;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s;
+}
+.switchButton:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+
+.dangerButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  border-radius: 7px;
+  background: rgba(220, 38, 38, 0.1);
+  color: #fca5a5;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.dangerButton:hover { background: rgba(220, 38, 38, 0.2); color: #fff; }
+
+.emptyHint {
+  padding: 14px;
+  color: #94a3b8;
+  font-size: 12.5px;
+  text-align: center;
+  line-height: 1.5;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  border: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+.healthWarning {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(251, 191, 36, 0.08);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+  color: #fbbf24;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.urlFieldError { display: block; font-size: 10.5px; color: #fca5a5; padding-top: 4px; }
+.input[data-invalid] {
+  border-color: #f87171 !important;
+  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.18) !important;
+}
+
+/* ============================================================
+   PREVIEW PANEL
+   ============================================================ */
+.previewPanel {
+  min-width: 0;
+  min-height: 0;
+  background: #0b1220;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px;
+}
+
+.previewContent {
+  display: grid;
+  width: min(100%, 1100px);
+  margin: 0 auto;
+}
+
+/* ============================================================
+   INLINE TOOLBAR (édition texte)
+   ============================================================ */
+.inlineTextToolbar {
+  position: absolute;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  max-width: calc(100% - 16px);
+  padding: 6px 8px;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  background: #1e242e;
+  color: #f8fafc;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+  cursor: grab;
+  user-select: none;
+  flex-wrap: wrap;
+}
+.inlineTextToolbar:active { cursor: grabbing; }
+
+.inlineToolbarDragHandle, .inlineToolbarClose {
+  width: 20px; height: 20px;
+  border: none;
+  border-radius: 4px;
+  background: rgba(148, 163, 184, 0.12);
+  color: #cbd5e1;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.inlineToolbarClose:hover, .inlineToolbarDragHandle:hover {
+  background: rgba(148, 163, 184, 0.2); color: #fff;
+}
+
+.inlineToolbarLabel {
+  padding: 0 6px;
+  border-right: 1px solid rgba(255, 255, 255, 0.15);
+  color: #cbd5e1;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.inlineTextInput, .inlineLinkInput {
+  height: 26px;
+  padding: 0 7px;
+  border: 1px solid #475569;
+  border-radius: 5px;
+  background: #f8fafc;
+  color: #0f172a;
+  font: inherit;
+  font-size: 11.5px;
+}
+.inlineTextInput { width: 150px; }
+.inlineLinkInput { width: 190px; }
+
+.inlineToolbarSelect, .inlineToolbarButton {
+  min-width: 26px;
+  height: 26px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: #f8fafc;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.inlineToolbarSelect { min-width: 52px; padding: 0 5px; background: #2d3748; }
+.inlineToolbarButton:hover, .inlineToolbarSelect:hover, .inlineColorButton:hover {
+  border-color: #64748b; background: #374151;
+}
+
+.inlineLinkForm { display: inline-flex; align-items: center; gap: 4px; }
+
+.inlineColorButton {
+  position: relative; cursor: pointer;
+  width: 26px; height: 26px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 5px;
+}
+.inlineColorButton span {
+  text-decoration: underline;
+  text-decoration-color: #14b8a6;
+  text-decoration-thickness: 3px;
+  color: #fff; font-weight: 700;
+}
+.inlineColorButton input {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  opacity: 0; cursor: pointer;
+}
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+.toast {
+  position: fixed;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #10e5b0;
+  color: #0a1f1b;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 10px 20px;
+  border-radius: 999px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+  z-index: 9999;
+  animation: toastIn 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translate(-50%, 20px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* ============================================================
+   FOCUS
+   ============================================================ */
+.sidebar button:focus-visible,
+.sidebar input:focus-visible,
+.sidebar select:focus-visible,
+.topBar button:focus-visible,
+.tabBar button:focus-visible {
+  outline: 2px solid #5eead4;
+  outline-offset: 2px;
+}
+
+/* ============================================================
+   MOBILE
+   ============================================================ */
+.mobileToggle { display: none; }
+.mobileBackdrop { display: none; }
+
+@media (max-width: 1100px) {
+  .editorLayout { grid-template-columns: 1fr; overflow: visible; }
+  .editorLayout[data-collapsed] { grid-template-columns: 1fr; }
+  .editorLayout[data-collapsed] .sidebar { transform: translateX(-105%); }
+
+  .mobileToggle {
+    display: inline-flex;
+    position: fixed;
+    top: 96px; left: 12px;
+    z-index: 100;
+    width: 42px; height: 42px;
+    border-radius: 12px;
+    background: #10e5b0;
+    color: #0a1f1b;
+    border: none;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0; bottom: 0; left: 0;
+    width: 320px;
+    max-width: 88vw;
+    height: 100vh;
+    z-index: 95;
+    transform: translateX(-105%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .sidebar[data-mobile-open] { transform: translateX(0); }
+
+  .mobileBackdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 90;
+    backdrop-filter: blur(2px);
+  }
+}
+
+/* ============================================================
+   Reduced motion (CORRIGÉ — pas de "*")
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .unsavedPill,
+  .toast,
+  .sidebar,
+  .editorLayout,
+  .insertionPoint,
+  .treeChevron,
+  .undoDropdown,
+  .mobileToggle {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
