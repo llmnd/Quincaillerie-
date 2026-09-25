@@ -27,11 +27,11 @@
   --ink-4: #6f7a8a;
   --ink-5: #4f5866;
 
-  /* Accent prune (dashboard) */
-  --accent: #a46aa3;
-  --accent-hi: #c497c2;
-  --accent-soft: rgba(164, 106, 163, 0.1);
-  --accent-line: rgba(164, 106, 163, 0.35);
+  /* Accent laiton - identité MIZAN */
+  --accent: #dfb053;
+  --accent-hi: #efa716;
+  --accent-soft: rgba(223, 176, 83, 0.12);
+  --accent-line: rgba(223, 176, 83, 0.38);
 
   /* Sémantique */
   --good: #64eeae;

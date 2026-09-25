@@ -102,3 +102,19 @@ class FarmingEggProduction(Base):
     damaged_quantity: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     notes: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class FarmingStockTransfer(Base):
+    __tablename__ = "farming_stock_transfers"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    organization_id: Mapped[int] = mapped_column(ForeignKey("organizations.id"), nullable=False, index=True)
+    batch_id: Mapped[int] = mapped_column(ForeignKey("farming_batches.id"), nullable=False, index=True)
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id"), nullable=False, index=True)
+    egg_production_id: Mapped[int | None] = mapped_column(ForeignKey("farming_egg_productions.id"), nullable=True, index=True)
+    transfer_type: Mapped[str] = mapped_column(String(30), nullable=False)
+    quantity: Mapped[int] = mapped_column(Integer, nullable=False)
+    unit_cost: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    transfer_date: Mapped[date] = mapped_column(Date, nullable=False)
+    notes: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)

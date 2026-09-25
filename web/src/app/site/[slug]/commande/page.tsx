@@ -116,7 +116,7 @@ export default function CheckoutRoute({ params }: Readonly<{ params: Promise<{ s
           siteName: payload.website?.name || payload.organization?.name || "Entreprise",
           phone: payload.organization?.phone,
           primaryColor: theme.primary ?? "#111827",
-          secondaryColor: theme.secondary ?? "#714B67",
+          secondaryColor: theme.secondary ?? "#dfb053",
           textColor: theme.text ?? "#111827",
           secondaryTextColor: theme.secondaryText ?? "#475569",
           eyebrowText: theme.checkoutEyebrow ?? "Dernière étape",
@@ -124,7 +124,7 @@ export default function CheckoutRoute({ params }: Readonly<{ params: Promise<{ s
           leadText: theme.checkoutLead ?? `Transmettez votre demande à ${payload.website?.name || payload.organization?.name || "Entreprise"} directement sur WhatsApp.`,
         });
       } catch {
-        if (active) setConfig({ loaded: true, slug, siteName: "Entreprise", phone: null, primaryColor: "#111827", secondaryColor: "#714B67", textColor: "#111827", secondaryTextColor: "#475569", eyebrowText: "Dernière étape", titleText: "Votre commande", leadText: "Transmettez votre demande directement sur WhatsApp." });
+        if (active) setConfig({ loaded: true, slug, siteName: "Entreprise", phone: null, primaryColor: "#111827", secondaryColor: "#dfb053", textColor: "#111827", secondaryTextColor: "#475569", eyebrowText: "Dernière étape", titleText: "Votre commande", leadText: "Transmettez votre demande directement sur WhatsApp." });
       }
     });
     return () => { active = false; };

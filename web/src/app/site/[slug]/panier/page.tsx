@@ -20,7 +20,7 @@ export default async function CartRoute({ params }: Readonly<{ params: Promise<{
         siteName={payload.website?.name || payload.organization?.name || "Entreprise"}
         logo={payload.website?.logo ?? ""}
         primaryColor={theme.primary ?? "#111827"}
-        secondaryColor={theme.secondary ?? "#714B67"}
+        secondaryColor={theme.secondary ?? "#dfb053"}
         textColor={theme.text ?? "#111827"}
         labels={{
           home: theme.headerHome,
@@ -35,7 +35,7 @@ export default async function CartRoute({ params }: Readonly<{ params: Promise<{
         slug={slug}
         siteName={payload.website?.name || payload.organization?.name || "Entreprise"}
         primaryColor={theme.primary ?? "#111827"}
-        secondaryColor={theme.secondary ?? "#714B67"}
+        secondaryColor={theme.secondary ?? "#dfb053"}
         textColor={theme.text ?? "#111827"}
         secondaryTextColor={theme.secondaryText ?? "#475569"}
       />

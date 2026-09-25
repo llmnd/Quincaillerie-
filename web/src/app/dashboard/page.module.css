@@ -1,6 +1,6 @@
 /* =========================================================
-   DASHBOARD — ERP · Édition finale
-   Palette prune · rythme cohérent · zéro glow · interactif
+  DASHBOARD — ERP · Édition finale
+  Palette laiton MIZAN · rythme cohérent · zéro glow · interactif
 ========================================================= */
 
 /* -------------------------------------------------------------------------
@@ -22,11 +22,11 @@
   --ink-4: #6f7a8a;
   --ink-5: #4f5866;
 
-  --accent: #a46aa3;
-  --accent-soft: rgba(164, 106, 163, 0.1);
-  --accent-line: rgba(164, 106, 163, 0.35);
-  --accent-hi: #c497c2;
-  --accent-ink: #2a1629;
+  --accent: #dfb053;
+  --accent-soft: rgba(223, 176, 83, 0.12);
+  --accent-line: rgba(223, 176, 83, 0.38);
+  --accent-hi: #efa716;
+  --accent-ink: #1a1408;
 
   --good: #64eeae;
   --warn: #ffc04c;

@@ -13,7 +13,7 @@ export const HEADER_THEME_KEYS = [
 
 export const defaultTheme: WebsiteTheme = {
   primary: "#111827",
-  secondary: "#714B67",
+  secondary: "#dfb053",
   background: "#FFFFFF",
   text: "#111827",
   font: "Inter, sans-serif",
@@ -27,7 +27,7 @@ export const defaultTheme: WebsiteTheme = {
 
 export const themePresets = [
   { name: "Slate", primary: "#0f172a", secondary: "#0ea5a4", background: "#ffffff", text: "#0f172a" },
-  { name: "Plum", primary: "#1e1b4b", secondary: "#714b67", background: "#faf5ff", text: "#1e1b4b" },
+  { name: "Laiton MIZAN", primary: "#1a1408", secondary: "#dfb053", background: "#faf8f0", text: "#1a1408" },
   { name: "Ember", primary: "#7c2d12", secondary: "#ea580c", background: "#fffbeb", text: "#7c2d12" },
   { name: "Forest", primary: "#14532d", secondary: "#16a34a", background: "#f0fdf4", text: "#14532d" },
   { name: "Ocean", primary: "#0c4a6e", secondary: "#0ea5e9", background: "#f0f9ff", text: "#0c4a6e" },

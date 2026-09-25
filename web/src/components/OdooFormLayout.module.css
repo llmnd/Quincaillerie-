@@ -15,8 +15,8 @@
   --muted: #9298a3;
   --muted-2: #6e747f;
 
-  --primary: #714b67;
-  --primary-hover: #835875;
+  --primary: #dfb053;
+  --primary-hover: #efa716;
 
   --save: #22c7a8;
   --save-hover: #32d6b7;
@@ -74,8 +74,8 @@
   border: 0;
   border-radius: 0px;
 
-  background: #714b67;
-  color: #fff;
+  background: #dfb053;
+  color: #1a1408;
 
   font-size: 16px;
   font-weight: 600;
@@ -88,7 +88,7 @@
 }
 
 .newButton:hover {
-  background: #835875;
+  background: #efa716;
 }
 
 .newButton:active {

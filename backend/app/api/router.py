@@ -153,6 +153,8 @@ def create_stock_movement(payload: StockMovementCreate, db: Session = Depends(ge
         product_id=payload.product_id,
         movement_type=payload.movement_type,
         quantity=payload.quantity,
+        source_type=payload.source_type,
+        source_id=payload.source_id,
         reason=payload.reason,
     )
     db.add(movement)

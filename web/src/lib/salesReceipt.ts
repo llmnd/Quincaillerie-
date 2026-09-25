@@ -50,10 +50,10 @@ export function openSalesReceipt(data: ReceiptData) {
     @page{size:A4;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#eef0f4}
     body{font-family:Arial,Helvetica,sans-serif;color:#17202b;font-size:10pt;line-height:1.4}
     .page{width:210mm;min-height:297mm;margin:0 auto;padding:15mm;background:#fff}
-    .header{display:grid;grid-template-columns:auto minmax(0,1fr) minmax(42mm,.7fr);gap:7mm;align-items:start;padding-bottom:7mm;border-bottom:1px solid #a46aa3}
+    .header{display:grid;grid-template-columns:auto minmax(0,1fr) minmax(42mm,.7fr);gap:7mm;align-items:start;padding-bottom:7mm;border-bottom:1px solid #dfb053}
     .logo{width:22mm;height:22mm;object-fit:cover;border-radius:3mm;border:1px solid #e2e5ea;background:#fafbfc}
-    .logoFallback{display:grid;place-items:center;background:#a46aa3;color:#fff;font-size:22pt;font-weight:700}
-    .brand{min-width:0}.eyebrow,.metaLabel{margin:0;color:#a46aa3;font-size:7pt;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
+    .logoFallback{display:grid;place-items:center;background:#dfb053;color:#1a1408;font-size:22pt;font-weight:700}
+    .brand{min-width:0}.eyebrow,.metaLabel{margin:0;color:#dfb053;font-size:7pt;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
     h1{margin:1mm 0 0;font-size:16pt;line-height:1.15} .contact{margin:1mm 0 0;color:#64748b;font-size:8pt;overflow-wrap:anywhere}
     .meta{text-align:right;display:grid;gap:3mm}.metaItem{display:grid;gap:1mm}.metaLabel{color:#94a3b8;font-size:7pt}.metaValue{font-size:8.5pt;font-weight:600;overflow-wrap:anywhere}
     .title{padding:6mm 0 4mm;border-bottom:1px solid #e2e8f0}.title h2{margin:0;font-size:18pt;line-height:1.1}.title p{margin:2mm 0 0;color:#64748b;font-size:9pt}

@@ -98,6 +98,200 @@ def test_user_pinned_modules_are_persisted_per_user():
     assert second_me.json()["pinned_modules"] == []
 
 
+def test_farming_production_transfers_to_commercial_stock():
+    registration = client.post(
+        "/api/v1/auth/register",
+        json={
+            "organization_name": f"Farming Stock Org {uuid.uuid4().hex[:8]}",
+            "full_name": "Farming Admin",
+            "email": f"farming-stock-{uuid.uuid4().hex[:8]}@demo.test",
+            "password": "StrongPass123",
+        },
+    )
+    assert registration.status_code == 201, registration.text
+    token = registration.cookies.get("access_token", "")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    product = client.post(
+        "/api/v1/products",
+        json={
+            "sku": f"EGG-{uuid.uuid4().hex[:8].upper()}",
+            "name": "Œufs frais",
+            "unit_price": 0.25,
+            "stock_quantity": 0,
+        },
+        headers=headers,
+    )
+    assert product.status_code == 201, product.text
+    product_id = product.json()["id"]
+
+    batch = client.post(
+        "/api/v1/farming/batches",
+        json={
+            "reference": f"PONTE-{uuid.uuid4().hex[:8]}",
+            "species": "chicken",
+            "production_type": "layer",
+            "start_date": "2026-09-25",
+            "initial_count": 20,
+        },
+        headers=headers,
+    )
+    assert batch.status_code == 201, batch.text
+    batch_id = batch.json()["id"]
+
+    production = client.post(
+        "/api/v1/farming/egg-productions",
+        json={
+            "batch_id": batch_id,
+            "production_date": "2026-09-25",
+            "quantity": 10,
+            "damaged_quantity": 2,
+        },
+        headers=headers,
+    )
+    assert production.status_code == 201, production.text
+    production_id = production.json()["id"]
+
+    transfer = client.post(
+        "/api/v1/farming/stock-transfers",
+        json={
+            "batch_id": batch_id,
+            "product_id": product_id,
+            "egg_production_id": production_id,
+            "transfer_type": "eggs",
+            "quantity": 8,
+            "unit_cost": 0.1,
+            "transfer_date": "2026-09-25",
+        },
+        headers=headers,
+    )
+    assert transfer.status_code == 201, transfer.text
+
+    product_after = client.get(f"/api/v1/products/{product_id}", headers=headers)
+    assert product_after.status_code == 200
+    assert product_after.json()["stock_quantity"] == 8
+
+    duplicate_transfer = client.post(
+        "/api/v1/farming/stock-transfers",
+        json={
+            "batch_id": batch_id,
+            "product_id": product_id,
+            "egg_production_id": production_id,
+            "transfer_type": "eggs",
+            "quantity": 1,
+            "transfer_date": "2026-09-25",
+        },
+        headers=headers,
+    )
+    assert duplicate_transfer.status_code == 400
+
+    poultry_product = client.post(
+        "/api/v1/products",
+        json={
+            "sku": f"POULTRY-{uuid.uuid4().hex[:8].upper()}",
+            "name": "Poulet vivant",
+            "unit_price": 12.0,
+            "stock_quantity": 0,
+        },
+        headers=headers,
+    )
+    assert poultry_product.status_code == 201, poultry_product.text
+
+    poultry_batch = client.post(
+        "/api/v1/farming/batches",
+        json={
+            "reference": f"CHAIR-{uuid.uuid4().hex[:8]}",
+            "species": "chicken",
+            "production_type": "broiler",
+            "start_date": "2026-09-25",
+            "initial_count": 5,
+        },
+        headers=headers,
+    )
+    assert poultry_batch.status_code == 201, poultry_batch.text
+    poultry_batch_id = poultry_batch.json()["id"]
+
+    poultry_transfer = client.post(
+        "/api/v1/farming/stock-transfers",
+        json={
+            "batch_id": poultry_batch_id,
+            "product_id": poultry_product.json()["id"],
+            "transfer_type": "poultry",
+            "quantity": 2,
+            "unit_cost": 8.0,
+            "transfer_date": "2026-09-25",
+        },
+        headers=headers,
+    )
+    assert poultry_transfer.status_code == 201, poultry_transfer.text
+    assert poultry_transfer.json()["quantity"] == 2
+
+    poultry_batch_after = client.get("/api/v1/farming/batches", headers=headers)
+    assert poultry_batch_after.status_code == 200
+    updated_batch = next(item for item in poultry_batch_after.json() if item["id"] == poultry_batch_id)
+    assert updated_batch["current_count"] == 3
+
+
+def test_farming_feed_consumption_is_posted_to_income_statement():
+    registration = client.post(
+        "/api/v1/auth/register",
+        json={
+            "organization_name": f"Feed Accounting Org {uuid.uuid4().hex[:8]}",
+            "full_name": "Feed Accounting Admin",
+            "email": f"feed-accounting-{uuid.uuid4().hex[:8]}@demo.test",
+            "password": "StrongPass123",
+        },
+    )
+    assert registration.status_code == 201, registration.text
+    token = registration.cookies.get("access_token", "")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    feed = client.post(
+        "/api/v1/products",
+        json={
+            "sku": f"FEED-{uuid.uuid4().hex[:8].upper()}",
+            "name": "Aliment volaille",
+            "unit_price": 4.5,
+            "stock_quantity": 20,
+        },
+        headers=headers,
+    )
+    assert feed.status_code == 201, feed.text
+
+    batch = client.post(
+        "/api/v1/farming/batches",
+        json={
+            "reference": f"ALIM-{uuid.uuid4().hex[:8]}",
+            "species": "chicken",
+            "production_type": "broiler",
+            "start_date": "2026-09-25",
+            "initial_count": 10,
+        },
+        headers=headers,
+    )
+    assert batch.status_code == 201, batch.text
+
+    consumption = client.post(
+        "/api/v1/farming/consumptions",
+        json={
+            "batch_id": batch.json()["id"],
+            "product_id": feed.json()["id"],
+            "quantity": 3,
+            "consumed_at": "2026-09-25",
+            "reason": "Ration du matin",
+        },
+        headers=headers,
+    )
+    assert consumption.status_code == 201, consumption.text
+
+    income_statement = client.get("/api/v1/accounting/reports/income-statement", headers=headers)
+    assert income_statement.status_code == 200, income_statement.text
+    report = income_statement.json()
+    assert report["farming_feed_cost"] == 13.5
+    assert report["gross_margin"] == -13.5
+    assert any(row["code"] == "602" and row["debit"] == 13.5 for row in report["expenses"])
+
+
 def test_new_organization_starts_with_default_accounting_chart():
     payload = {
         "organization_name": f"Compta Org {uuid.uuid4().hex[:8]}",

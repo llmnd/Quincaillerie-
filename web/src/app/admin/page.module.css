@@ -25,12 +25,12 @@
   --ink-4: #6f7a8a;
   --ink-5: #4f5866;
 
-  /* Accent céladon — cohérent avec l'AppShell nav */
-  --accent: #82c8bc;
-  --accent-hi: #9ce0d3;
-  --accent-soft: rgba(130, 200, 188, 0.1);
-  --accent-soft-2: rgba(130, 200, 188, 0.16);
-  --accent-line: rgba(130, 200, 188, 0.35);
+  /* Accent laiton - identité MIZAN */
+  --accent: #dfb053;
+  --accent-hi: #efa716;
+  --accent-soft: rgba(223, 176, 83, 0.12);
+  --accent-soft-2: rgba(223, 176, 83, 0.18);
+  --accent-line: rgba(223, 176, 83, 0.38);
 
   /* Rayons */
   --r-xs: 4px;

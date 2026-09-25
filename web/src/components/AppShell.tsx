@@ -469,7 +469,8 @@ export default function AppShell({
       .map((module) => module.key)
   );
   const safeEnabledModules = enabledModuleKeys.size > 0 ? enabledModuleKeys : allModuleKeys;
-  const pinnedModuleKeys = user?.pinned_modules ?? [];
+  // Keep the first server/client render identical; account preferences appear after hydration.
+  const pinnedModuleKeys = isHydrated ? user?.pinned_modules ?? [] : [];
   const organization = isHydrated ? organizationQuery.data ?? null : null;
   const visibleBreadcrumbs =
     breadcrumbs.length > 0
@@ -800,7 +801,7 @@ export default function AppShell({
               {!hideSidebar && !minimalSidebar && (
                 <button
                   type="button"
-                  className={styles.backButton}
+                  className={`${styles.backButton} ${styles.sidebarToggleButton}`}
                   onClick={() => {
                     if (hideSidebar) {
                       handleBack();
@@ -809,9 +810,10 @@ export default function AppShell({
                     }
                   }}
                   aria-label={sidebarToggleAriaLabel}
+                  title={sidebarToggleAriaLabel}
                 >
                   {renderSidebarToggleIcon()}
-                  <span>{sidebarToggleLabel}</span>
+                  <span className={styles.sidebarToggleText}>{sidebarToggleLabel}</span>
                 </button>
               )}
 

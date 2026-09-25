@@ -2239,7 +2239,7 @@ export default function WebsiteEditorPage() {
                   />
                   <ThemeColorInput
                     label="Couleur secondaire"
-                    value={websiteTheme.secondary ?? "#714B67"}
+                    value={websiteTheme.secondary ?? "#dfb053"}
                     onCommit={(v) => void updateThemeValue("secondary", v)}
                   />
                   <ThemeColorInput
@@ -2593,7 +2593,7 @@ export default function WebsiteEditorPage() {
                     href={websiteSlug ? `/site/${websiteSlug}/panier` : "/website/editor"}
                     onNavigate={() => setPreviewPage("cart")}
                     textColor={websiteTheme.text ?? "#111827"}
-                    secondaryColor={websiteTheme.secondary ?? "#714B67"}
+                    secondaryColor={websiteTheme.secondary ?? "#dfb053"}
                     editable={editorMode === "edit"}
                     style={headerStyleFor("headerCart")}
                     countStyle={headerStyleFor("headerCartCount")}
@@ -2648,7 +2648,7 @@ export default function WebsiteEditorPage() {
                         textColor={websiteTheme.text ?? "#111827"}
                         secondaryTextColor={websiteTheme.secondaryText ?? "#475569"}
                         primaryColor={websiteTheme.primary ?? "#111827"}
-                        secondaryColor={websiteTheme.secondary ?? "#714B67"}
+                        secondaryColor={websiteTheme.secondary ?? "#dfb053"}
                         slug={currentSiteSlug}
                         fontFamily={websiteTheme.font ?? "Inter, sans-serif"}
                         editable={editorMode === "edit"}
@@ -2670,7 +2670,7 @@ export default function WebsiteEditorPage() {
                         title={String(productsSection?.content?.title ?? "Nos produits")}
                         introText={String(productsSection?.content?.subtitle ?? "Choisissez vos produits et envoyez votre demande directement à l'entreprise.")}
                         primaryColor={websiteTheme.primary ?? "#111827"}
-                        secondaryColor={websiteTheme.secondary ?? "#714B67"}
+                        secondaryColor={websiteTheme.secondary ?? "#dfb053"}
                         textColor={websiteTheme.text ?? "#111827"}
                         secondaryTextColor={websiteTheme.secondaryText ?? "#475569"}
                         fontFamily={websiteTheme.font ?? "Inter, sans-serif"}
@@ -2692,7 +2692,7 @@ export default function WebsiteEditorPage() {
                         onNavigate={() => setPreviewPage("checkout")}
                         siteName={organizationProfile?.name || "Votre entreprise"}
                         primaryColor={websiteTheme.primary ?? "#111827"}
-                        secondaryColor={websiteTheme.secondary ?? "#714B67"}
+                          secondaryColor={websiteTheme.secondary ?? "#dfb053"}
                         textColor={websiteTheme.text ?? "#111827"}
                         secondaryTextColor={websiteTheme.secondaryText ?? "#475569"}
                       />

@@ -19,12 +19,12 @@
   --ink-4: #6f7a8a;
   --ink-5: #4f5866;
 
-  /* Accent vert sauge (identité conservée) */
-  --sage: #82c8bc;
-  --sage-hi: #9ce0d3;
-  --sage-soft: rgba(130, 200, 188, 0.1);
-  --sage-soft-2: rgba(130, 200, 188, 0.16);
-  --sage-line: rgba(130, 200, 188, 0.28);
+  /* Accent laiton - identité MIZAN */
+  --sage: #dfb053;
+  --sage-hi: #efa716;
+  --sage-soft: rgba(223, 176, 83, 0.12);
+  --sage-soft-2: rgba(223, 176, 83, 0.18);
+  --sage-line: rgba(223, 176, 83, 0.32);
 
   /* Surfaces */
   --bg-sidebar: #171a24;
@@ -81,7 +81,7 @@
   border-right: 1px solid var(--line-1);
   color: #ffffff;
   overscroll-behavior: contain;
-  scrollbar-color: rgba(130, 200, 188, 0.32) transparent;
+  scrollbar-color: rgba(223, 176, 83, 0.32) transparent;
   scrollbar-width: thin;
 }
 
@@ -113,10 +113,10 @@
 .sidebar::-webkit-scrollbar-track { background: transparent; }
 .sidebar::-webkit-scrollbar-thumb {
   border-radius: 999px;
-  background: rgba(130, 200, 188, 0.28);
+  background: rgba(223, 176, 83, 0.28);
 }
 .sidebar::-webkit-scrollbar-thumb:hover {
-  background: rgba(130, 200, 188, 0.5);
+  background: rgba(223, 176, 83, 0.5);
 }
 
 .sidebarTop {
@@ -211,10 +211,10 @@
 }
 
 .breadcrumbLink {
-  color: #c07bbc !important;
+  color: var(--sage) !important;
   transition: color 180ms var(--ease);
 }
-.breadcrumbLink:hover { color: #dc92d6 !important; }
+.breadcrumbLink:hover { color: var(--sage-hi) !important; }
 
 .breadcrumbBrand {
   color: #7c8a9d;
@@ -268,8 +268,8 @@
 
 .breadcrumbMore:hover,
 .breadcrumbMore[aria-expanded="true"] {
-  background: rgba(130, 200, 188, 0.08);
-  border-color: rgba(130, 200, 188, 0.24);
+  background: rgba(223, 176, 83, 0.08);
+  border-color: rgba(223, 176, 83, 0.24);
   color: var(--sage-hi);
 }
 
@@ -303,7 +303,7 @@
 }
 
 .breadcrumbMenuLink:hover {
-  background: rgba(130, 200, 188, 0.1);
+  background: rgba(223, 176, 83, 0.1);
   color: #ffffff;
 }
 
@@ -348,9 +348,9 @@
   width: 24px;
   height: 24px;
   place-items: center;
-  border: 1px solid rgba(130, 200, 188, 0.32);
+  border: 1px solid rgba(223, 176, 83, 0.32);
   border-radius: 7px;
-  background: rgba(130, 200, 188, 0.14);
+  background: rgba(223, 176, 83, 0.14);
   color: var(--sage-hi);
   transition: background 180ms var(--ease), color 180ms var(--ease), transform 180ms var(--ease);
 }
@@ -363,7 +363,7 @@
   min-height: 42px;
   padding: 0;
   justify-content: center;
-  border: 1px solid rgba(130, 144, 200, 0.29);
+  border: 1px solid rgba(223, 176, 83, 0.29);
   border-radius: 50%;
   background: transparent;
   color: #f0f2ff;
@@ -382,8 +382,8 @@
 
 .backButton:hover {
   transform: translateX(-2px);
-  border-color: rgba(130, 200, 188, 0.5);
-  background: linear-gradient(135deg, rgba(130, 200, 188, 0.16), rgba(255, 255, 255, 0.03));
+  border-color: rgba(223, 176, 83, 0.5);
+  background: linear-gradient(135deg, rgba(223, 176, 83, 0.16), rgba(255, 255, 255, 0.03));
 }
 
 .backButton:hover .backIcon { transform: translateX(-1px); }
@@ -395,9 +395,19 @@
   outline-offset: 3px;
 }
 
+.sidebarToggleButton {
+  width: 36px;
+  min-height: 36px;
+  padding: 0;
+  justify-content: center;
+  border-radius: 8px;
+}
+
+.sidebarToggleText { display: none; }
+
 .backButtonPrimary:hover {
   transform: translateX(-2px) scale(1.03);
-  border-color: rgba(130, 200, 188, 0.55);
+  border-color: rgba(223, 176, 83, 0.55);
 }
 
 /* -------- Hamburger -------- */
@@ -548,15 +558,15 @@
 }
 
 .navPinButton:hover {
-  background: rgba(130, 200, 188, 0.08);
-  border-color: rgba(130, 200, 188, 0.22);
+  background: rgba(223, 176, 83, 0.08);
+  border-color: rgba(223, 176, 83, 0.22);
   color: var(--sage-hi);
 }
 
 .navPinButtonActive {
   color: var(--sage-hi);
-  background: rgba(130, 200, 188, 0.12);
-  border-color: rgba(130, 200, 188, 0.3);
+  background: rgba(223, 176, 83, 0.12);
+  border-color: rgba(223, 176, 83, 0.3);
 }
 
 .navPinMenuWrap {
@@ -624,7 +634,7 @@
   place-items: center;
   border: 1px solid var(--line-2);
   border-radius: 8px;
-  background: linear-gradient(135deg, rgba(130, 200, 188, 0.12), rgba(255, 255, 255, 0.02));
+  background: linear-gradient(135deg, rgba(223, 176, 83, 0.12), rgba(255, 255, 255, 0.02));
   color: #ffffff;
   font-size: 0.72rem;
   font-weight: 600;
@@ -634,7 +644,7 @@
 
 .avatarButton:hover {
   border-color: var(--sage-line);
-  background: linear-gradient(135deg, rgba(130, 200, 188, 0.22), rgba(255, 255, 255, 0.03));
+  background: linear-gradient(135deg, rgba(223, 176, 83, 0.22), rgba(255, 255, 255, 0.03));
   transform: translateY(-1px);
 }
 
@@ -980,7 +990,7 @@
   width: 100%;
   height: 2px;
   overflow: hidden;
-  background: rgba(130, 200, 188, 0.12);
+  background: rgba(223, 176, 83, 0.12);
 }
 
 .navigationLoading span {

@@ -117,7 +117,7 @@ type SectionKey = "identity" | null;
 
 const defaultTheme: Theme = {
   primary: "#111827",
-  secondary: "#714B67",
+  secondary: "#dfb053",
   background: "#FFFFFF",
   text: "#111827",
   font: "Inter, sans-serif",

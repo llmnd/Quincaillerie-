@@ -1,7 +1,6 @@
 .pageShell {
 	width: min(1120px, calc(100% - 32px));
 	min-height: calc(100vh - 64px);
-	margin: 32px auto;
 	padding: 48px 56px;
 	border: 1px solid rgba(255, 255, 255, 0.05);
 	border-radius: 0px; /* Les découpes droites accentuent le côté éditorial Zara */
@@ -28,7 +27,7 @@
 	background: #4b4c72;
 	color: #fff;
 	font-weight: 400;
-	font-size: 0.85rem;
+	font-size: 1rem;
 	letter-spacing: 0.05em;
 }
 
@@ -66,7 +65,7 @@
 .eyebrow {
 	margin: 0 0 20px;
 	color: #7c8a9d;
-	font-size: 0.6rem;
+	font-size: 0.9rem;
 	letter-spacing: 0.3em;
 	text-transform: uppercase;
 	font-weight: 400;
@@ -106,8 +105,8 @@
 
 .form label {
 	display: block;
-	color: #9ba5b8;
-	font-size: 0.6rem;
+	color: #e0e2e7;
+	font-size: 1.1rem;
 	font-weight: 400;
 	letter-spacing: 0.22em;
 	text-transform: uppercase;
@@ -122,14 +121,14 @@
 	background: transparent;
 	color: #edf0f5;
 	font: inherit;
-	font-size: 0.9rem;
+	font-size: 1rem;
 	font-weight: 300;
 	outline: none;
 	transition: border-color 200ms ease;
 }
 
 .form input::placeholder {
-	color: #525e70;
+	color: #6b7584;
 	font-weight: 300;
 }
 
@@ -147,7 +146,7 @@
 	color: #ffffff;
 	font: inherit;
 	font-weight: 400;
-	font-size: 0.75rem;
+	font-size: 0.9rem;
 	letter-spacing: 0.2em;
 	text-transform: uppercase;
 	cursor: pointer;
@@ -167,8 +166,8 @@
 
 .error {
 	margin: 0;
-	color: #ed9eae;
-	font-size: 0.75rem;
+	color: #e34e6c;
+	font-size: 1rem;
 	letter-spacing: 0.02em;
 	font-weight: 300;
 }
@@ -184,7 +183,7 @@
 }
 
 .cardFooterText {
-	font-size: 0.7rem;
+	font-size: 1rem;
 	color: #7c8a9d;
 	letter-spacing: 0.08em;
 	text-transform: uppercase;
@@ -193,7 +192,7 @@
 .signupLink {
 	display: inline-block;
 	color: #6ce1d1;
-	font-size: 0.75rem;
+	font-size: 1rem;
 	font-weight: 400;
 	letter-spacing: 0.15em;
 	text-transform: uppercase;

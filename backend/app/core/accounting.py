@@ -12,6 +12,8 @@ DEFAULT_ACCOUNTS = (
     ("521", "Banque", "5"),
     ("571", "Caisse", "5"),
     ("601", "Achats de marchandises", "6"),
+    ("602", "Consommation d'aliments", "6"),
+    ("32", "Stock d'aliments et approvisionnements", "3"),
     ("701", "Ventes de marchandises", "7"),
 )
 
@@ -109,4 +111,38 @@ def create_sale_journal(
     db.add(JournalLine(organization_id=organization_id, entry_id=entry.id, account_id=accounts["701"].id, label=f"Chiffre d'affaires vente #{sale_id}", debit=0, credit=subtotal))
     if tax_amount:
         db.add(JournalLine(organization_id=organization_id, entry_id=entry.id, account_id=accounts["4431"].id, label=f"TVA vente #{sale_id}", debit=0, credit=tax_amount))
+    return entry
+
+
+def create_farming_consumption_journal(
+    db: Session,
+    organization_id: int,
+    consumption_id: int,
+    batch_reference: str,
+    amount: float,
+) -> JournalEntry:
+    existing = db.scalar(
+        select(JournalEntry).where(
+            JournalEntry.organization_id == organization_id,
+            JournalEntry.source_type == "farming_consumption",
+            JournalEntry.source_id == consumption_id,
+        )
+    )
+    if existing is not None:
+        return existing
+
+    accounts = get_or_create_default_accounts(db, organization_id)
+    value = round(amount, 2)
+    entry = JournalEntry(
+        organization_id=organization_id,
+        reference=f"ALIM-{consumption_id}",
+        journal="ELEVAGE",
+        description=f"Consommation d'aliments - {batch_reference}",
+        source_type="farming_consumption",
+        source_id=consumption_id,
+    )
+    db.add(entry)
+    db.flush()
+    db.add(JournalLine(organization_id=organization_id, entry_id=entry.id, account_id=accounts["602"].id, label=f"Aliments consommés - {batch_reference}", debit=value, credit=0))
+    db.add(JournalLine(organization_id=organization_id, entry_id=entry.id, account_id=accounts["32"].id, label=f"Sortie du stock d'aliments - {batch_reference}", debit=0, credit=value))
     return entry

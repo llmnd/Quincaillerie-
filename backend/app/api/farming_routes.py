@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, require_module, require_roles
-from app.models.farming import FarmingBatch, FarmingBuilding, FarmingConsumption, FarmingEggProduction, FarmingHealthEvent, FarmingSite
+from app.core.accounting import create_farming_consumption_journal
+from app.models.farming import FarmingBatch, FarmingBuilding, FarmingConsumption, FarmingEggProduction, FarmingHealthEvent, FarmingSite, FarmingStockTransfer
 from app.models.product import Product
 from app.models.stock_movement import StockMovement
 from app.models.user import User
@@ -21,6 +22,8 @@ from app.schemas.farming import (
     FarmingHealthEventRead,
     FarmingSiteCreate,
     FarmingSiteRead,
+    FarmingStockTransferCreate,
+    FarmingStockTransferRead,
 )
 
 router = APIRouter(prefix="/farming", tags=["farming"], dependencies=[Depends(require_module("farming"))])
@@ -161,6 +164,14 @@ def create_consumption(payload: FarmingConsumptionCreate, db: Session = Depends(
         **payload.model_dump(),
     )
     db.add(consumption)
+    db.flush()
+    create_farming_consumption_journal(
+        db,
+        organization_id=current_user.organization_id,
+        consumption_id=consumption.id,
+        batch_reference=batch.reference,
+        amount=consumption.quantity * consumption.unit_cost,
+    )
     db.add(StockMovement(organization_id=current_user.organization_id, product_id=product.id, movement_type="farming_consumption", quantity=payload.quantity, reason=f"Batch {batch.reference}: {payload.reason or 'consumption'}"))
     db.commit()
     db.refresh(consumption)
@@ -188,3 +199,89 @@ def create_egg_production(payload: FarmingEggProductionCreate, db: Session = Dep
     db.commit()
     db.refresh(production)
     return production
+
+
+@router.get("/stock-transfers", response_model=list[FarmingStockTransferRead])
+def list_stock_transfers(db: Session = Depends(get_db), current_user: User = Depends(require_roles("admin", "seller"))) -> list[FarmingStockTransfer]:
+    return db.scalars(
+        select(FarmingStockTransfer)
+        .where(FarmingStockTransfer.organization_id == current_user.organization_id)
+        .order_by(FarmingStockTransfer.transfer_date.desc(), FarmingStockTransfer.id.desc())
+    ).all()
+
+
+@router.post("/stock-transfers", response_model=FarmingStockTransferRead, status_code=status.HTTP_201_CREATED)
+def create_stock_transfer(
+    payload: FarmingStockTransferCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("admin")),
+) -> FarmingStockTransfer:
+    batch = db.scalar(
+        select(FarmingBatch).where(
+            FarmingBatch.id == payload.batch_id,
+            FarmingBatch.organization_id == current_user.organization_id,
+            FarmingBatch.status == "active",
+        )
+    )
+    product = db.scalar(
+        select(Product).where(
+            Product.id == payload.product_id,
+            Product.organization_id == current_user.organization_id,
+            Product.is_active.is_(True),
+        )
+    )
+    if batch is None:
+        raise HTTPException(status_code=404, detail="Active farming batch not found")
+    if product is None:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    if payload.transfer_type == "eggs":
+        if payload.egg_production_id is None:
+            raise HTTPException(status_code=400, detail="An egg production record is required")
+        egg_production = db.scalar(
+            select(FarmingEggProduction).where(
+                FarmingEggProduction.id == payload.egg_production_id,
+                FarmingEggProduction.batch_id == batch.id,
+                FarmingEggProduction.organization_id == current_user.organization_id,
+            )
+        )
+        if egg_production is None:
+            raise HTTPException(status_code=404, detail="Egg production record not found")
+        transferred_quantity = db.scalar(
+            select(func.coalesce(func.sum(FarmingStockTransfer.quantity), 0)).where(
+                FarmingStockTransfer.egg_production_id == egg_production.id,
+                FarmingStockTransfer.organization_id == current_user.organization_id,
+            )
+        ) or 0
+        available_quantity = egg_production.quantity - egg_production.damaged_quantity - int(transferred_quantity)
+        if payload.quantity > available_quantity:
+            raise HTTPException(status_code=400, detail=f"Only {available_quantity} usable eggs remain for this production")
+    elif payload.egg_production_id is not None:
+        raise HTTPException(status_code=400, detail="Egg production is only valid for egg transfers")
+
+    if payload.transfer_type == "poultry" and payload.quantity > batch.current_count:
+        raise HTTPException(status_code=400, detail="Transfer quantity cannot exceed the active batch count")
+
+    transfer = FarmingStockTransfer(
+        organization_id=current_user.organization_id,
+        **payload.model_dump(),
+    )
+    db.add(transfer)
+    db.flush()
+    if payload.transfer_type == "poultry":
+        batch.current_count -= payload.quantity
+    product.stock_quantity += payload.quantity
+    db.add(
+        StockMovement(
+            organization_id=current_user.organization_id,
+            product_id=product.id,
+            movement_type="farming_production",
+            quantity=payload.quantity,
+            source_type="farming_stock_transfer",
+            source_id=transfer.id,
+            reason=f"{batch.reference}: transfert de production",
+        )
+    )
+    db.commit()
+    db.refresh(transfer)
+    return transfer

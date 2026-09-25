@@ -7,6 +7,8 @@ class StockMovementCreate(BaseModel):
     product_id: int
     movement_type: str = Field(..., min_length=1)
     quantity: int = Field(..., gt=0)
+    source_type: str | None = None
+    source_id: int | None = None
     reason: str | None = None
 
 

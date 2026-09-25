@@ -123,7 +123,7 @@ export default async function PublicWebsitePage({ params }: PageParams) {
   const siteName = website.name || organization.name || "Entreprise";
 
   const primaryColor = theme.primary ?? "#111827";
-  const secondaryColor = theme.secondary ?? "#714B67";
+  const secondaryColor = theme.secondary ?? "#dfb053";
   const textColor = theme.text ?? "#111827";
   const secondaryTextColor = theme.secondaryText ?? "#475569";
   const background = theme.background ?? "#ffffff";

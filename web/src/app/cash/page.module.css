@@ -1,5 +1,5 @@
 /* =========================================================
-   CAISSE — Thème Odoo POS (gris bleuté · teal · violet)
+  CAISSE — Thème Odoo POS (gris bleuté · teal · laiton)
    Typographie entreprise · minimaliste
 ========================================================= */
 
@@ -45,12 +45,12 @@
   --teal-line: #5FB3C7;
   --teal-soft: rgba(47, 79, 93, 0.55);
 
-  /* Accent violet (bouton principal) */
-  --accent:      #6B3E66;
-  --accent-hi:   #8B5085;
-  --accent-soft: rgba(107, 62, 102, 0.20);
-  --accent-line: rgba(107, 62, 102, 0.55);
-  --accent-ink:  #FFFFFF;
+  /* Accent laiton - identité MIZAN */
+  --accent:      #dfb053;
+  --accent-hi:   #efa716;
+  --accent-soft: rgba(223, 176, 83, 0.12);
+  --accent-line: rgba(223, 176, 83, 0.38);
+  --accent-ink:  #1a1408;
 
   /* Sémantique */
   --accent-good:    #64EEAE;
@@ -752,13 +752,13 @@
   max-width: none;
   max-height: none;
   margin: 0;
-  background: rgba(2, 6, 23, 0.78);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(3, 8, 15, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   display: grid;
   place-items: center;
   z-index: 100;
-  padding: 24px;
+  padding: 12px;
   overflow-y: auto;
   animation: fadeIn 200ms var(--ease);
 }
@@ -768,7 +768,7 @@
   background: var(--bg-secondary);
   border: 1px solid var(--border-medium);
   width: min(520px, 100%);
-  padding: 28px;
+  padding: 22px;
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-lg);
   animation: slideUp 260ms var(--ease);
@@ -794,8 +794,8 @@
   background: var(--bg-secondary);
   border: 1px solid var(--border-medium);
   width: min(620px, 100%);
-  max-height: min(92vh, 940px);
-  padding: 28px;
+  max-height: min(940px, calc(100dvh - 24px));
+  padding: 22px;
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-lg);
   overflow-y: auto;

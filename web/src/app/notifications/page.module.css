@@ -26,12 +26,12 @@
   --ink-4: #6f7a8a;
   --ink-5: #4f5866;
 
-  /* Accent prune */
-  --accent: #a46aa3;
-  --accent-hi: #c497c2;
-  --accent-soft: rgba(164, 106, 163, 0.1);
-  --accent-line: rgba(164, 106, 163, 0.35);
-  --accent-ink: #2a1629;
+  /* Accent laiton - identité MIZAN */
+  --accent: #dfb053;
+  --accent-hi: #efa716;
+  --accent-soft: rgba(223, 176, 83, 0.12);
+  --accent-line: rgba(223, 176, 83, 0.38);
+  --accent-ink: #1a1408;
 
   /* Sémantique */
   --good: #64eeae;
@@ -608,7 +608,7 @@
     gap: 32px;
     padding: 0 0 28px;
     margin: 0 0 28px;
-    border-bottom: 3px solid #a46aa3;
+    border-bottom: 3px solid var(--accent);
     background: transparent !important;
   }
 
@@ -624,7 +624,7 @@
     display: inline-flex !important;
     align-items: center;
     justify-content: center;
-    background: #a46aa3 !important;
+    background: var(--accent) !important;
     color: #ffffff !important;
     font-size: 20pt;
     font-weight: 700;
@@ -644,7 +644,7 @@
     font-size: 8pt;
     letter-spacing: 0.22em;
     text-transform: uppercase;
-    color: #a46aa3 !important;
+    color: var(--accent) !important;
     font-weight: 700;
   }
 

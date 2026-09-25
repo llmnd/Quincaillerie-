@@ -367,7 +367,16 @@ def income_statement(
     expenses = [row for row in rows if str(row["code"])[0] == "6"]
     revenue_total = sum(-float(row["balance"]) for row in revenue)
     expense_total = sum(float(row["balance"]) for row in expenses)
-    return {"revenue": revenue, "expenses": expenses, "revenue_total": revenue_total, "expense_total": expense_total, "net_result": revenue_total - expense_total}
+    farming_feed_cost = sum(float(row["balance"]) for row in expenses if row["code"] == "602")
+    return {
+        "revenue": revenue,
+        "expenses": expenses,
+        "revenue_total": revenue_total,
+        "expense_total": expense_total,
+        "farming_feed_cost": farming_feed_cost,
+        "gross_margin": revenue_total - farming_feed_cost,
+        "net_result": revenue_total - expense_total,
+    }
 
 
 @router.get("/reports/vat")

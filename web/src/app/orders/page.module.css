@@ -9,9 +9,9 @@
   --ink-2: #d6dce5;
   --ink-3: #9aa4b2;
   --ink-4: #6f7a8a;
-  --accent: #a46aa3;
-  --accent-soft: rgba(164, 106, 163, 0.1);
-  --accent-line: rgba(164, 106, 163, 0.35);
+  --accent: #dfb053;
+  --accent-soft: rgba(223, 176, 83, 0.12);
+  --accent-line: rgba(223, 176, 83, 0.38);
   --good: #64eeae;
   --warn: #ffc04c;
   --danger: #ff6b6b;
@@ -69,13 +69,13 @@
 }
 
 .header p:last-child { margin: 8px 0 0; color: var(--ink-4); font-size: .82rem; }
-.headerIcon { display: grid; width: 38px; height: 38px; place-items: center; border: 1px solid var(--line-2); border-radius: 6px; background: var(--bg-1); color: #c497c2; }
+.headerIcon { display: grid; width: 38px; height: 38px; place-items: center; border: 1px solid var(--line-2); border-radius: 6px; background: var(--bg-1); color: var(--accent-hi); }
 
 .metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 24px; }
 .metricCard { display: flex; align-items: center; gap: 12px; min-width: 0; min-height: 92px; padding: 14px 16px; border: 1px solid var(--line-1); border-radius: 8px; background: var(--bg-1); box-shadow: 0 1px 2px rgba(0,0,0,.35); }
 .metricCard small { display: block; margin-bottom: 6px; color: var(--ink-4); font-size: .68rem; }
 .metricCard strong { display: block; overflow: hidden; color: var(--ink-1); font-size: 1.05rem; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
-.metricIcon { display: grid; width: 32px; height: 32px; flex: 0 0 auto; place-items: center; border: 1px solid var(--accent-line); border-radius: 6px; background: var(--accent-soft); color: #c497c2; }
+.metricIcon { display: grid; width: 32px; height: 32px; flex: 0 0 auto; place-items: center; border: 1px solid var(--accent-line); border-radius: 6px; background: var(--accent-soft); color: var(--accent-hi); }
 .metricIconGood { border-color: rgba(100,238,174,.22); background: rgba(100,238,174,.09); color: var(--good); }
 .metricIconPending { border-color: rgba(255,192,76,.22); background: rgba(255,192,76,.09); color: var(--warn); }
 .metricIconAmount { border-color: rgba(114,189,221,.22); background: rgba(114,189,221,.09); color: #72bddd; }

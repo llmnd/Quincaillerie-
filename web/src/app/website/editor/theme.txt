@@ -1432,7 +1432,7 @@ export default function WebsiteEditorPage() {
                 </div>
 
                 <ThemeColorInput label="Couleur principale" value={websiteTheme.primary ?? "#111827"} onCommit={(v) => void updateThemeValue("primary", v)} />
-                <ThemeColorInput label="Couleur secondaire" value={websiteTheme.secondary ?? "#714B67"} onCommit={(v) => void updateThemeValue("secondary", v)} />
+                <ThemeColorInput label="Couleur secondaire" value={websiteTheme.secondary ?? "#dfb053"} onCommit={(v) => void updateThemeValue("secondary", v)} />
                 <ThemeColorInput label="Arrière-plan" value={websiteTheme.background ?? "#FFFFFF"} onCommit={(v) => void updateThemeValue("background", v)} />
                 <ThemeColorInput label="Couleur du texte" value={websiteTheme.text ?? "#111827"} onCommit={(v) => void updateThemeValue("text", v)} />
                 <ThemeColorInput label="Texte secondaire" value={websiteTheme.secondaryText ?? "#475569"} onCommit={(v) => void updateThemeValue("secondaryText", v)} />
@@ -1685,7 +1685,7 @@ export default function WebsiteEditorPage() {
                   <CartBadge
                     slug={currentSiteSlug}
                     textColor={websiteTheme.text ?? "#111827"}
-                    secondaryColor={websiteTheme.secondary ?? "#714B67"}
+                    secondaryColor={websiteTheme.secondary ?? "#dfb053"}
                     editable={editorMode === "edit"}
                     style={headerStyleFor("headerCart")}
                     countStyle={headerStyleFor("headerCartCount")}
@@ -1715,7 +1715,7 @@ export default function WebsiteEditorPage() {
                       textColor={websiteTheme.text ?? "#111827"}
                       secondaryTextColor={websiteTheme.secondaryText ?? "#475569"}
                       primaryColor={websiteTheme.primary ?? "#111827"}
-                      secondaryColor={websiteTheme.secondary ?? "#714B67"}
+                      secondaryColor={websiteTheme.secondary ?? "#dfb053"}
                       slug={currentSiteSlug}
                       fontFamily={websiteTheme.font ?? "Inter, sans-serif"}
                       editable={editorMode === "edit"}

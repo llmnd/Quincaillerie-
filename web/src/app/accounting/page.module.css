@@ -30,12 +30,12 @@
   --ink-4: #6f7a8a;
   --ink-5: #4f5866;
 
-  /* Accent prune (dashboard) */
-  --accent: #a46aa3;
-  --accent-hi: #c497c2;
-  --accent-soft: rgba(164, 106, 163, 0.1);
-  --accent-line: rgba(164, 106, 163, 0.35);
-  --accent-ink: #2a1629;
+  /* Accent laiton - identité MIZAN */
+  --accent: #dfb053;
+  --accent-hi: #efa716;
+  --accent-soft: rgba(223, 176, 83, 0.12);
+  --accent-line: rgba(223, 176, 83, 0.38);
+  --accent-ink: #1a1408;
 
   /* Sémantique */
   --good: #64eeae;
@@ -1100,18 +1100,18 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
-  background: rgba(2, 6, 23, 0.82);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  padding: 12px;
+  background: rgba(3, 8, 15, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   animation: modalFadeIn 180ms var(--ease);
 }
 
 .modalCard {
   width: min(720px, 92vw);
-  max-height: 86vh;
+  max-height: calc(100dvh - 24px);
   overflow: auto;
-  padding: 26px;
+  padding: 22px;
   border: 1px solid var(--line-2);
   border-radius: var(--r-lg);
   background: var(--bg-1);

@@ -115,3 +115,21 @@ class FarmingEggProductionRead(FarmingEggProductionCreate):
 
     id: int
     created_at: datetime
+
+
+class FarmingStockTransferCreate(BaseModel):
+    batch_id: int
+    product_id: int
+    egg_production_id: int | None = None
+    transfer_type: str = Field(pattern="^(eggs|poultry)$")
+    quantity: int = Field(gt=0)
+    unit_cost: float = Field(default=0.0, ge=0)
+    transfer_date: date = Field(default_factory=date.today)
+    notes: str | None = Field(default=None, max_length=255)
+
+
+class FarmingStockTransferRead(FarmingStockTransferCreate):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    created_at: datetime

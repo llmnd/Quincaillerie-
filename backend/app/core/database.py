@@ -13,6 +13,7 @@ from app.models.organization import Organization, OrganizationModule  # noqa: E4
 from app.models.user import User  # noqa: E402,F401
 from app.models.cash import AuditLog, CashHandoff, CashOperation, CashRegister, CashSession  # noqa: E402,F401
 from app.models.accounting import Account, Invoice, InvoiceLine, JournalEntry, JournalLine, Tax  # noqa: E402,F401
+from app.models.farming import FarmingBatch, FarmingBuilding, FarmingConsumption, FarmingEggProduction, FarmingHealthEvent, FarmingSite, FarmingStockTransfer  # noqa: E402,F401
 
 connect_args = {}
 if settings.database_url.startswith("sqlite"):
@@ -50,6 +51,14 @@ def ensure_sqlite_schema() -> None:
         if "organization_id" not in user_columns:
             connection.execute(text("ALTER TABLE users ADD COLUMN organization_id INTEGER"))
             connection.execute(text("UPDATE users SET organization_id = :org_id WHERE organization_id IS NULL"), {"org_id": default_org_id})
+        if "pinned_modules" not in user_columns:
+            connection.execute(text("ALTER TABLE users ADD COLUMN pinned_modules JSON NOT NULL DEFAULT '[]'"))
+
+        stock_columns = {column[1] for column in connection.execute(text("PRAGMA table_info(stock_movements)"))} if "stock_movements" in tables else set()
+        if "stock_movements" in tables and "source_type" not in stock_columns:
+            connection.execute(text("ALTER TABLE stock_movements ADD COLUMN source_type VARCHAR(50)"))
+        if "stock_movements" in tables and "source_id" not in stock_columns:
+            connection.execute(text("ALTER TABLE stock_movements ADD COLUMN source_id INTEGER"))
 
         for table_name in [
             "products",
