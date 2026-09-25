@@ -75,7 +75,12 @@ class UserRead(BaseModel):
     role: Literal["admin", "seller"]
     is_active: bool
     permissions: dict[str, bool] = {}
+    pinned_modules: list[str] = Field(default_factory=list)
     access_token: str | None = None
+
+
+class UserPreferencesUpdate(BaseModel):
+    pinned_modules: list[str] = Field(default_factory=list)
 
 
 class PasswordChangeRequest(BaseModel):

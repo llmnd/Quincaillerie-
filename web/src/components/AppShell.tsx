@@ -13,9 +13,11 @@ import {
   LayoutDashboard,
   LayoutGrid,
   LogOut,
+  MoreVertical,
   Package,
   PanelLeftClose,
   PanelLeftOpen,
+  Pin,
   Settings,
   ShoppingCart,
   UserRound,
@@ -25,7 +27,12 @@ import {
 import { authHeaders, clearStoredAuth, getStoredUser, restoreAuthSession } from "../lib/auth";
 import styles from "./AppShell.module.css";
 
-type User = { full_name?: string; email?: string; role?: "admin" | "seller" };
+type User = {
+  full_name?: string;
+  email?: string;
+  role?: "admin" | "seller";
+  pinned_modules?: string[];
+};
 type ModuleState = { key: string; enabled: boolean };
 type OrganizationProfile = { name: string; logo?: string | null };
 type Application = {
@@ -75,7 +82,6 @@ const breadcrumbLabels: Record<string, string> = {
 
 const breadcrumbStorageKey = "quincaillerie_breadcrumbs";
 const sidebarScrollStorageKey = "quincaillerie_sidebar_scroll";
-
 function BreadcrumbTrail({
   items,
   className = "",
@@ -201,6 +207,7 @@ const navigationGroups: NavigationGroup[] = [
       { label: "Analyse des opérations", href: "/reports", icon: LayoutGrid, image: "https://i.pinimg.com/1200x/e3/d5/9d/e3d59d60c2891e39457dc635b6fc89ab.jpg", roles: ["admin"], moduleKey: "accounting" },
       { label: "Métriques d'entreprise", href: "/dashboard", icon: LayoutDashboard, image: "https://i.pinimg.com/1200x/a8/13/3f/a8133f8bcfac2c7f80958f5aeb31c574.jpg" },
       { label: "Stock", href: "/stock", icon: Boxes, image: "https://i.pinimg.com/736x/71/16/ba/7116bafcb4ae414d6fd8c74a8cd2a46b.jpg", roles: ["admin"], moduleKey: "stock" },
+      { label: "Élevage", href: "/farming", icon: Bird, image: "https://i.pinimg.com/originals/6e/cd/13/6ecd136e249649f0ba8452d13613bcfd.gif", roles: ["admin", "seller"], moduleKey: "farming" },
     ],
   },
   {
@@ -239,6 +246,7 @@ export default function AppShell({
   const queryClient = useQueryClient();
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const [openPinMenu, setOpenPinMenu] = useState<string | null>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
@@ -348,6 +356,7 @@ export default function AppShell({
     if (navigationTimerRef.current) clearTimeout(navigationTimerRef.current);
     navigationTimerRef.current = null;
     setIsNavigating(false);
+    setOpenPinMenu(null);
   }, [pathname]);
 
   useEffect(() => {
@@ -460,6 +469,7 @@ export default function AppShell({
       .map((module) => module.key)
   );
   const safeEnabledModules = enabledModuleKeys.size > 0 ? enabledModuleKeys : allModuleKeys;
+  const pinnedModuleKeys = user?.pinned_modules ?? [];
   const organization = isHydrated ? organizationQuery.data ?? null : null;
   const visibleBreadcrumbs =
     breadcrumbs.length > 0
@@ -471,9 +481,43 @@ export default function AppShell({
     const moduleKey = item.moduleKey ?? "";
     return !isHydrated || moduleKey.length === 0 || safeEnabledModules.has(moduleKey);
   };
+  const togglePinnedModule = async (moduleKey: string) => {
+    if (!user) return;
+
+    const nextPinnedModules = pinnedModuleKeys.includes(moduleKey)
+      ? pinnedModuleKeys.filter((key) => key !== moduleKey)
+      : [...pinnedModuleKeys, moduleKey];
+
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? ""}/api/v1/auth/me/preferences`, {
+      method: "PATCH",
+      credentials: "include",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        ...authHeaders(),
+      },
+      body: JSON.stringify({ pinned_modules: nextPinnedModules }),
+    });
+
+    if (!response.ok) return;
+
+    const updatedUser = (await response.json()) as User;
+    queryClient.setQueryData(["auth", "me"], updatedUser);
+  };
+  const isPinned = (item: NavigationItem) => Boolean(item.moduleKey && pinnedModuleKeys.includes(item.moduleKey));
+  const visiblePinnedItems = navigationGroups
+    .flatMap((group) => group.items)
+    .filter((item) => item.moduleKey && isVisibleItem(item) && isPinned(item));
+  const pinnedKeys = new Set(visiblePinnedItems.map((item) => item.moduleKey ?? ""));
   const visibleGroups = navigationGroups
-    .map((group) => ({ ...group, items: group.items.filter(isVisibleItem) }))
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => isVisibleItem(item) && !(item.moduleKey && pinnedKeys.has(item.moduleKey))),
+    }))
     .filter((group) => group.items.length > 0);
+  const sidebarSections = visiblePinnedItems.length
+    ? [{ label: "Favoris", items: visiblePinnedItems }, ...visibleGroups]
+    : visibleGroups;
   const safeUser = isHydrated
     ? effectiveUser
     : { full_name: "Utilisateur", email: "", role: undefined };
@@ -630,39 +674,94 @@ export default function AppShell({
 
             <div className={styles.navDivider} aria-hidden="true" />
 
-            {visibleGroups.map((group) => (
+            {sidebarSections.map((group) => (
               <section key={group.label} className={styles.navSection} aria-labelledby={`nav-${group.label}`}>
                 <h2 id={`nav-${group.label}`} className={styles.navLabel}>{group.label}</h2>
                 <div className={styles.navSectionItems}>
-                  {group.items.map((item) => (
-                    <Link
-                      key={`${item.href}-${item.label}`}
-                      href={item.href}
-                      onClick={() => {
-                        preserveSidebarScroll();
-                        setMenuOpen(false);
-                        startNavigation(item.href);
-                      }}
-                      onMouseEnter={() => prefetchRoute(item.href)}
-                      onFocus={() => prefetchRoute(item.href)}
-                      className={isNavigationItemActive(item.href) ? styles.navActive : styles.navItem}
-                      aria-current={isNavigationItemActive(item.href) ? "page" : undefined}
-                    >
-                      {item.image ? (
-                        <img
-                          src={item.image}
-                          alt=""
-                          className={styles.navImage}
-                          onError={(event) => {
-                            event.currentTarget.style.display = "none";
+                  {group.items.map((item) => {
+                    const isPinnedItem = isPinned(item);
+                    const isActive = isNavigationItemActive(item.href);
+                    return (
+                      <div key={`${item.href}-${item.label}`} className={styles.navItemWrap}>
+                        <Link
+                          href={item.href}
+                          onClick={() => {
+                            preserveSidebarScroll();
+                            setMenuOpen(false);
+                            startNavigation(item.href);
                           }}
-                        />
-                      ) : (
-                        <item.icon size={16} strokeWidth={1.8} aria-hidden="true" />
-                      )}
-                      <span>{item.label}</span>
-                    </Link>
-                  ))}
+                          onMouseEnter={() => prefetchRoute(item.href)}
+                          onFocus={() => prefetchRoute(item.href)}
+                          className={isActive ? styles.navActive : styles.navItem}
+                          aria-current={isActive ? "page" : undefined}
+                        >
+                          {item.image ? (
+                            <img
+                              src={item.image}
+                              alt=""
+                              className={styles.navImage}
+                              onError={(event) => {
+                                event.currentTarget.style.display = "none";
+                              }}
+                            />
+                          ) : (
+                            <item.icon size={16} strokeWidth={1.8} aria-hidden="true" />
+                          )}
+                          <span>{item.label}</span>
+                        </Link>
+                        {item.moduleKey && isPinnedItem && (
+                          <button
+                            type="button"
+                            className={`${styles.navPinButton} ${styles.navPinButtonActive}`}
+                            aria-label={`Désépingler ${item.label}`}
+                            title={`Désépingler ${item.label}`}
+                            onClick={(event) => {
+                              event.preventDefault();
+                              event.stopPropagation();
+                              togglePinnedModule(item.moduleKey!);
+                            }}
+                          >
+                            <Pin size={13} strokeWidth={2} aria-hidden="true" />
+                          </button>
+                        )}
+                        {item.moduleKey && !isPinnedItem && (
+                          <div className={styles.navPinMenuWrap}>
+                            <button
+                              type="button"
+                              className={styles.navPinButton}
+                              aria-label={`Actions pour ${item.label}`}
+                              title={`Actions pour ${item.label}`}
+                              aria-expanded={openPinMenu === item.moduleKey}
+                              onClick={(event) => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                setOpenPinMenu((current) => current === item.moduleKey ? null : item.moduleKey ?? null);
+                              }}
+                            >
+                              <MoreVertical size={15} strokeWidth={2} aria-hidden="true" />
+                            </button>
+                            {openPinMenu === item.moduleKey && (
+                              <div className={styles.navPinMenu} role="menu">
+                                <button
+                                  type="button"
+                                  role="menuitem"
+                                  onClick={(event) => {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                    setOpenPinMenu(null);
+                                    void togglePinnedModule(item.moduleKey!);
+                                  }}
+                                >
+                                  <Pin size={13} strokeWidth={2} aria-hidden="true" />
+                                  Épingler
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </section>
             ))}

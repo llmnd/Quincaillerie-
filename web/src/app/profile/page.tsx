@@ -238,53 +238,59 @@ export default function ProfilePage() {
               aria-label="Formulaire de changement de mot de passe"
             >
               <form className={styles.passwordForm} onSubmit={changePassword}>
-                <input
-                  required
-                  minLength={8}
-                  type="password"
-                  placeholder="Mot de passe actuel"
-                  autoComplete="current-password"
-                  aria-label="Mot de passe actuel"
-                  value={passwordForm.current_password}
-                  onChange={(event) =>
-                    setPasswordForm({
-                      ...passwordForm,
-                      current_password: event.target.value,
-                    })
-                  }
-                />
+                <div className={styles.passwordField}>
+                  <input
+                    required
+                    minLength={8}
+                    type="password"
+                    placeholder="Mot de passe actuel"
+                    autoComplete="current-password"
+                    aria-label="Mot de passe actuel"
+                    value={passwordForm.current_password}
+                    onChange={(event) =>
+                      setPasswordForm({
+                        ...passwordForm,
+                        current_password: event.target.value,
+                      })
+                    }
+                  />
+                </div>
 
-                <input
-                  required
-                  minLength={8}
-                  type="password"
-                  placeholder="Nouveau mot de passe"
-                  autoComplete="new-password"
-                  aria-label="Nouveau mot de passe"
-                  value={passwordForm.new_password}
-                  onChange={(event) =>
-                    setPasswordForm({
-                      ...passwordForm,
-                      new_password: event.target.value,
-                    })
-                  }
-                />
+                <div className={styles.passwordField}>
+                  <input
+                    required
+                    minLength={8}
+                    type="password"
+                    placeholder="Nouveau mot de passe"
+                    autoComplete="new-password"
+                    aria-label="Nouveau mot de passe"
+                    value={passwordForm.new_password}
+                    onChange={(event) =>
+                      setPasswordForm({
+                        ...passwordForm,
+                        new_password: event.target.value,
+                      })
+                    }
+                  />
+                </div>
 
-                <input
-                  required
-                  minLength={8}
-                  type="password"
-                  placeholder="Confirmer le nouveau mot de passe"
-                  autoComplete="new-password"
-                  aria-label="Confirmer le nouveau mot de passe"
-                  value={passwordForm.confirmation}
-                  onChange={(event) =>
-                    setPasswordForm({
-                      ...passwordForm,
-                      confirmation: event.target.value,
-                    })
-                  }
-                />
+                <div className={styles.passwordField}>
+                  <input
+                    required
+                    minLength={8}
+                    type="password"
+                    placeholder="Confirmer le nouveau mot de passe"
+                    autoComplete="new-password"
+                    aria-label="Confirmer le nouveau mot de passe"
+                    value={passwordForm.confirmation}
+                    onChange={(event) =>
+                      setPasswordForm({
+                        ...passwordForm,
+                        confirmation: event.target.value,
+                      })
+                    }
+                  />
+                </div>
 
                 <button
                   type="submit"

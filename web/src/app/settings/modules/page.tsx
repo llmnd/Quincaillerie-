@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import AppShell from "../../../components/AppShell";
 import { authHeaders } from "../../../lib/auth";
 import styles from "./page.module.css";
@@ -16,6 +17,7 @@ type Module = {
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 export function ModulesPageContent() {
+  const queryClient = useQueryClient();
   const [modules, setModules] = useState<Module[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -65,6 +67,7 @@ export function ModulesPageContent() {
     }
     const updated = await response.json();
     setModules((current) => current.map((item) => item.key === updated.key ? updated : item));
+    await queryClient.invalidateQueries({ queryKey: ["organization", "modules"] });
   }
 
   return (

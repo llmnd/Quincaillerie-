@@ -13,7 +13,7 @@ from app.core.config import settings
 from app.core.security import create_access_token, hash_password, verify_password
 from app.models.organization import Organization
 from app.models.user import User
-from app.schemas.auth import BootstrapAdminRequest, LoginRequest, PasswordChangeRequest, UserCreate, UserRead, UserUpdate
+from app.schemas.auth import BootstrapAdminRequest, LoginRequest, PasswordChangeRequest, UserCreate, UserPreferencesUpdate, UserRead, UserUpdate
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -196,6 +196,27 @@ def logout(response: Response) -> None:
 
 @router.get("/me", response_model=UserRead)
 def get_me(current_user: User = Depends(get_current_user)) -> User:
+    return current_user
+
+
+@router.patch("/me/preferences", response_model=UserRead)
+def update_my_preferences(
+    payload: UserPreferencesUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> User:
+    cleaned: list[str] = []
+    seen: set[str] = set()
+    for key in payload.pinned_modules:
+        value = str(key).strip()
+        if not value or value in seen:
+            continue
+        seen.add(value)
+        cleaned.append(value)
+
+    current_user.pinned_modules = cleaned
+    db.commit()
+    db.refresh(current_user)
     return current_user
 
 

@@ -15,5 +15,6 @@ class User(Base):
     role: Mapped[str] = mapped_column(String(20), nullable=False, default="seller")
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     permissions: Mapped[dict[str, bool]] = mapped_column(JSON, nullable=False, default=dict)
+    pinned_modules: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
 
     organization: Mapped["Organization"] = relationship(back_populates="users")

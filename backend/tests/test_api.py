@@ -56,6 +56,48 @@ def test_register_company_creates_admin_and_organization():
     assert body["role"] == "admin"
 
 
+def test_user_pinned_modules_are_persisted_per_user():
+    first = client.post(
+        "/api/v1/auth/register",
+        json={
+            "organization_name": f"Pinned Org 1 {uuid.uuid4().hex[:8]}",
+            "full_name": "First User",
+            "email": f"first-{uuid.uuid4().hex[:8]}@demo.test",
+            "password": "StrongPass123",
+        },
+    )
+    assert first.status_code == 201, first.text
+    first_token = first.cookies.get("access_token", "")
+
+    second = client.post(
+        "/api/v1/auth/register",
+        json={
+            "organization_name": f"Pinned Org 2 {uuid.uuid4().hex[:8]}",
+            "full_name": "Second User",
+            "email": f"second-{uuid.uuid4().hex[:8]}@demo.test",
+            "password": "StrongPass123",
+        },
+    )
+    assert second.status_code == 201, second.text
+    second_token = second.cookies.get("access_token", "")
+
+    first_pin = client.patch(
+        "/api/v1/auth/me/preferences",
+        json={"pinned_modules": ["sales", "farming"]},
+        headers={"Authorization": f"Bearer {first_token}"},
+    )
+    assert first_pin.status_code == 200, first_pin.text
+    assert first_pin.json()["pinned_modules"] == ["sales", "farming"]
+
+    first_me = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {first_token}"})
+    assert first_me.status_code == 200, first_me.text
+    assert first_me.json()["pinned_modules"] == ["sales", "farming"]
+
+    second_me = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {second_token}"})
+    assert second_me.status_code == 200, second_me.text
+    assert second_me.json()["pinned_modules"] == []
+
+
 def test_new_organization_starts_with_default_accounting_chart():
     payload = {
         "organization_name": f"Compta Org {uuid.uuid4().hex[:8]}",

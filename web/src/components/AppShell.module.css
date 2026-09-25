@@ -441,6 +441,13 @@
 .navSectionItems { display: flex; flex-direction: column; gap: 2px; }
 .navDivider { height: 1px; background: var(--line-1); }
 
+.navItemWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
 .navItem,
 .navActive {
   position: relative;
@@ -462,6 +469,7 @@
 }
 
 .navItem {
+  width: 100%;
   color: #e5e9ef;
 }
 
@@ -518,6 +526,84 @@
 }
 
 .navActive svg { color: var(--sage); }
+
+.navPinButton {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.02);
+  color: rgba(255, 255, 255, 0.56);
+  font-size: 0.7rem;
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition: background 160ms var(--ease), border-color 160ms var(--ease), color 160ms var(--ease), transform 160ms var(--ease);
+}
+
+.navPinButton:hover {
+  background: rgba(130, 200, 188, 0.08);
+  border-color: rgba(130, 200, 188, 0.22);
+  color: var(--sage-hi);
+}
+
+.navPinButtonActive {
+  color: var(--sage-hi);
+  background: rgba(130, 200, 188, 0.12);
+  border-color: rgba(130, 200, 188, 0.3);
+}
+
+.navPinMenuWrap {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.navPinMenuWrap .navPinButton {
+  position: static;
+  transform: none;
+}
+
+.navPinMenu {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 118px;
+  padding: 4px;
+  border: 1px solid var(--line-2);
+  border-radius: 7px;
+  background: #151c25;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
+}
+
+.navPinMenu button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #e5e9ef;
+  font: inherit;
+  font-size: 0.72rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.navPinMenu button:hover {
+  background: var(--bg-hover);
+  color: var(--sage-hi);
+}
 
 /* ==========================================================================
    USER CARD (sidebar)
@@ -1005,10 +1091,10 @@
     left: 0;
     right: 0;
     z-index: 25;
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1px;
-    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 10px 14px;
     background: var(--bg-topbar);
     border-bottom: 1px solid var(--line-2);
     box-shadow: 0 24px 48px -18px rgba(0, 0, 0, 0.8);
@@ -1020,24 +1106,46 @@
     to   { opacity: 1; transform: translateY(0); }
   }
 
+  .sidebarNavOpen .navSection {
+    gap: 8px;
+  }
+
+  .sidebarNavOpen .navSectionItems {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
   .sidebarNavOpen .navLabel {
-    grid-column: 1 / -1;
-    margin: 4px 8px 8px;
+    margin: 2px 6px 0;
     background: transparent;
-    font-size: 0.62rem;
+    font-size: 0.58rem;
+    letter-spacing: 0.12em;
   }
 
   .sidebarNavOpen .navItem,
   .sidebarNavOpen .navActive {
     display: flex;
     align-items: center;
-    justify-content: center;
-    text-align: center;
-    min-height: 54px;
-    padding: 12px;
-    border-radius: 8px;
+    justify-content: flex-start;
+    gap: 10px;
+    min-height: 48px;
+    padding: 10px 12px;
+    border-radius: 10px;
     background: rgba(255, 255, 255, 0.02);
     font-size: 0.72rem;
+    text-align: left;
+  }
+
+  .sidebarNavOpen .navItem span,
+  .sidebarNavOpen .navActive span {
+    line-height: 1.2;
+  }
+
+  .sidebarNavOpen .navItem .navImage,
+  .sidebarNavOpen .navActive .navImage {
+    width: 22px;
+    height: 22px;
   }
 
   .sidebarNavOpen .navActive {
@@ -1052,10 +1160,11 @@
 
   .topbar {
     min-height: 56px;
-    padding: 0 18px;
+    padding: 0 12px;
+    gap: 12px;
   }
 
-  .topbar::after { left: 18px; width: 32px; }
+  .topbar::after { left: 12px; width: 28px; }
 
   .topbarLeft {
     gap: 8px;
@@ -1066,7 +1175,25 @@
     display: none !important;
   }
 
-  .topbarActions { gap: 10px; }
+  .topbarActions {
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .company {
+    display: inline-flex;
+    max-width: 82px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    letter-spacing: 0.08em;
+    font-size: 0.56rem;
+  }
+
+  .companyLogo {
+    width: 20px;
+    height: 20px;
+  }
 
   .globalSearch {
     width: auto;
